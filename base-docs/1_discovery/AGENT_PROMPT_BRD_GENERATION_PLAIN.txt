@@ -1,0 +1,384 @@
+AGENT PROMPT: GENERATE BRD FRAMEWORK FROM DISCOVERY QUESTIONNAIRE
+
+========================================
+OVERVIEW
+========================================
+
+This prompt guides an AI agent to create a Business Requirements Document (BRD) framework from a Discovery Questionnaire. The BRD follows a hierarchical structure used in Adobe Analytics implementation projects.
+
+========================================
+TASK DESCRIPTION
+========================================
+
+Generate a structured BRD Excel file that translates discovery questionnaire findings into a hierarchical business framework with goals, strategies, initiatives, tactics, KPIs, and business capabilities.
+
+========================================
+INPUT FILES REQUIRED
+========================================
+
+1. Discovery Questionnaire: Excel file containing client responses
+   - Example: Discovery Q to BRD.xlsx
+   - Key sheet: Kickoff Questionnaire
+   - Contains questions and client feedback across categories:
+     * Site Architecture
+     * Performance
+     * Acquisition/Retention
+     * Governance
+     * Privacy
+     * QA
+     * Report Suite Architecture
+
+2. Reference Template: Excel file with hierarchy structure
+   - Example: Discovery Q to BRD.xlsx → Manufacturing sheet
+   - Shows the 6-level hierarchy structure to follow
+
+========================================
+OUTPUT SPECIFICATIONS
+========================================
+
+FILE FORMAT:
+- File Type: Excel (.xlsx)
+- Naming Convention: {CLIENT_NAME}_BRD_Framework.xlsx
+- Sheet Name: {CLIENT_NAME} BRD or similar
+
+HIERARCHY STRUCTURE (6 LEVELS):
+
+Business Goal
+  └─ Strategy
+      └─ Initiative
+          └─ Tactics
+              ├─ KPI
+              └─ Business Capability (multiple per tactic)
+
+COLUMN STRUCTURE:
+
+Column A: Business Goal
+- Description: Top-level business objective
+- Merge Strategy: Merge vertically across all related rows
+
+Column B: Strategy
+- Description: High-level approach to achieve goal
+- Merge Strategy: Merge vertically across all related rows
+
+Column C: Initiative
+- Description: Specific program or effort
+- Merge Strategy: Merge vertically across all related rows
+
+Column D: Tactics
+- Description: Specific actions or methods
+- Merge Strategy: Merge vertically across all related rows
+
+Column E: KPI
+- Description: Key Performance Indicators
+- Merge Strategy: No merge - individual cells
+
+Column F: Business Capability
+- Description: Required capabilities or actions
+- Merge Strategy: No merge - individual cells
+
+========================================
+STYLING REQUIREMENTS
+========================================
+
+HEADER ROW (Row 1):
+- Font: Bold, White (FFFFFF), Size 11
+- Background: Blue (4472C4)
+- Alignment: Center horizontal and vertical
+- Border: Thin border all sides
+- Text Wrap: Enabled
+
+COLUMN WIDTHS:
+- Column A (Business Goal): 20
+- Column B (Strategy): 25
+- Column C (Initiative): 30
+- Column D (Tactics): 35
+- Column E (KPI): 30
+- Column F (Business Capability): 45
+
+ROW HEIGHTS:
+- All data rows: 25
+
+DATA CELL STYLING:
+
+Column A (Business Goal):
+- Font: Bold, Size 12, Color: Dark Blue (1F4E78)
+- Background: Light Blue (D9E2F3)
+- Alignment: Left horizontal, Center vertical
+- Text Wrap: Enabled
+
+Column B (Strategy):
+- Font: Bold, Size 11, Color: Medium Blue (2E5C8A)
+- Background: Lighter Blue (E7F0F7)
+- Alignment: Left horizontal, Center vertical
+- Text Wrap: Enabled
+
+Column C (Initiative):
+- Font: Bold, Size 10, Color: Steel Blue (3D5A80)
+- Background: Lightest Blue (F2F6F9)
+- Alignment: Left horizontal, Center vertical
+- Text Wrap: Enabled
+
+Column D (Tactics):
+- Font: Regular, Size 10, Color: Black (000000)
+- Background: None
+- Alignment: Left horizontal, Top vertical
+- Text Wrap: Enabled
+
+Column E (KPI):
+- Font: Regular, Size 10, Color: Black (000000)
+- Background: None
+- Alignment: Left horizontal, Top vertical
+- Text Wrap: Enabled
+
+Column F (Business Capability):
+- Font: Regular, Size 10, Color: Black (000000)
+- Background: None
+- Alignment: Left horizontal, Top vertical
+- Text Wrap: Enabled
+
+BORDERS:
+- All cells: Thin border on all sides
+
+ADDITIONAL FORMATTING:
+- Freeze Panes: Row 2 (header row always visible)
+
+========================================
+CONTENT GENERATION GUIDELINES
+========================================
+
+STEP 1: ANALYZE DISCOVERY QUESTIONNAIRE
+
+Read and understand the client's business context from their responses:
+- Business model and revenue generation
+- Target audience and competitors
+- Technical architecture (platforms, frameworks, hosting)
+- Marketing channels and performance
+- Key challenges and pain points
+- Business objectives
+- Organizational structure
+- Compliance requirements
+- QA and release processes
+- Analytics maturity and data integration needs
+
+STEP 2: DEFINE BUSINESS GOALS
+
+Based on discovery findings, create 3-7 top-level business goals. Common goals for different business types:
+
+B2C E-commerce / Retail:
+- Grow Revenue
+- Increase Customer Lifetime Value
+- Optimize Multi-Channel Performance
+- Improve Data-Driven Decision Making
+- Ensure Compliance and Governance
+
+B2B / Enterprise:
+- Grow Revenue
+- Increase Account Value
+- Improve Lead Quality and Conversion
+- Enhance Customer Engagement
+- Enable Data-Driven Sales
+
+Media / Content:
+- Increase Audience Engagement
+- Optimize Content Performance
+- Grow Subscription Revenue
+- Improve Advertising Revenue
+- Enhance Personalization
+
+STEP 3: MAP STRATEGIES TO GOALS
+
+For each business goal, define 1-3 strategies:
+- Should directly support the goal
+- Should be actionable and measurable
+- Should align with client's stated objectives and challenges
+
+STEP 4: DEFINE INITIATIVES UNDER STRATEGIES
+
+For each strategy, create 1-5 initiatives:
+- Specific programs or efforts
+- Should address challenges mentioned in discovery
+- Should leverage client's existing capabilities
+- Should consider technical constraints
+
+STEP 5: SPECIFY TACTICS FOR EACH INITIATIVE
+
+For each initiative, define 1-5 tactics:
+- Concrete, actionable methods
+- Should be implementable given client's tech stack
+- Should align with client's priorities
+- Should consider organizational readiness
+
+STEP 6: ASSIGN KPIS TO TACTICS
+
+For each tactic, specify measurable KPIs:
+- Should be trackable with Adobe Analytics
+- Should align with client's current measurement approach
+- Should be specific and quantifiable
+- Can list multiple KPIs separated by commas
+
+STEP 7: LIST BUSINESS CAPABILITIES PER TACTIC
+
+For each tactic, list 2-5 business capabilities (one per row):
+- Specific actions or requirements needed
+- Technical capabilities (tracking, integration, analysis)
+- Process capabilities (testing, governance, optimization)
+- Organizational capabilities (training, roles, workflows)
+
+STEP 8: HANDLE UNKNOWN INFORMATION
+
+- If specific information is missing from discovery questionnaire, leave cells blank
+- Do not invent or assume critical business information
+- Use industry best practices for standard capabilities
+- Mark uncertain areas for client validation
+
+========================================
+IMPLEMENTATION INSTRUCTIONS
+========================================
+
+Use Python with openpyxl and pandas libraries to:
+
+1. Read the Discovery Questionnaire Excel file
+2. Parse the Kickoff Questionnaire sheet (skip first 5 rows)
+3. Analyze client context and identify key information
+4. Create a structured data array with 6 columns
+5. Create an Excel workbook with proper formatting
+6. Write data to the worksheet
+7. Apply cell merging for columns A, B, C, D based on hierarchy
+8. Apply styling (colors, fonts, borders, alignment)
+9. Set column widths and row heights
+10. Freeze the header row
+11. Save the workbook with proper naming convention
+
+DATA STRUCTURE FORMAT:
+
+Each row should be a list with 6 elements:
+[Business Goal, Strategy, Initiative, Tactic, KPI, Business Capability]
+
+Use empty strings ("") for continuation rows where upper-level hierarchy items should be merged.
+
+Example:
+["Grow Revenue", "Acquire new customers", "Increase qualified traffic", "Increase paid media traffic", "Traffic by paid media channels", "Create relevant paid media assets"]
+["", "", "", "", "", "Target appropriate audiences"]
+["", "", "", "", "", "Optimize channel placement"]
+["", "", "", "Improve SEO traffic", "SEO traffic", "Enhance content tagging"]
+
+CELL MERGING LOGIC:
+
+For columns A through D, identify consecutive rows with the same value (or empty string) and merge them vertically. Apply appropriate styling to the merged cell based on the column.
+
+========================================
+EXAMPLE BRD STRUCTURE
+========================================
+
+Business Goal: Grow Revenue
+  Strategy: Acquire new customers
+    Initiative: Increase qualified traffic
+      Tactic: Increase paid media traffic
+        KPI: Traffic by paid media channels
+        Capability: Create relevant paid media assets
+        Capability: Target high-value audiences
+        Capability: Optimize channel placement
+      Tactic: Improve SEO traffic
+        KPI: SEO traffic
+        Capability: Enhance content tagging
+        Capability: Improve site structure
+    Initiative: Improve new user conversion
+      Tactic: Increase registration conversion rate
+        KPI: New user registration rate
+        Capability: Simplify registration flow
+        Capability: Offer registration incentives
+
+========================================
+QUALITY CHECKLIST
+========================================
+
+Before finalizing the BRD, verify:
+
+[ ] All hierarchy levels are properly structured (6 levels)
+[ ] Cell merging is applied correctly to columns A-D
+[ ] Styling matches specifications (colors, fonts, borders)
+[ ] Column widths and row heights are set appropriately
+[ ] Header row is frozen
+[ ] Content aligns with client's discovery responses
+[ ] Business goals address client's stated objectives
+[ ] Tactics are feasible given client's tech stack
+[ ] KPIs are measurable with Adobe Analytics
+[ ] Business capabilities are specific and actionable
+[ ] No placeholder text remains (or clearly marked as TBD)
+[ ] File naming follows convention
+[ ] Excel file opens without errors
+
+========================================
+COMMON BUSINESS GOALS BY INDUSTRY
+========================================
+
+E-COMMERCE / RETAIL:
+1. Grow Revenue (acquisition, conversion, AOV)
+2. Increase Customer Lifetime Value (retention, repeat purchase)
+3. Optimize Multi-Channel Performance (online, mobile, app, in-store)
+4. Improve Merchandising Effectiveness
+5. Enhance Customer Experience
+
+B2B / SAAS:
+1. Generate Qualified Leads
+2. Improve Lead-to-Customer Conversion
+3. Increase Product Adoption
+4. Reduce Churn
+5. Enable Account-Based Marketing
+
+MEDIA / PUBLISHING:
+1. Grow Audience Reach
+2. Increase Content Engagement
+3. Optimize Subscription Conversion
+4. Improve Ad Revenue
+5. Enhance Personalization
+
+FINANCIAL SERVICES:
+1. Increase Product Adoption
+2. Improve Digital Self-Service
+3. Enhance Customer Retention
+4. Optimize Cross-Sell Opportunities
+5. Ensure Regulatory Compliance
+
+TRAVEL / HOSPITALITY:
+1. Increase Direct Bookings
+2. Reduce Booking Abandonment
+3. Optimize Multi-Device Journey
+4. Improve Loyalty Program Engagement
+5. Enhance Personalization
+
+========================================
+TROUBLESHOOTING
+========================================
+
+ISSUE: Cell merging not working correctly
+SOLUTION: Ensure empty string values ("") are used for continuation rows, not None/null values
+
+ISSUE: Styling not applied
+SOLUTION: Check that openpyxl.styles imports are correct and color codes use proper hex format
+
+ISSUE: Excel file corruption
+SOLUTION: Validate that merge ranges don't overlap and all cell references are valid
+
+ISSUE: Content doesn't match client needs
+SOLUTION: Re-read discovery questionnaire focusing on client's stated challenges and objectives
+
+ISSUE: Too generic / not specific enough
+SOLUTION: Incorporate client-specific details like:
+- Actual platform names (e.g., "Next.js SPA" not just "website")
+- Specific channels (e.g., "TV homeshopping" not just "offline")
+- Named tools (e.g., "Amplitude, Braze" not just "third-party tools")
+- Real challenges (e.g., "new user registration conversion" not just "conversion")
+
+========================================
+IMPORTANT NOTES
+========================================
+
+- This framework is designed for Adobe Analytics implementation projects
+- The hierarchy structure can be adapted for other analytics platforms
+- Content should always be customized based on specific client needs
+- Empty cells are acceptable for unknown/TBD items
+- Always base content on actual discovery questionnaire responses
+- Prioritize client-specific information over generic best practices
+- Ensure all technical capabilities align with client's existing tech stack
+- Version: 1.0 (2025-12-17)
