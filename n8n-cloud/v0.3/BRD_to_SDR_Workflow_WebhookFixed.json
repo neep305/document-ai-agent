@@ -1,0 +1,282 @@
+{
+  "name": "BRD to SDR - Webhook (No Response)",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "brd-sdr-upload",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "id": "webhook-trigger",
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 400],
+      "webhookId": "brd-sdr-upload"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "client-name",
+              "name": "clientName",
+              "value": "={{ $json.body.clientName || 'Client' }}",
+              "type": "string"
+            },
+            {
+              "id": "file-data",
+              "name": "fileData",
+              "value": "={{ $json.body.fileData }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "extract-data",
+      "name": "Extract Form Data",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [460, 400]
+    },
+    {
+      "parameters": {
+        "mode": "jsonToBinary",
+        "convertAllData": false,
+        "sourceKey": "fileData",
+        "options": {
+          "fileName": "uploaded.xlsx",
+          "mimeType": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        }
+      },
+      "id": "convert-to-binary",
+      "name": "Convert to Binary",
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1,
+      "position": [680, 400]
+    },
+    {
+      "parameters": {
+        "binaryPropertyName": "data",
+        "options": {
+          "headerRow": true,
+          "range": "B6:E75",
+          "sheetName": "Requirements"
+        }
+      },
+      "id": "read-requirements",
+      "name": "Read Requirements Sheet",
+      "type": "n8n-nodes-base.spreadsheetFile",
+      "typeVersion": 2,
+      "position": [900, 400]
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nconst clientName = $('Extract Form Data').first().json.clientName;\n\nconsole.log('=== Processing Requirements ===');\nconsole.log('Client:', clientName);\nconsole.log('Rows:', items.length);\n\nconst requirements = [];\nconst categoryGroups = {};\n\nitems.forEach((item, index) => {\n  const reqId = item.json['Requirement ID'];\n  const category = item.json['Category'];\n  const businessReq = item.json['Business Requirement'];\n  const notes = item.json['Additional Notes'];\n  \n  if (!category && !businessReq) return;\n  \n  const requirement = {\n    id: reqId || `REQ-${index + 1}`,\n    category: category || 'General',\n    requirement: businessReq || '',\n    notes: notes || ''\n  };\n  \n  requirements.push(requirement);\n  \n  const cat = requirement.category;\n  if (!categoryGroups[cat]) {\n    categoryGroups[cat] = [];\n  }\n  categoryGroups[cat].push(requirement);\n});\n\nlet formattedRequirements = '# BUSINESS REQUIREMENTS DOCUMENT\\n\\n';\nformattedRequirements += `**Client:** ${clientName}\\n`;\nformattedRequirements += `**Total Requirements:** ${requirements.length}\\n\\n`;\nformattedRequirements += '## REQUIREMENTS BY CATEGORY\\n\\n';\n\nObject.keys(categoryGroups).forEach(category => {\n  const reqs = categoryGroups[category];\n  formattedRequirements += `### ${category} (${reqs.length} requirements)\\n\\n`;\n  \n  reqs.forEach(req => {\n    if (req.id) formattedRequirements += `**[${req.id}]**\\n`;\n    if (req.requirement) formattedRequirements += `- **Requirement:** ${req.requirement}\\n`;\n    if (req.notes) formattedRequirements += `- **Notes:** ${req.notes}\\n`;\n    formattedRequirements += '\\n';\n  });\n});\n\nreturn [{\n  json: {\n    clientName: clientName,\n    totalRequirements: requirements.length,\n    categories: Object.keys(categoryGroups),\n    requirements: requirements,\n    formattedRequirements: formattedRequirements\n  },\n  binary: $input.first().binary\n}];"
+      },
+      "id": "parse-requirements",
+      "name": "Parse Requirements",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1120, 400]
+    },
+    {
+      "parameters": {
+        "name": "get_requirements_data",
+        "description": "Retrieves the complete BRD requirements data with all categories and details",
+        "workflowCode": "const parseNode = $('Parse Requirements').first();\nif (!parseNode?.json) return { error: 'No requirements data available' };\nreturn parseNode.json.formattedRequirements;"
+      },
+      "id": "tool-requirements",
+      "name": "Tool: Get Requirements",
+      "type": "@n8n/n8n-nodes-langchain.toolCode",
+      "typeVersion": 1.1,
+      "position": [1440, 580]
+    },
+    {
+      "parameters": {
+        "name": "get_sdr_guide",
+        "description": "Retrieves the SDR conversion guidelines and rules for mapping requirements to Adobe Analytics variables",
+        "workflowCode": "return `# SDR CONVERSION GUIDELINES\n\n## Variable Types\n\n### eVars (Conversion Variables)\n- **Purpose**: Capture persistent values across user journey\n- **Use for**: Campaign tracking, User properties, Product attributes\n- **Expiration**: Can persist (visit, days, months)\n- **Examples**: Campaign ID, User Type, Product Category\n\n### Props (Traffic Variables)\n- **Purpose**: Capture page-level/hit-level data\n- **Use for**: Page attributes, Navigation, Device info\n- **Expiration**: Hit-level only (no persistence)\n- **Examples**: Page Name, Device Type, Search Term\n\n### Events (Success Events)\n- **Purpose**: Count discrete actions or conversions\n- **Use for**: User actions, Milestones, Conversions\n- **Types**: Counter, Numeric, Currency\n- **Examples**: Form Submission, Purchase, Video Play\n\n## Mandatory Variables\n\n**MUST include these:**\n\n**eVars:**\n- eVar1: Pagename\n- eVar2: Site Section\n- eVar3: ECID (Experience Cloud ID)\n\n**Props:**\n- prop1: Pagename\n- prop2: Site Section\n- prop3: ECID\n\n**Events:**\n- event1: Custom Page View\n\n## Allocation Rules\n\n### MECE Principle\n- Mutually Exclusive: No overlapping variable purposes\n- Collectively Exhaustive: Cover all requirements\n- Each requirement should map to appropriate variable type\n\n### Variable Limits (AA Prime SKU)\n- eVars: 250 maximum\n- Props: 75 maximum\n- Events: 1000 maximum\n\n### Best Practices\n1. **Map logically**: Persistent data → eVar, Hit-level → Prop, Actions → Events\n2. **Avoid redundancy**: Don't duplicate same data across multiple variables\n3. **Use descriptive names**: Clear, concise, business-friendly\n4. **Reference requirement IDs**: Link each variable to specific requirements\n5. **Consider implementation**: Think about how developers will populate\n\n## Expected Output Format\n\nFor each requirement, determine:\n1. Should it be eVar, Prop, or Event?\n2. What is the variable name?\n3. What is the business description?\n4. What are the expected values?\n5. What is the implementation trigger?\n\n## Target Ranges\n- eVars: 30-50 variables (including 3 mandatory)\n- Props: 20-30 variables (including 3 mandatory)\n- Events: 15-25 events (including event1)\n\nGenerate comprehensive SDR that maps ALL requirements appropriately.`;"
+      },
+      "id": "tool-sdr-guide",
+      "name": "Tool: Get SDR Guide",
+      "type": "@n8n/n8n-nodes-langchain.toolCode",
+      "typeVersion": 1.1,
+      "position": [1440, 700]
+    },
+    {
+      "parameters": {
+        "model": "gpt-4o",
+        "options": {
+          "temperature": 0.2
+        }
+      },
+      "id": "openai-model",
+      "name": "OpenAI GPT-4o",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1,
+      "position": [1440, 460],
+      "credentials": {
+        "openAiApi": {
+          "id": "openai-credential",
+          "name": "OpenAI API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are an expert Adobe Analytics consultant specializing in Solution Design Reference (SDR) creation.\n\nYour task: Analyze the Business Requirements Document (BRD) and generate a comprehensive SDR that maps all requirements to appropriate Adobe Analytics variables.\n\n**Instructions:**\n\n1. Use the `get_requirements_data` tool to retrieve all BRD requirements\n2. Use the `get_sdr_guide` tool to understand SDR conversion rules\n3. Analyze each requirement and determine the appropriate variable type (eVar, Prop, or Event)\n4. Apply MECE principle: Mutually Exclusive, Collectively Exhaustive\n5. Include ALL mandatory variables (eVar1-3, prop1-3, event1)\n6. Generate 30-50 eVars, 20-30 Props, 15-25 Events\n7. Provide clear business descriptions and expected values\n8. Link each variable to relevant requirement IDs\n\n**Output Format:**\n\nProvide your SDR in this exact JSON structure:\n\n```json\n{\n  \"evars\": [\n    {\n      \"Requirement ID\": \"REQ-001, REQ-002\",\n      \"Analytics Variable\": \"eVar1\",\n      \"Business Name\": \"Pagename\",\n      \"Business Description\": \"Name of the page being viewed\",\n      \"Expected Values\": \"Home, Product List, Product Detail, Cart, Checkout\",\n      \"Implementation Trigger\": \"All page loads\",\n      \"Example Value\": \"Home\",\n      \"Additional Notes\": \"Mandatory variable\"\n    }\n  ],\n  \"props\": [\n    {\n      \"Requirement ID\": \"REQ-001\",\n      \"Analytics Variable\": \"prop1\",\n      \"Business Name\": \"Pagename\",\n      \"Business Description\": \"Name of the page being viewed\",\n      \"Expected Values\": \"Home, Product List, Product Detail\",\n      \"Implementation Trigger\": \"All page loads\",\n      \"Example Value\": \"Home\",\n      \"Additional Notes\": \"Mandatory variable\"\n    }\n  ],\n  \"events\": [\n    {\n      \"Requirement ID\": \"REQ-001\",\n      \"Analytics Variable\": \"event1\",\n      \"Business Name\": \"Custom Page View\",\n      \"Business Description\": \"Fired on every page view\",\n      \"Expected Values\": \"Counter\",\n      \"Implementation Trigger\": \"All page loads\",\n      \"Example Value\": \"1\",\n      \"Additional Notes\": \"Mandatory event\"\n    }\n  ]\n}\n```\n\n**CRITICAL**: Output ONLY valid JSON. No markdown, no explanation, just the JSON object.\n\nClient: {{ $('Parse Requirements').item.json.clientName }}\nTotal Requirements: {{ $('Parse Requirements').item.json.totalRequirements }}\n\nBegin SDR generation now.",
+        "hasOutputParser": true
+      },
+      "id": "sdr-agent",
+      "name": "SDR Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [1340, 400]
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nconst clientName = $('Parse Requirements').first().json.clientName;\n\nconsole.log('=== Parsing SDR Output ===');\n\nlet rawOutput = '';\nif (items[0]?.json?.output) {\n  rawOutput = items[0].json.output;\n} else if (items[0]?.json?.text) {\n  rawOutput = items[0].json.text;\n} else {\n  rawOutput = JSON.stringify(items[0].json);\n}\n\nconsole.log('Raw output:', rawOutput.substring(0, 200));\n\n// Extract JSON from output\nlet sdrData;\ntry {\n  // Try to find JSON in the output\n  const jsonMatch = rawOutput.match(/\\{[\\s\\S]*\\}/);\n  if (jsonMatch) {\n    sdrData = JSON.parse(jsonMatch[0]);\n  } else {\n    sdrData = JSON.parse(rawOutput);\n  }\n} catch (error) {\n  console.error('Failed to parse SDR output:', error);\n  throw new Error(`Failed to parse SDR output. Raw output: ${rawOutput.substring(0, 500)}`);\n}\n\nif (!sdrData.evars || !sdrData.props || !sdrData.events) {\n  throw new Error('SDR output missing required fields: evars, props, or events');\n}\n\nconsole.log('Parsed SDR:');\nconsole.log('- eVars:', sdrData.evars.length);\nconsole.log('- Props:', sdrData.props.length);\nconsole.log('- Events:', sdrData.events.length);\n\nreturn [{\n  json: {\n    clientName: clientName,\n    sdrData: sdrData,\n    stats: {\n      evars: sdrData.evars.length,\n      props: sdrData.props.length,\n      events: sdrData.events.length,\n      total: sdrData.evars.length + sdrData.props.length + sdrData.events.length\n    },\n    rawOutput: rawOutput\n  },\n  binary: $input.first().binary || $('Convert to Binary').first().binary\n}];"
+      },
+      "id": "parse-sdr-output",
+      "name": "Parse SDR Output",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1560, 400]
+    },
+    {
+      "parameters": {
+        "jsCode": "const ExcelJS = require('exceljs');\nconst sdrOutput = $input.first().json;\nconst clientName = sdrOutput.clientName;\nconst sdrData = sdrOutput.sdrData;\n\n// Get binary data\nconst binaryData = $input.first().binary || $('Convert to Binary').first().binary;\nconst binaryKey = Object.keys(binaryData)[0];\nconst fileData = binaryData[binaryKey];\n\nconsole.log('=== Writing SDR to Excel ===');\nconsole.log('Binary key:', binaryKey);\nconsole.log('Client:', clientName);\n\n// Load workbook\nconst workbook = new ExcelJS.Workbook();\nawait workbook.xlsx.load(Buffer.from(fileData.data, 'base64'));\n\n// Get sheets\nconst eVarsSheet = workbook.getWorksheet('eVars');\nconst propsSheet = workbook.getWorksheet('Props');\nconst eventsSheet = workbook.getWorksheet('Events');\n\nif (!eVarsSheet || !propsSheet || !eventsSheet) {\n  throw new Error('Required sheets not found in Excel file');\n}\n\nconsole.log('Sheets found. Writing data...');\n\n// Write eVars (starting from row 7)\nlet evarRow = 7;\nsdrData.evars.forEach(evar => {\n  const row = eVarsSheet.getRow(evarRow);\n  row.getCell(2).value = evar['Requirement ID'] || '';\n  row.getCell(3).value = evar['Analytics Variable'] || '';\n  row.getCell(4).value = evar['Business Name'] || '';\n  row.getCell(5).value = evar['Business Description'] || '';\n  row.getCell(6).value = evar['Expected Values'] || '';\n  row.getCell(7).value = evar['Implementation Trigger'] || '';\n  row.getCell(8).value = evar['Example Value'] || '';\n  row.getCell(9).value = evar['Additional Notes'] || '';\n  row.commit();\n  evarRow++;\n});\n\nconsole.log('eVars written:', sdrData.evars.length);\n\n// Write Props (starting from row 7)\nlet propRow = 7;\nsdrData.props.forEach(prop => {\n  const row = propsSheet.getRow(propRow);\n  row.getCell(2).value = prop['Requirement ID'] || '';\n  row.getCell(3).value = prop['Analytics Variable'] || '';\n  row.getCell(4).value = prop['Business Name'] || '';\n  row.getCell(5).value = prop['Business Description'] || '';\n  row.getCell(6).value = prop['Expected Values'] || '';\n  row.getCell(7).value = prop['Implementation Trigger'] || '';\n  row.getCell(8).value = prop['Example Value'] || '';\n  row.getCell(9).value = prop['Additional Notes'] || '';\n  row.commit();\n  propRow++;\n});\n\nconsole.log('Props written:', sdrData.props.length);\n\n// Write Events (starting from row 7)\nlet eventRow = 7;\nsdrData.events.forEach(event => {\n  const row = eventsSheet.getRow(eventRow);\n  row.getCell(2).value = event['Requirement ID'] || '';\n  row.getCell(3).value = event['Analytics Variable'] || '';\n  row.getCell(4).value = event['Business Name'] || '';\n  row.getCell(5).value = event['Business Description'] || '';\n  row.getCell(6).value = event['Expected Values'] || '';\n  row.getCell(7).value = event['Implementation Trigger'] || '';\n  row.getCell(8).value = event['Example Value'] || '';\n  row.getCell(9).value = event['Additional Notes'] || '';\n  row.commit();\n  eventRow++;\n});\n\nconsole.log('Events written:', sdrData.events.length);\n\n// Generate output buffer\nconst buffer = await workbook.xlsx.writeBuffer();\nconst base64Data = buffer.toString('base64');\n\nconst timestamp = new Date().toISOString().split('T')[0];\nconst fileName = `SDR_${clientName.replace(/[^a-zA-Z0-9]/g, '_')}_${timestamp}.xlsx`;\n\nconsole.log('Excel file generated:', fileName);\n\nreturn [{\n  json: {\n    success: true,\n    clientName: clientName,\n    fileName: fileName,\n    stats: sdrOutput.stats\n  },\n  binary: {\n    data: {\n      data: base64Data,\n      mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',\n      fileName: fileName\n    }\n  }\n}];"
+      },
+      "id": "write-excel",
+      "name": "Write SDR to Excel",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1780, 400]
+    }
+  ],
+  "connections": {
+    "Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "Extract Form Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Form Data": {
+      "main": [
+        [
+          {
+            "node": "Convert to Binary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convert to Binary": {
+      "main": [
+        [
+          {
+            "node": "Read Requirements Sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Requirements Sheet": {
+      "main": [
+        [
+          {
+            "node": "Parse Requirements",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Requirements": {
+      "main": [
+        [
+          {
+            "node": "SDR Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tool: Get Requirements": {
+      "ai_tool": [
+        [
+          {
+            "node": "SDR Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tool: Get SDR Guide": {
+      "ai_tool": [
+        [
+          {
+            "node": "SDR Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI GPT-4o": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "SDR Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SDR Agent": {
+      "main": [
+        [
+          {
+            "node": "Parse SDR Output",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse SDR Output": {
+      "main": [
+        [
+          {
+            "node": "Write SDR to Excel",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [],
+  "triggerCount": 1,
+  "updatedAt": "2026-01-14T00:00:00.000Z",
+  "versionId": "1"
+}

@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BRD to SDR - File Upload Test</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            padding: 40px;
+            max-width: 500px;
+            width: 100%;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .file-upload {
+            position: relative;
+            overflow: hidden;
+            background: #f8f9fa;
+            border: 2px dashed #ccc;
+            border-radius: 8px;
+            padding: 30px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .file-upload:hover {
+            border-color: #667eea;
+            background: #f0f4ff;
+        }
+
+        .file-upload.dragover {
+            border-color: #667eea;
+            background: #e8eeff;
+        }
+
+        .file-upload input[type="file"] {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            cursor: pointer;
+        }
+
+        .file-upload-icon {
+            font-size: 48px;
+            margin-bottom: 10px;
+        }
+
+        .file-upload-text {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .file-name {
+            margin-top: 10px;
+            padding: 10px;
+            background: #e8f5e9;
+            border-radius: 6px;
+            color: #2e7d32;
+            font-size: 13px;
+            display: none;
+        }
+
+        button {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .status {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            font-size: 14px;
+            display: none;
+        }
+
+        .status.loading {
+            background: #fff3cd;
+            color: #856404;
+            display: block;
+        }
+
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            display: block;
+        }
+
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            display: block;
+        }
+
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+            display: inline-block;
+            margin-right: 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .response-details {
+            margin-top: 10px;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 6px;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 200px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 BRD to SDR Converter</h1>
+        <p class="subtitle">Upload your BRD Excel file to generate SDR</p>
+
+        <form id="uploadForm">
+            <div class="form-group">
+                <label for="webhookUrl">Webhook URL</label>
+                <input
+                    type="text"
+                    id="webhookUrl"
+                    placeholder="http://localhost:5678/webhook/brd-sdr-upload"
+                    value="http://localhost:5678/webhook/brd-sdr-upload"
+                    required
+                >
+            </div>
+
+            <div class="form-group">
+                <label for="clientName">Client Name</label>
+                <input
+                    type="text"
+                    id="clientName"
+                    placeholder="eCommerce Client A"
+                    value="eCommerce_Client_A"
+                    required
+                >
+            </div>
+
+            <div class="form-group">
+                <label>Excel File (BRD)</label>
+                <div class="file-upload" id="fileUpload">
+                    <input type="file" id="fileInput" accept=".xlsx,.xls" required>
+                    <div class="file-upload-icon">📄</div>
+                    <div class="file-upload-text">
+                        Click to select or drag & drop Excel file
+                    </div>
+                </div>
+                <div class="file-name" id="fileName"></div>
+            </div>
+
+            <button type="submit" id="submitBtn">Upload and Process</button>
+        </form>
+
+        <div class="status" id="status"></div>
+    </div>
+
+    <script>
+        const form = document.getElementById('uploadForm');
+        const fileInput = document.getElementById('fileInput');
+        const fileUpload = document.getElementById('fileUpload');
+        const fileName = document.getElementById('fileName');
+        const status = document.getElementById('status');
+        const submitBtn = document.getElementById('submitBtn');
+
+        // File selection handler
+        fileInput.addEventListener('change', function(e) {
+            if (e.target.files.length > 0) {
+                const file = e.target.files[0];
+                fileName.textContent = `📎 ${file.name} (${(file.size / 1024).toFixed(1)} KB)`;
+                fileName.style.display = 'block';
+            }
+        });
+
+        // Drag and drop handlers
+        fileUpload.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            fileUpload.classList.add('dragover');
+        });
+
+        fileUpload.addEventListener('dragleave', function(e) {
+            fileUpload.classList.remove('dragover');
+        });
+
+        fileUpload.addEventListener('drop', function(e) {
+            e.preventDefault();
+            fileUpload.classList.remove('dragover');
+
+            if (e.dataTransfer.files.length > 0) {
+                fileInput.files = e.dataTransfer.files;
+                const file = e.dataTransfer.files[0];
+                fileName.textContent = `📎 ${file.name} (${(file.size / 1024).toFixed(1)} KB)`;
+                fileName.style.display = 'block';
+            }
+        });
+
+        // Form submission
+        form.addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const webhookUrl = document.getElementById('webhookUrl').value;
+            const clientName = document.getElementById('clientName').value;
+            const file = fileInput.files[0];
+
+            if (!file) {
+                showStatus('error', 'Please select a file');
+                return;
+            }
+
+            // Convert file to base64
+            showStatus('loading', 'Converting file to base64...');
+            submitBtn.disabled = true;
+
+            try {
+                const base64 = await fileToBase64(file);
+
+                showStatus('loading', `Uploading to n8n webhook...\nFile: ${file.name}\nSize: ${(file.size / 1024).toFixed(1)} KB\nBase64 size: ${(base64.length / 1024).toFixed(1)} KB`);
+
+                // Send to webhook
+                const response = await fetch(webhookUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        clientName: clientName,
+                        fileData: base64
+                    })
+                });
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}\n${errorText}`);
+                }
+
+                const contentType = response.headers.get('content-type');
+                let result;
+
+                if (contentType && contentType.includes('application/json')) {
+                    result = await response.json();
+                    showStatus('success', `✅ Success!\n\n${JSON.stringify(result, null, 2)}`);
+                } else {
+                    const text = await response.text();
+                    showStatus('success', `✅ Success!\n\n${text}`);
+                }
+
+            } catch (error) {
+                console.error('Upload error:', error);
+                showStatus('error', `❌ Error: ${error.message}`);
+            } finally {
+                submitBtn.disabled = false;
+            }
+        });
+
+        // Helper function: File to Base64
+        function fileToBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => {
+                    const base64 = reader.result.split(',')[1]; // Remove data:...;base64, prefix
+                    resolve(base64);
+                };
+                reader.onerror = reject;
+                reader.readAsDataURL(file);
+            });
+        }
+
+        // Helper function: Show status
+        function showStatus(type, message) {
+            status.className = 'status ' + type;
+
+            if (type === 'loading') {
+                status.innerHTML = `<div class="spinner"></div><span>${message.replace(/\n/g, '<br>')}</span>`;
+            } else {
+                status.innerHTML = message.replace(/\n/g, '<br>');
+            }
+        }
+    </script>
+</body>
+</html>
