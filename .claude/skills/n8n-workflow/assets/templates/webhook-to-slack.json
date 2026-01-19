@@ -1,0 +1,94 @@
+{
+  "name": "Webhook to Slack Notification",
+  "nodes": [
+    {
+      "id": "webhook-trigger",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [250, 300],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "webhook-notification",
+        "responseMode": "onReceived",
+        "responseData": "allEntries"
+      },
+      "webhookId": "webhook-to-slack-001"
+    },
+    {
+      "id": "format-message",
+      "name": "Format Message",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [500, 300],
+      "parameters": {
+        "mode": "manual",
+        "duplicateItem": false,
+        "assignments": {
+          "assignments": [
+            {
+              "id": "assign-1",
+              "name": "slackMessage",
+              "value": "=*New Notification*\n\nType: {{ $json.type }}\nMessage: {{ $json.message }}\nTimestamp: {{ $now.toISO() }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "send-slack",
+      "name": "Send to Slack",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.2,
+      "position": [750, 300],
+      "parameters": {
+        "resource": "message",
+        "operation": "post",
+        "channel": {
+          "mode": "id",
+          "value": "YOUR-CHANNEL-ID"
+        },
+        "messageType": "text",
+        "text": "={{ $json.slackMessage }}"
+      },
+      "credentials": {
+        "slackApi": {
+          "id": "YOUR-CREDENTIAL-ID",
+          "name": "Slack"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Format Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Message": {
+      "main": [
+        [
+          {
+            "node": "Send to Slack",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [],
+  "pinData": {}
+}

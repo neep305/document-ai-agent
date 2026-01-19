@@ -1,0 +1,227 @@
+{
+  "name": "Data Transform Pipeline",
+  "nodes": [
+    {
+      "id": "manual-trigger",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [250, 300],
+      "parameters": {}
+    },
+    {
+      "id": "input-data",
+      "name": "Input Data",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [500, 300],
+      "parameters": {
+        "mode": "manual",
+        "duplicateItem": false,
+        "assignments": {
+          "assignments": [
+            {
+              "id": "assign-1",
+              "name": "records",
+              "value": "=[{\"id\":1,\"name\":\"Alice\",\"score\":85},{\"id\":2,\"name\":\"Bob\",\"score\":92},{\"id\":3,\"name\":\"Charlie\",\"score\":78}]",
+              "type": "array"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "split-records",
+      "name": "Split Records",
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [750, 300],
+      "parameters": {
+        "fieldToSplitOut": "records",
+        "options": {}
+      }
+    },
+    {
+      "id": "filter-high-score",
+      "name": "Filter High Scores",
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2,
+      "position": [1000, 300],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.score }}",
+              "rightValue": "80",
+              "operator": {
+                "type": "number",
+                "operation": "gte"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "add-grade",
+      "name": "Add Grade",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1250, 300],
+      "parameters": {
+        "jsCode": "return items.map(item => {\n  const score = item.json.score;\n  let grade;\n  \n  if (score >= 90) grade = 'A';\n  else if (score >= 80) grade = 'B';\n  else if (score >= 70) grade = 'C';\n  else grade = 'D';\n  \n  return {\n    json: {\n      ...item.json,\n      grade,\n      passed: score >= 70,\n      processedAt: new Date().toISOString()\n    }\n  };\n});"
+      }
+    },
+    {
+      "id": "sort-by-score",
+      "name": "Sort by Score",
+      "type": "n8n-nodes-base.sort",
+      "typeVersion": 1,
+      "position": [1500, 300],
+      "parameters": {
+        "sortFieldsUi": {
+          "sortField": [
+            {
+              "fieldName": "score",
+              "order": "descending"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "aggregate-results",
+      "name": "Aggregate Results",
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [1750, 300],
+      "parameters": {
+        "aggregate": "aggregateAllItemData",
+        "destinationFieldName": "results",
+        "options": {}
+      }
+    },
+    {
+      "id": "final-output",
+      "name": "Final Output",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [2000, 300],
+      "parameters": {
+        "mode": "manual",
+        "duplicateItem": false,
+        "assignments": {
+          "assignments": [
+            {
+              "id": "assign-summary",
+              "name": "summary",
+              "value": "={\"totalRecords\": {{ $json.results.length }}, \"processedAt\": \"{{ $now.toISO() }}\"}",
+              "type": "object"
+            },
+            {
+              "id": "assign-data",
+              "name": "data",
+              "value": "={{ $json.results }}",
+              "type": "array"
+            }
+          ]
+        },
+        "options": {}
+      }
+    }
+  ],
+  "connections": {
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "Input Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Input Data": {
+      "main": [
+        [
+          {
+            "node": "Split Records",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Records": {
+      "main": [
+        [
+          {
+            "node": "Filter High Scores",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter High Scores": {
+      "main": [
+        [
+          {
+            "node": "Add Grade",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Add Grade": {
+      "main": [
+        [
+          {
+            "node": "Sort by Score",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sort by Score": {
+      "main": [
+        [
+          {
+            "node": "Aggregate Results",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate Results": {
+      "main": [
+        [
+          {
+            "node": "Final Output",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [],
+  "pinData": {}
+}

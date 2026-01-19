@@ -1,0 +1,161 @@
+{
+  "name": "BRD to SDR - Simple Test",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "brd-sdr-test",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "id": "webhook-trigger",
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 400],
+      "webhookId": "brd-sdr-test"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Step 1: Extract input data\nconst input = $input.first().json;\nconsole.log('=== Webhook Input ===');\nconsole.log('Keys:', Object.keys(input));\nconsole.log('Body keys:', input.body ? Object.keys(input.body) : 'No body');\n\nlet clientName, fileData;\n\n// Try different input formats\nif (input.body) {\n  clientName = input.body.clientName;\n  fileData = input.body.fileData;\n} else {\n  clientName = input.clientName;\n  fileData = input.fileData;\n}\n\nconsole.log('Client Name:', clientName);\nconsole.log('File Data length:', fileData ? fileData.length : 0);\n\nif (!clientName || !fileData) {\n  throw new Error(`Missing data: clientName=${!!clientName}, fileData=${!!fileData}`);\n}\n\nreturn [{\n  json: {\n    clientName: clientName,\n    fileData: fileData,\n    step: 'extracted'\n  }\n}];"
+      },
+      "id": "extract-data",
+      "name": "Extract and Validate",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [460, 400]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Step 2: Convert base64 to binary\nconst data = $input.first().json;\nconst clientName = data.clientName;\nconst base64Data = data.fileData;\n\nconsole.log('=== Converting to Binary ===');\nconsole.log('Base64 length:', base64Data.length);\n\n// Validate base64\nif (!/^[A-Za-z0-9+/=]+$/.test(base64Data)) {\n  throw new Error('Invalid base64 data');\n}\n\n// Create binary data\nconst binaryData = {\n  data: base64Data,\n  mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',\n  fileName: 'uploaded.xlsx'\n};\n\nconsole.log('Binary created successfully');\n\nreturn [{\n  json: {\n    clientName: clientName,\n    step: 'binary_created'\n  },\n  binary: {\n    file: binaryData\n  }\n}];"
+      },
+      "id": "create-binary",
+      "name": "Create Binary",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [680, 400]
+    },
+    {
+      "parameters": {
+        "binaryPropertyName": "file",
+        "options": {
+          "headerRow": true,
+          "range": "B6:E75",
+          "sheetName": "Requirements"
+        }
+      },
+      "id": "read-requirements",
+      "name": "Read Requirements Sheet",
+      "type": "n8n-nodes-base.spreadsheetFile",
+      "typeVersion": 2,
+      "position": [900, 400]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Step 4: Parse requirements\nconst items = $input.all();\nconst clientName = $('Create Binary').first().json.clientName;\n\nconsole.log('=== Processing Requirements ===');\nconsole.log('Client:', clientName);\nconsole.log('Rows received:', items.length);\n\nconst requirements = [];\n\nitems.forEach((item, index) => {\n  const reqId = item.json['Requirement ID'];\n  const category = item.json['Category'];\n  const businessReq = item.json['Business Requirement'];\n  \n  if (category || businessReq) {\n    requirements.push({\n      id: reqId || `REQ-${index + 1}`,\n      category: category || 'General',\n      requirement: businessReq || ''\n    });\n  }\n});\n\nconsole.log('Requirements parsed:', requirements.length);\n\nreturn [{\n  json: {\n    clientName: clientName,\n    totalRequirements: requirements.length,\n    requirements: requirements,\n    step: 'parsed'\n  }\n}];"
+      },
+      "id": "parse-requirements",
+      "name": "Parse Requirements",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1120, 400]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Step 5: Generate mock SDR (without AI for testing)\nconst data = $input.first().json;\nconst clientName = data.clientName;\nconst totalReqs = data.totalRequirements;\n\nconsole.log('=== Generating Mock SDR ===');\nconsole.log('Client:', clientName);\nconsole.log('Total Requirements:', totalReqs);\n\n// Generate mock SDR data\nconst sdrData = {\n  evars: [\n    {\n      'Requirement ID': 'REQ-001',\n      'Analytics Variable': 'eVar1',\n      'Business Name': 'Pagename',\n      'Business Description': 'Name of the page being viewed',\n      'Expected Values': 'Home, Product, Cart',\n      'Implementation Trigger': 'All page loads',\n      'Example Value': 'Home',\n      'Additional Notes': 'Mandatory variable'\n    },\n    {\n      'Requirement ID': 'REQ-002',\n      'Analytics Variable': 'eVar2',\n      'Business Name': 'Site Section',\n      'Business Description': 'Section of the site',\n      'Expected Values': 'Homepage, Shop, Support',\n      'Implementation Trigger': 'All page loads',\n      'Example Value': 'Shop',\n      'Additional Notes': 'Mandatory variable'\n    }\n  ],\n  props: [\n    {\n      'Requirement ID': 'REQ-001',\n      'Analytics Variable': 'prop1',\n      'Business Name': 'Pagename',\n      'Business Description': 'Name of the page being viewed',\n      'Expected Values': 'Home, Product, Cart',\n      'Implementation Trigger': 'All page loads',\n      'Example Value': 'Home',\n      'Additional Notes': 'Mandatory variable'\n    }\n  ],\n  events: [\n    {\n      'Requirement ID': 'REQ-001',\n      'Analytics Variable': 'event1',\n      'Business Name': 'Custom Page View',\n      'Business Description': 'Fired on every page view',\n      'Expected Values': 'Counter',\n      'Implementation Trigger': 'All page loads',\n      'Example Value': '1',\n      'Additional Notes': 'Mandatory event'\n    }\n  ]\n};\n\nconsole.log('Mock SDR generated');\n\nreturn [{\n  json: {\n    clientName: clientName,\n    sdrData: sdrData,\n    stats: {\n      evars: sdrData.evars.length,\n      props: sdrData.props.length,\n      events: sdrData.events.length\n    },\n    step: 'sdr_generated'\n  }\n}];"
+      },
+      "id": "generate-mock-sdr",
+      "name": "Generate Mock SDR",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1340, 400]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Step 6: Return success response\nconst data = $input.first().json;\n\nconsole.log('=== Workflow Complete ===');\nconsole.log('Client:', data.clientName);\nconsole.log('Stats:', data.stats);\n\nreturn [{\n  json: {\n    success: true,\n    message: 'BRD processing complete (test mode - no Excel generation)',\n    clientName: data.clientName,\n    stats: data.stats,\n    totalRequirements: data.sdrData.evars.length + data.sdrData.props.length + data.sdrData.events.length\n  }\n}];"
+      },
+      "id": "final-response",
+      "name": "Final Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1560, 400]
+    }
+  ],
+  "connections": {
+    "Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "Extract and Validate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract and Validate": {
+      "main": [
+        [
+          {
+            "node": "Create Binary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Binary": {
+      "main": [
+        [
+          {
+            "node": "Read Requirements Sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Requirements Sheet": {
+      "main": [
+        [
+          {
+            "node": "Parse Requirements",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Requirements": {
+      "main": [
+        [
+          {
+            "node": "Generate Mock SDR",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Mock SDR": {
+      "main": [
+        [
+          {
+            "node": "Final Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [],
+  "triggerCount": 1,
+  "updatedAt": "2026-01-14T00:00:00.000Z",
+  "versionId": "1"
+}

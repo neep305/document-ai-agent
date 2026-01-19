@@ -1,0 +1,477 @@
+{
+  "name": "Document AI Agent - v0.3",
+  "nodes": [
+    {
+      "parameters": {
+        "binaryPropertyName": "Upload_Excel_File",
+        "options": {
+          "headerRow": true,
+          "range": "B6:G1000",
+          "sheetName": "Kickoff Questionnaire"
+        }
+      },
+      "id": "dd72e348-8005-4418-80ec-203ee14a18f9",
+      "name": "Read Excel File",
+      "type": "n8n-nodes-base.spreadsheetFile",
+      "typeVersion": 2,
+      "position": [
+        192,
+        80
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Spreadsheet File 노드의 출력을 정리하고 구조화\nconst items = $input.all();\nconst formData = $('Add File').first().json;\n\nconsole.log('=== Processing Excel Data ===');\nconsole.log('Total rows:', items.length);\n\nif (items.length === 0) {\n  throw new Error('No data found in Excel file. Check sheet name and range.');\n}\n\n// Form 데이터\nconst clientName = formData['Client Name'] || 'Client';\nconst analysisRequest = formData['Analysis Request'] || 'Analyze this file';\n\nconsole.log('Client:', clientName);\nconsole.log('Request:', analysisRequest);\n\n// 첫 번째 행이 헤더인지 확인\nconst firstRow = items[0].json;\nconst columns = Object.keys(firstRow);\nconsole.log('Columns:', columns);\n\n// 데이터 추출\nconst data = items.map(item => item.json);\n\n// 헤더 확인 및 재매핑 (필요시)\nlet headers = columns;\nlet actualData = data;\n\n// 첫 행이 \"ID\", \"Type\" 같은 헤더인 경우 제거\nif (data.length > 0 && data[0][columns[0]] === 'ID') {\n  console.log('First row is header, removing it');\n  headers = Object.values(data[0]);\n  actualData = data.slice(1);\n  \n  // 데이터를 새로운 헤더로 재구성\n  actualData = actualData.map(row => {\n    const newRow = {};\n    Object.keys(row).forEach((key, index) => {\n      newRow[headers[index] || key] = row[key];\n    });\n    return newRow;\n  });\n}\n\nconsole.log('Actual data rows:', actualData.length);\nconsole.log('Sample row:', JSON.stringify(actualData[0], null, 2));\n\nreturn [{\n  json: {\n    success: true,\n    rowCount: actualData.length,\n    columns: headers,\n    data: actualData,\n    clientName: clientName,\n    analysisRequest: analysisRequest\n  }\n}];"
+      },
+      "id": "74716df2-7d10-4ad8-bbe1-f4d766f43f38",
+      "name": "Process Excel Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        416,
+        80
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Excel 데이터를 AI Agent가 읽기 쉬운 텍스트로 변환\nconst inputData = $input.first().json;\nconst excelData = inputData.data;\nconst rowCount = inputData.rowCount;\nconst clientName = inputData.clientName;\nconst analysisRequest = inputData.analysisRequest;\n\nconsole.log(`=== Converting ${rowCount} rows for ${clientName} ===`);\n\nif (!excelData || excelData.length === 0) {\n  throw new Error('No data to process.');\n}\n\n// 카테고리별로 질문-답변 그룹화\nconst categories = {};\nlet validQACount = 0;\n\nexcelData.forEach((row, index) => {\n  const category = row.Type || row.type || 'General';\n  const question = row.Question || row.question || '';\n  const feedback = row.Feedback || row.feedback || row.Answer || '';\n  const id = row.ID || row.id || index + 1;\n  \n  if (!categories[category]) {\n    categories[category] = [];\n  }\n  \n  if (question && feedback) {\n    categories[category].push({\n      id: id,\n      question: question,\n      feedback: feedback\n    });\n    validQACount++;\n  }\n});\n\nconsole.log('Valid Q&A pairs:', validQACount);\nconsole.log('Categories:', Object.keys(categories));\n\nif (validQACount === 0) {\n  throw new Error('No valid Q&A pairs found. Check Excel structure.');\n}\n\n// 구조화된 텍스트 생성\nlet formattedContent = '=== DISCOVERY QUESTIONNAIRE ANALYSIS ===\\n\\n';\nformattedContent += `Client: ${clientName}\\n`;\nformattedContent += `Total Questions: ${validQACount}\\n`;\nformattedContent += `Categories: ${Object.keys(categories).join(', ')}\\n\\n`;\n\nformattedContent += '=== DETAILED RESPONSES BY CATEGORY ===\\n\\n';\n\nObject.keys(categories).forEach(category => {\n  const items = categories[category];\n  formattedContent += `## ${category.toUpperCase()} (${items.length} items)\\n\\n`;\n  \n  items.forEach(item => {\n    formattedContent += `Q${item.id}: ${item.question}\\n`;\n    formattedContent += `A: ${item.feedback}\\n\\n`;\n  });\n  \n  formattedContent += '\\n';\n});\n\nconsole.log('Formatted content length:', formattedContent.length);\n\n// AI Agent가 사용할 컨텍스트\nconst context = {\n  clientName: clientName,\n  analysisRequest: analysisRequest,\n  rowCount: validQACount,\n  categories: Object.keys(categories),\n  formattedContent: formattedContent,\n  rawData: excelData,\n  timestamp: new Date().toISOString()\n};\n\nconsole.log('✅ Context prepared');\n\nreturn [{ json: context }];"
+      },
+      "id": "628409aa-3625-4967-8e15-5d4e020a0b6c",
+      "name": "Format for AI Agent",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        640,
+        80
+      ]
+    },
+    {
+      "parameters": {
+        "model": "gpt-4o",
+        "options": {
+          "maxTokens": 16000,
+          "temperature": 0.3
+        }
+      },
+      "id": "d830c749-e3a0-455a-beea-73fc3f3cdf54",
+      "name": "OpenAI GPT-4",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1,
+      "position": [
+        912,
+        272
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "9vON6mMxzGrVg3DO",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "name": "get_discovery_data",
+        "description": "Retrieves the Discovery Questionnaire data organized by category",
+        "jsCode": "// Format for AI Agent 노드에서 데이터 가져오기\nconst formatNodeOutput = $('Format for AI Agent').first();\n\nif (!formatNodeOutput || !formatNodeOutput.json) {\n  return 'Error: Format for AI Agent node output not found';\n}\n\nconst discoveryData = formatNodeOutput.json;\n\nconsole.log('=== Tool: Get Discovery Data Called ===');\nconsole.log('Available data keys:', Object.keys(discoveryData));\n\nconst requestedCategory = $input.item.json.category || '';\nconsole.log('Requested category:', requestedCategory || 'ALL DATA');\n\n// formattedContent 확인\nif (!discoveryData.formattedContent) {\n  return 'Error: No formatted content available';\n}\n\nlet result = '';\n\nif (requestedCategory && requestedCategory.trim() !== '') {\n  // 특정 카테고리만 요청한 경우\n  const lines = discoveryData.formattedContent.split('\\n');\n  let inCategory = false;\n  let categoryContent = '';\n  \n  lines.forEach(line => {\n    // 카테고리 시작 확인\n    if (line.includes(`## ${requestedCategory.toUpperCase()}`)) {\n      inCategory = true;\n      categoryContent += line + '\\n';\n    } else if (line.startsWith('## ') && inCategory) {\n      // 다른 카테고리 시작하면 종료\n      inCategory = false;\n    } else if (inCategory) {\n      categoryContent += line + '\\n';\n    }\n  });\n  \n  if (categoryContent) {\n    result = categoryContent.trim();\n    console.log(`Returned category: ${requestedCategory}, length: ${result.length} chars`);\n  } else {\n    // 카테고리를 찾지 못한 경우\n    const availableCategories = discoveryData.categories.join(', ');\n    result = `Category \"${requestedCategory}\" not found.\\n\\nAvailable categories:\\n${availableCategories}`;\n    console.log('Category not found. Available:', availableCategories);\n  }\n} else {\n  // 전체 데이터 반환\n  result = discoveryData.formattedContent;\n  console.log(`Returned all data, length: ${result.length} chars`);\n}\n\n// Tool은 문자열을 직접 반환해야 함\nreturn result;",
+        "specifyInputSchema": true
+      },
+      "id": "17bc16d1-d05f-4422-97e5-62f38c4841f1",
+      "name": "Tool: Get Discovery Data",
+      "type": "@n8n/n8n-nodes-langchain.toolCode",
+      "typeVersion": 1.1,
+      "position": [
+        1152,
+        352
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const agentOutput = $input.first().json.output || $input.first().json.text || '';\nconst context = $('Format for AI Agent').first().json;\n\nconst validations = {\n  hasContent: agentOutput.length > 200,\n  hasBRD: agentOutput.toLowerCase().includes('business goal'),\n  hasClientData: agentOutput.toLowerCase().includes(context.clientName.toLowerCase())\n};\n\nconst response = {\n  success: Object.values(validations).every(v => v),\n  client: context.clientName,\n  result: agentOutput,\n  metadata: {\n    rowCount: context.rowCount,\n    categories: context.categories,\n    resultLength: agentOutput.length,\n    validations: validations\n  }\n};\n\nreturn [{ json: response }];"
+      },
+      "id": "ab310689-a45d-4035-902a-c6bf2015b87a",
+      "name": "Format Output",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1296,
+        80
+      ]
+    },
+    {
+      "parameters": {
+        "text": "=🎯 *BRD Generation Complete*\\n\\n*Client:* {{ $json.client }}\\n*Questions Analyzed:* {{ $json.metadata.rowCount }}\\n*Status:* {{ $json.success ? '✅' : '⚠️' }}\\n\\n*Preview:*\\n```\\n{{ $json.result.substring(0, 800) }}...\\n```",
+        "otherOptions": {}
+      },
+      "id": "045c8606-db87-4e2d-9b4b-3f3761cf3480",
+      "name": "Send to Slack",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.1,
+      "position": [
+        1520,
+        80
+      ],
+      "webhookId": "e7e18a0a-088c-4b9b-91bc-24ae4203545f",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "path": "641b3125-4b32-4711-879c-c44f30f84973",
+        "formTitle": "Upload Discovery Questionnaire",
+        "formDescription": "Upload your Discovery Questionnaire Excel file for AI analysis",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Upload Excel File",
+              "fieldType": "file",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Client Name",
+              "placeholder": "e.g., GSSHOP, Acme Corp",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Analysis Request",
+              "fieldType": "textarea",
+              "placeholder": "What would you like the AI to do?"
+            }
+          ]
+        },
+        "options": {
+          "respondWithOptions": {
+            "values": {
+              "formSubmittedText": "✅ File uploaded successfully! AI Agent is processing..."
+            }
+          }
+        }
+      },
+      "id": "371385c2-92b0-498f-8c8a-6d640d54d66a",
+      "name": "Add File",
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.1,
+      "position": [
+        -32,
+        80
+      ],
+      "webhookId": "641b3125-4b32-4711-879c-c44f30f84973"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4.1-mini"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        1728,
+        272
+      ],
+      "id": "23d52bde-ed3f-4d04-9891-cc20b2eff77e",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "9vON6mMxzGrVg3DO",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Write the BRD document in a markdown file.\n- Client:  {{ $('Format Output').item.json.client }}\n- Initial file convert result to BRD: {{ $('Format Output').item.json.result }}\n- metadata: {{ $('Format Output').item.json.metadata }}",
+        "options": {
+          "systemMessage": "=You are a helpful BRD document assistant. \nYou must write the result to the EXCEL file.\n\nRearrange the result and write as a plain text format to see it prettier."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3,
+      "position": [
+        1728,
+        80
+      ],
+      "id": "ef3b0fea-dfc3-49ba-b188-e104ba72fa91",
+      "name": "Solution Desgn Requirement AI"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=# AI Business Analyst Agent\n\nYou are an expert business analyst specializing in Adobe Analytics implementation and BRD generation.\n\n## Current Task\n\n**Client:** {{ $('Format for AI Agent').item.json.clientName }}\n**Request:** {{ $('Format for AI Agent').item.json.analysisRequest }}\n**Data Available:** {{ $('Format for AI Agent').item.json.rowCount }} questionnaire responses\n**Categories:** {{ $('Format for AI Agent').item.json.categories.join(', ') }}\n\n## Instructions\n\n1. **FIRST**: Call `get_discovery_data` tool to retrieve the questionnaire data\n2. **Analyze**: Review the client's responses carefully\n3. **Generate**: Create a comprehensive BRD with:\n   - Business Goals (3-7)\n   - Strategies (1-3 per goal)\n   - Initiatives (1-5 per strategy)\n   - Tactics (1-5 per initiative)\n   - KPIs (per tactic)\n   - Business Capabilities (2-5 per tactic)\n4. **Be specific**: Use actual client details (platforms, domains, technologies)\n\nStart by calling the get_discovery_data tool.",
+        "options": {
+          "systemMessage": "You are an expert AI agent. ALWAYS use your tools first. Never provide analysis without data."
+        }
+      },
+      "id": "0175d082-475e-4086-a2cc-444693f52885",
+      "name": "Tagging Requirement Document AI",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [
+        912,
+        80
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Loop over input items and add a new field called 'myNewField' to the JSON of each one\nfor (const item of $input.all()) {\n  item.json.myNewField = 1;\n}\n\nreturn $input.all();"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2080,
+        80
+      ],
+      "id": "6f12d9b0-a7e0-4ba7-b8a4-1b307c12db8e",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Agent #1의 출력을 GSSHOP BRD Framework 형식으로 변환\nconst agentOutput = $input.first().json.output || $input.first().json.text || '';\nconst context = $('Format for AI Agent').first().json;\n\nconsole.log('=== Parsing for GSSHOP BRD Format ===');\nconsole.log('Output length:', agentOutput.length);\n\nif (!agentOutput || agentOutput.length < 100) {\n  throw new Error('No valid output from Agent #1');\n}\n\n// BRD Framework 구조: 6개 컬럼\nconst rows = [];\n\n// Row 1: 헤더\nrows.push({\n  'Business Goal': 'Business Goal',\n  'Strategy': 'Strategy',\n  'Initiative': 'Initiative',\n  'Tactics': 'Tactics',\n  'KPI': 'KPI',\n  'Business Capability': 'Business Capability'\n});\n\n// Markdown 파싱하여 계층 구조 추출\nconst lines = agentOutput.split('\\n');\n\nlet currentGoal = '';\nlet currentStrategy = '';\nlet currentInitiative = '';\nlet currentTactic = '';\nlet currentKPI = '';\nlet currentCapability = '';\n\nlines.forEach(line => {\n  const trimmed = line.trim();\n  \n  if (!trimmed) return;\n  \n  // Level 1: Business Goal (# 로 시작)\n  if (trimmed.match(/^# Business Goal \\d+:/)) {\n    currentGoal = trimmed.replace(/^# Business Goal \\d+:\\s*/, '');\n    currentStrategy = '';\n    currentInitiative = '';\n    currentTactic = '';\n    currentKPI = '';\n    currentCapability = '';\n  }\n  // Level 2: Strategy (## 로 시작)\n  else if (trimmed.match(/^## Strategy \\d+\\.\\d+:/)) {\n    currentStrategy = trimmed.replace(/^## Strategy \\d+\\.\\d+:\\s*/, '');\n    currentInitiative = '';\n    currentTactic = '';\n    currentKPI = '';\n    currentCapability = '';\n  }\n  // Level 3: Initiative (### 로 시작)\n  else if (trimmed.match(/^### Initiative \\d+\\.\\d+\\.\\d+:/)) {\n    currentInitiative = trimmed.replace(/^### Initiative \\d+\\.\\d+\\.\\d+:\\s*/, '');\n    currentTactic = '';\n    currentKPI = '';\n    currentCapability = '';\n  }\n  // Level 4: Tactic (#### 로 시작)\n  else if (trimmed.match(/^#### Tactic \\d+\\.\\d+\\.\\d+\\.\\d+:/)) {\n    currentTactic = trimmed.replace(/^#### Tactic \\d+\\.\\d+\\.\\d+\\.\\d+:\\s*/, '');\n    currentKPI = '';\n    currentCapability = '';\n  }\n  // Level 5: KPI\n  else if (trimmed.match(/^\\*\\*KPIs?:\\*\\*/)) {\n    const kpiContent = trimmed.replace(/^\\*\\*KPIs?:\\*\\*\\s*/, '');\n    currentKPI = kpiContent;\n  }\n  // Level 6: Business Capability\n  else if (trimmed.match(/^\\*\\*Business Capabilities?:\\*\\*/)) {\n    const capContent = trimmed.replace(/^\\*\\*Business Capabilities?:\\*\\*\\s*/, '');\n    currentCapability = capContent;\n    \n    // 완전한 행이 되면 추가\n    if (currentGoal && currentStrategy && currentInitiative && currentTactic) {\n      rows.push({\n        'Business Goal': currentGoal,\n        'Strategy': currentStrategy,\n        'Initiative': currentInitiative,\n        'Tactics': currentTactic,\n        'KPI': currentKPI,\n        'Business Capability': currentCapability\n      });\n    }\n  }\n  // Bullet points를 KPI나 Capability에 추가\n  else if (trimmed.startsWith('-') || trimmed.startsWith('*')) {\n    const content = trimmed.replace(/^[-*]\\s*/, '');\n    \n    // 마지막으로 설정된 것이 무엇인지 확인\n    if (currentCapability) {\n      currentCapability += ' | ' + content;\n    } else if (currentKPI) {\n      currentKPI += ' | ' + content;\n    }\n  }\n});\n\nconsole.log('Total BRD rows parsed:', rows.length);\n\n// Google Sheets 메타데이터\nconst output = {\n  spreadsheetName: `GSSHOP BRD - ${context.clientName} - ${new Date().toISOString().split('T')[0]}`,\n  sheetName: 'GSSHOP BRD',\n  rows: rows,\n  metadata: {\n    client: context.clientName,\n    totalGoals: rows.filter(r => r['Business Goal'] && r['Business Goal'] !== 'Business Goal').length,\n    generatedAt: new Date().toISOString()\n  }\n};\n\nconsole.log('✅ Parsed for GSSHOP BRD Format');\nconsole.log('Total Goals:', output.metadata.totalGoals);\n\nreturn [{ json: output }];"
+      },
+      "id": "9e22b3df-7c44-4e1a-b971-a96f60f87da6",
+      "name": "Parse for Google Sheets",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1296,
+        288
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Google Sheets 노드에 맞는 형식으로 데이터 변환\nconst inputData = $input.first().json;\nconst rows = inputData.rows;\n\nconsole.log('=== Preparing for Google Sheets ===');\nconsole.log('Total rows:', rows.length);\nconsole.log('Spreadsheet name:', inputData.spreadsheetName);\n\n// 각 행을 개별 아이템으로 변환\nconst items = rows.map(row => ({\n  json: row\n}));\n\nconsole.log('✅ Prepared', items.length, 'items for Google Sheets');\n\nreturn items;"
+      },
+      "id": "9b2677b8-4c70-4a16-bb78-909d3220213c",
+      "name": "Prepare Sheets Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1520,
+        448
+      ]
+    },
+    {
+      "parameters": {
+        "authentication": "serviceAccount",
+        "resource": "spreadsheet",
+        "title": "Technical Document",
+        "sheetsUi": {
+          "sheetValues": [
+            {
+              "title": "Requirement"
+            },
+            {
+              "title": "Variable Map"
+            },
+            {
+              "title": "Report Suite"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "0ba05ef5-9e3e-4bfd-bdef-f36f03f96f1e",
+      "name": "Create Google Sheet",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.4,
+      "position": [
+        1760,
+        448
+      ],
+      "credentials": {
+        "googleApi": {
+          "id": "xbbPVPJ1Jm11veck",
+          "name": "Google Sheets account"
+        }
+      },
+      "notes": "Google Sheets credential 필요"
+    },
+    {
+      "parameters": {
+        "content": "## BRD to SDR \n- BRD Requirment를 보고 SDR 시트 완성",
+        "height": 704,
+        "width": 2640
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -240,
+        -32
+      ],
+      "typeVersion": 1,
+      "id": "21bf2a1c-635c-4b01-a9fe-ed4181856581",
+      "name": "Sticky Note"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Read Excel File": {
+      "main": [
+        [
+          {
+            "node": "Process Excel Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process Excel Data": {
+      "main": [
+        [
+          {
+            "node": "Format for AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format for AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Tagging Requirement Document AI",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI GPT-4": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Tagging Requirement Document AI",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tool: Get Discovery Data": {
+      "ai_tool": [
+        [
+          {
+            "node": "Tagging Requirement Document AI",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Output": {
+      "main": [
+        [
+          {
+            "node": "Send to Slack",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Add File": {
+      "main": [
+        [
+          {
+            "node": "Read Excel File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send to Slack": {
+      "main": [
+        [
+          {
+            "node": "Solution Desgn Requirement AI",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Solution Desgn Requirement AI",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tagging Requirement Document AI": {
+      "main": [
+        [
+          {
+            "node": "Format Output",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Parse for Google Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Solution Desgn Requirement AI": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse for Google Sheets": {
+      "main": [
+        [
+          {
+            "node": "Prepare Sheets Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Sheets Data": {
+      "main": [
+        [
+          {
+            "node": "Create Google Sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "55bc785d-6399-488e-b60d-075a53a25d55",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "27b5dcb41b67c40ceae60eb917aed7b7772e9a0ab13692c24a09fe5f013917ea"
+  },
+  "id": "Q4UHxE39X8b6iT0Q",
+  "tags": [
+    {
+      "updatedAt": "2026-01-07T00:47:12.212Z",
+      "createdAt": "2026-01-07T00:47:12.212Z",
+      "id": "AQk3KoUYhA8B1U0R",
+      "name": "Claude"
+    }
+  ]
+}
