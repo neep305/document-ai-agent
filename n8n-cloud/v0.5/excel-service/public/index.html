@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BRD to SDR - Excel Generator v0.5</title>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            padding: 40px;
+            max-width: 600px;
+            width: 100%;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+
+        .badge {
+            display: inline-block;
+            background: #10b981;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+            margin-left: 10px;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .file-upload {
+            position: relative;
+            overflow: hidden;
+            background: #f8f9fa;
+            border: 2px dashed #ccc;
+            border-radius: 8px;
+            padding: 30px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .file-upload:hover {
+            border-color: #667eea;
+            background: #f0f4ff;
+        }
+
+        .file-upload input[type="file"] {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            cursor: pointer;
+        }
+
+        .file-upload-icon {
+            font-size: 48px;
+            margin-bottom: 10px;
+        }
+
+        .file-upload-text {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .file-name {
+            margin-top: 10px;
+            padding: 8px 12px;
+            background: #e3f2fd;
+            border-radius: 6px;
+            font-size: 13px;
+            color: #1976d2;
+            display: none;
+        }
+
+        .file-name.show {
+            display: block;
+        }
+
+        button {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .progress {
+            margin-top: 20px;
+            display: none;
+        }
+
+        .progress.show {
+            display: block;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #e0e0e0;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            width: 0%;
+            transition: width 0.3s;
+        }
+
+        .progress-text {
+            margin-top: 8px;
+            text-align: center;
+            font-size: 13px;
+            color: #666;
+        }
+
+        .status {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            font-size: 14px;
+            display: none;
+        }
+
+        .status.show {
+            display: block;
+        }
+
+        .status.success {
+            background: #d1fae5;
+            border-left: 4px solid #10b981;
+            color: #065f46;
+        }
+
+        .status.error {
+            background: #fee2e2;
+            border-left: 4px solid #ef4444;
+            color: #991b1b;
+        }
+
+        .info-box {
+            background: #e3f2fd;
+            border-left: 4px solid #2196f3;
+            padding: 12px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+            font-size: 13px;
+            color: #1565c0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 BRD to SDR Converter<span class="badge">v0.5 - Node.js</span></h1>
+        <p class="subtitle">Upload BRD Excel, get completed SDR Excel with template preserved</p>
+
+        <div class="info-box">
+            ✨ <strong>New Architecture!</strong> Powered by Node.js + ExcelJS. Template formatting fully preserved.
+        </div>
+
+        <form id="uploadForm">
+            <div class="form-group">
+                <label for="webhookUrl">n8n Webhook URL</label>
+                <input
+                    type="text"
+                    id="webhookUrl"
+                    placeholder="http://localhost:5678/webhook-test/brd-sdr-excel"
+                    value="http://localhost:5678/webhook-test/brd-sdr-excel"
+                    required
+                >
+            </div>
+
+            <div class="form-group">
+                <label for="clientName">Client Name</label>
+                <input
+                    type="text"
+                    id="clientName"
+                    placeholder="eCommerce Client A"
+                    value="eCommerce_Client_A"
+                    required
+                >
+            </div>
+
+            <div class="form-group">
+                <label for="baseSheetName">Base Sheetname</label>
+                <input
+                    type="text"
+                    id="baseSheetName"
+                    placeholder="Requirements_v2"
+                    value="Requirements_v2"
+                    required
+                >
+            </div>
+
+            <div class="form-group">
+                <label>BRD Excel File</label>
+                <div class="file-upload" id="fileUpload">
+                    <input type="file" id="fileInput" accept=".xlsx,.xls" required>
+                    <div class="file-upload-icon">📄</div>
+                    <div class="file-upload-text">
+                        Click to select or drag & drop Excel file
+                    </div>
+                </div>
+                <div class="file-name" id="fileName"></div>
+            </div>
+
+            <button type="submit" id="submitBtn">Generate SDR Excel</button>
+        </form>
+
+        <div class="progress" id="progress">
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+            <div class="progress-text" id="progressText">Processing...</div>
+        </div>
+
+        <div class="status" id="status"></div>
+    </div>
+
+    <script>
+        const form = document.getElementById('uploadForm');
+        const fileInput = document.getElementById('fileInput');
+        const fileUpload = document.getElementById('fileUpload');
+        const fileName = document.getElementById('fileName');
+        const submitBtn = document.getElementById('submitBtn');
+        const progress = document.getElementById('progress');
+        const progressFill = document.getElementById('progressFill');
+        const progressText = document.getElementById('progressText');
+        const status = document.getElementById('status');
+
+        let selectedFile = null;
+
+        // File input change
+        fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                selectedFile = file;
+                fileName.textContent = `📎 ${file.name} (${(file.size / 1024).toFixed(1)} KB)`;
+                fileName.classList.add('show');
+            }
+        });
+
+        // Drag and drop
+        fileUpload.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            fileUpload.style.borderColor = '#667eea';
+            fileUpload.style.background = '#f0f4ff';
+        });
+
+        fileUpload.addEventListener('dragleave', (e) => {
+            fileUpload.style.borderColor = '#ccc';
+            fileUpload.style.background = '#f8f9fa';
+        });
+
+        fileUpload.addEventListener('drop', (e) => {
+            e.preventDefault();
+            fileUpload.style.borderColor = '#ccc';
+            fileUpload.style.background = '#f8f9fa';
+            
+            const file = e.dataTransfer.files[0];
+            if (file && (file.name.endsWith('.xlsx') || file.name.endsWith('.xls'))) {
+                fileInput.files = e.dataTransfer.files;
+                selectedFile = file;
+                fileName.textContent = `📎 ${file.name} (${(file.size / 1024).toFixed(1)} KB)`;
+                fileName.classList.add('show');
+            }
+        });
+
+        // Form submit
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const webhookUrl = document.getElementById('webhookUrl').value;
+            const clientName = document.getElementById('clientName').value;
+            const baseSheetName = document.getElementById('baseSheetName').value;
+
+            if (!selectedFile) {
+                showStatus('error', 'Please select an Excel file');
+                return;
+            }
+
+            submitBtn.disabled = true;
+            progress.classList.add('show');
+            status.classList.remove('show');
+
+            try {
+                // Step 1: Convert file to base64
+                updateProgress(10, 'Converting file to base64...');
+                const base64 = await fileToBase64(selectedFile);
+
+                // Step 2: Call n8n webhook for AI processing
+                updateProgress(20, 'Calling n8n webhook...');
+                const n8nResponse = await fetch(webhookUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        baseSheetName: baseSheetName,
+                        clientName: clientName,
+                        fileData: base64
+                    })
+                });
+
+                updateProgress(40, 'AI is analyzing requirements... (30-60 seconds)');
+
+                if (!n8nResponse.ok) {
+                    const errorText = await n8nResponse.text();
+                    throw new Error(`n8n error: HTTP ${n8nResponse.status}: ${errorText}`);
+                }
+
+                const jsonResult = await n8nResponse.json();
+
+                if (!jsonResult.success || !jsonResult.sdr) {
+                    throw new Error('Invalid response from n8n: ' + JSON.stringify(jsonResult));
+                }
+
+                // Step 3: Call local Excel generation API
+                updateProgress(70, 'Generating Excel with template preservation...');
+                const excelResponse = await fetch('/generate-excel', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        originalFileBase64: jsonResult.originalFileBase64 || base64,
+                        sdrData: jsonResult.sdr,
+                        clientName: clientName
+                    })
+                });
+
+                if (!excelResponse.ok) {
+                    const errorData = await excelResponse.json().catch(() => ({ error: 'Unknown error' }));
+                    throw new Error(`Excel generation error: ${errorData.error || 'Unknown error'}`);
+                }
+
+                // Step 4: Download Excel file
+                updateProgress(90, 'Downloading...');
+                const blob = await excelResponse.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                const timestamp = new Date().toISOString().split('T')[0];
+                const safeClientName = clientName.replace(/[^a-zA-Z0-9]/g, '_');
+                a.download = `SDR_${safeClientName}_${timestamp}.xlsx`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                window.URL.revokeObjectURL(url);
+
+                updateProgress(100, 'Complete!');
+                showStatus('success', `✅ Success! Excel file downloaded.\n\nStatistics:\n- eVars: ${jsonResult.stats?.evars || 0}\n- Props: ${jsonResult.stats?.props || 0}\n- Events: ${jsonResult.stats?.events || 0}\n- Total: ${(jsonResult.stats?.evars || 0) + (jsonResult.stats?.props || 0) + (jsonResult.stats?.events || 0)}`);
+
+            } catch (error) {
+                console.error('Error:', error);
+                showStatus('error', `❌ Error: ${error.message}`);
+            } finally {
+                submitBtn.disabled = false;
+                setTimeout(() => {
+                    progress.classList.remove('show');
+                    progressFill.style.width = '0%';
+                }, 2000);
+            }
+        });
+
+        // Helper: File to Base64
+        function fileToBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => {
+                    const base64 = reader.result.split(',')[1];
+                    resolve(base64);
+                };
+                reader.onerror = reject;
+                reader.readAsDataURL(file);
+            });
+        }
+
+        // Helper: Update progress
+        function updateProgress(percent, text) {
+            progressFill.style.width = percent + '%';
+            progressText.textContent = text;
+        }
+
+        // Helper: Show status
+        function showStatus(type, message) {
+            status.className = 'status ' + type + ' show';
+            status.innerHTML = message.replace(/\n/g, '<br>');
+        }
+    </script>
+</body>
+</html>

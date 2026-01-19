@@ -1,0 +1,20 @@
+{
+  "name": "adobe-excel-service",
+  "version": "0.5.0",
+  "description": "BRD to SDR Excel Generator with ExcelJS",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "exceljs": "^4.4.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
