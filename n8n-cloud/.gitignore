@@ -1,0 +1,18 @@
+# n8n data
+n8n_data/
+postgres_data/
+custom-packages/
+
+# Environment files (keep .env as template)
+.env.local
+.env.prod
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+node_modules/

@@ -1,0 +1,46 @@
+services:
+  n8n:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: n8n-local-exceljs:latest
+    container_name: n8n-local
+    ports:
+      - "${N8N_PORT:-5678}:5678"
+    environment:
+      # Authentication
+      - N8N_BASIC_AUTH_ACTIVE=${N8N_BASIC_AUTH_ACTIVE}
+      - N8N_BASIC_AUTH_USER=${N8N_BASIC_AUTH_USER}
+      - N8N_BASIC_AUTH_PASSWORD=${N8N_BASIC_AUTH_PASSWORD}
+      
+      # Host configuration
+      - N8N_HOST=${N8N_HOST}
+      - N8N_PORT=${N8N_PORT}
+      - WEBHOOK_URL=${WEBHOOK_URL}
+      
+      # Timezone
+      - GENERIC_TIMEZONE=${GENERIC_TIMEZONE}
+      
+      # Execution settings
+      - EXECUTIONS_TIMEOUT=${EXECUTIONS_TIMEOUT:-300}
+      - EXECUTIONS_TIMEOUT_MAX=${EXECUTIONS_TIMEOUT_MAX:-600}
+      
+      # Enable community nodes
+      - N8N_COMMUNITY_PACKAGES_ENABLED=true
+      
+      # Python support (no task-runner in 1.70.0, direct execution)
+      - PYTHON_BINARY=/usr/bin/python3
+    
+    volumes:
+      # Data persistence
+      - ./n8n_data:/home/node/.n8n
+    
+    restart: unless-stopped
+    
+    # Health check
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:5678/healthz"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
