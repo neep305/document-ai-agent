@@ -1,0 +1,299 @@
+{
+  "name": "BRD to SDR - JSON Response v0.4",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "27174228-3fa0-4b33-9552-cea62afe8b59",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "id": "54d784a0-61db-426f-a336-ef11d859e975",
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "webhookId": "27174228-3fa0-4b33-9552-cea62afe8b59"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Step 1: Extract input data\nconst input = $input.first().json;\nconsole.log('=== Webhook Input ===');\n\nlet clientName, fileData, baseSheetName;\n\nif (input.body) {\n  clientName = input.body.clientName;\n  fileData = input.body.fileData;\n  baseSheetName = input.body.baseSheetName;\n} else {\n  clientName = input.clientName;\n  fileData = input.fileData;\n  baseSheetName = input.baseSheetName;\n}\n\nconsole.log('Client Name:', clientName);\nconsole.log('File Data length:', fileData ? fileData.length : 0);\nconsole.log('Sheet Name: ', baseSheetName);\n\nif (!clientName || !fileData) {\n  throw new Error(`Missing data: clientName=${!!clientName}, fileData=${!!fileData}`);\n}\n\nreturn [{\n  json: {\n    clientName: clientName,\n    fileData: fileData,\n    baseSheetName: baseSheetName\n  }\n}];"
+      },
+      "id": "498c5561-5d7c-4af7-8809-9acb73b91f94",
+      "name": "Extract and Validate",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        224,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Step 2: Convert base64 to binary\nconst data = $input.first().json;\nconst clientName = data.clientName;\nconst base64Data = data.fileData;\nconst baseSheetName = data.baseSheetName;\n\nconsole.log('=== Converting to Binary ===');\nconsole.log('Base64 length:', base64Data.length);\n\nif (!/^[A-Za-z0-9+/=]+$/.test(base64Data)) {\n  throw new Error('Invalid base64 data');\n}\n\nconst binaryData = {\n  data: base64Data,\n  mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',\n  fileName: 'uploaded.xlsx'\n};\n\nconsole.log('Binary created successfully');\n\nreturn [{\n  json: {\n    clientName: clientName,\n    baseSheetName: baseSheetName,\n  },\n  binary: {\n    file: binaryData\n  }\n}];"
+      },
+      "id": "37531634-21a0-4a35-aa92-5a3761bfe867",
+      "name": "Create Binary",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        448,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "binaryPropertyName": "file",
+        "options": {
+          "headerRow": true,
+          "range": "B6:E75",
+          "sheetName": "={{ $json.baseSheetName }}"
+        }
+      },
+      "id": "720f7bdf-8cb5-41df-9180-e1665a47f80f",
+      "name": "Read Requirements Sheet",
+      "type": "n8n-nodes-base.spreadsheetFile",
+      "typeVersion": 2,
+      "position": [
+        672,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Step 4: Parse requirements\nconst items = $input.all();\nconst clientName = $('Create Binary').first().json.clientName;\n\nconsole.log('=== Processing Requirements ===');\nconsole.log('Client:', clientName);\nconsole.log('Rows received:', items.length);\n\nconst requirements = [];\nconst categoryGroups = {};\n\nitems.forEach((item, index) => {\n  const reqId = item.json['Requirement ID'];\n  const category = item.json['Category'];\n  const businessReq = item.json['Business Requirement'];\n  const notes = item.json['Additional Notes'];\n  \n  if (!category && !businessReq) return;\n  \n  const requirement = {\n    id: reqId || `REQ-${index + 1}`,\n    category: category || 'General',\n    requirement: businessReq || '',\n    notes: notes || ''\n  };\n  \n  requirements.push(requirement);\n  \n  const cat = requirement.category;\n  if (!categoryGroups[cat]) {\n    categoryGroups[cat] = [];\n  }\n  categoryGroups[cat].push(requirement);\n});\n\nlet formattedRequirements = '# BUSINESS REQUIREMENTS DOCUMENT\\n\\n';\nformattedRequirements += `**Client:** ${clientName}\\n`;\nformattedRequirements += `**Total Requirements:** ${requirements.length}\\n\\n`;\nformattedRequirements += '## REQUIREMENTS BY CATEGORY\\n\\n';\n\nObject.keys(categoryGroups).forEach(category => {\n  const reqs = categoryGroups[category];\n  formattedRequirements += `### ${category} (${reqs.length} requirements)\\n\\n`;\n  \n  reqs.forEach(req => {\n    if (req.id) formattedRequirements += `**[${req.id}]**\\n`;\n    if (req.requirement) formattedRequirements += `- **Requirement:** ${req.requirement}\\n`;\n    if (req.notes) formattedRequirements += `- **Notes:** ${req.notes}\\n`;\n    formattedRequirements += '\\n';\n  });\n});\n\nconsole.log('Requirements parsed:', requirements.length);\n\nreturn [{\n  json: {\n    clientName: clientName,\n    totalRequirements: requirements.length,\n    categories: Object.keys(categoryGroups),\n    requirements: requirements,\n    formattedRequirements: formattedRequirements\n  }\n}];"
+      },
+      "id": "57188fdb-3be7-4551-894f-80d4222db56e",
+      "name": "Parse Requirements",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        880,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "name": "get_requirements_data",
+        "description": "Retrieves the complete BRD requirements data",
+        "jsCode": "const parseNode = $('Parse Requirements').first();\nif (!parseNode?.json) return { error: 'No requirements data' };\nreturn parseNode.json.formattedRequirements;"
+      },
+      "id": "5fe3c7a5-28f9-4149-8d40-7cfb66fb96d7",
+      "name": "Tool: Get Requirements",
+      "type": "@n8n/n8n-nodes-langchain.toolCode",
+      "typeVersion": 1.1,
+      "position": [
+        1200,
+        192
+      ]
+    },
+    {
+      "parameters": {
+        "name": "get_sdr_guide",
+        "description": "Retrieves SDR conversion guidelines",
+        "jsCode": "return `# SDR CONVERSION GUIDELINES\n\n## Variable Types\n\n### eVars: Persistent values (Campaign ID, User Type)\n### Props: Page-level data (Page Name, Device Type)\n### Events: Countable actions (Purchase, Form Submit)\n\n## Mandatory\n\n**eVars:** eVar1 (Pagename), eVar2 (Site Section), eVar3 (ECID)\n**Props:** prop1 (Pagename), prop2 (Site Section), prop3 (ECID)\n**Events:** event1 (Custom Page View)\n\n## Rules\n- MECE Principle\n- Limits: 250 eVars, 75 Props, 1000 Events\n- Target: 30-50 eVars, 20-30 Props, 15-25 Events\n`;"
+      },
+      "id": "ed2d67ec-a56e-4a99-90aa-b5bb55db2b7a",
+      "name": "Tool: Get SDR Guide",
+      "type": "@n8n/n8n-nodes-langchain.toolCode",
+      "typeVersion": 1.1,
+      "position": [
+        1376,
+        304
+      ]
+    },
+    {
+      "parameters": {
+        "model": "gpt-4o",
+        "options": {
+          "temperature": 0.2
+        }
+      },
+      "id": "58a11c07-d36a-4171-8e16-d1593d936240",
+      "name": "OpenAI GPT-4o",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1,
+      "position": [
+        1024,
+        160
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "9vON6mMxzGrVg3DO",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Analyze the provided BRD and generate SDR mapping requirements.\n\nClient: {{ $('Parse Requirements').item.json.clientName }}\nTotal Requirements: {{ $('Parse Requirements').item.json.totalRequirements }}\n\nGenerate the SDR mapping based on the BRD content.\n",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "=You are an expert Adobe Analytics consultant specializing in SDR design.\n\nYour responsibilities:\n- Convert BRD requirements into Adobe Analytics SDR mappings\n- Follow Adobe Analytics variable standards (eVars, Props, Events)\n- Apply MECE principle at all times\n\nTool usage rules:\n- Always retrieve BRD data using get_requirements_data\n- Always retrieve SDR rules using get_sdr_guide before generating output\n\nOutput rules (STRICT):\n- Output ONLY valid JSON\n- Do NOT include markdown, comments, or explanations\n- JSON must include: evars, props, events\n  - eVars implementation guide: https://experienceleague.adobe.com/en/docs/analytics/implementation/vars/page-vars/evar\n  - eVarsrow consists of 'Requirement ID','Analytics Variable','Variable Name','Value Format','Example Value','eVar Allocation','eVar Explanation','eVar Merchandising'\n    - Requirement ID: optional\n    - Analytics Variable: required. e.g. eVar1\n    - Variable Name: required. e.g. PageName\n    - Variable Description: optional. e.g. Capture a clear and concise page name\n    - eVar Allocation: required. e.g. Most Recent (Last)\n    - eVar Expiration: required. e.g. Visit\n    - eVar Merchandising: required. When ‘Product Syntax’ is enabled, the merchandising category is populated directly within the products variable, so selecting and setting a binding event is not required. e.g. n/a or 'Product Syntax'\n\n  - Props row consists of 'Requirement ID','Analytics Variable','Variable Name','Variable Description','Value Format','Example Value'\n    - Requirement ID: optional\n    - Analytics Variable: required.\n    - Variable Name: required.\n    - Variable Description: optional.\n    - Value Format: optional.\n    - Example Value\n  - Events row consists of 'Requirements ID','Event','Event Name','Event Description','Event Type'\n    - Requirement ID: optional.\n    - Event: required. e.g. event1 ... event 21\n    - Event Name: required. Pagename\n    - Event Description: required. Captures the load time of the previous page in seconds\n    - Event Type: required. e.g. Counter or Numeric or Currency\n- Always include mandatory variables:\n  - eVar1-3, prop1-3, event1\n\nIf requirements are ambiguous:\n- Make reasonable assumptions\n- Do NOT ask questions\n- Proceed with best-practice analytics judgment\n"
+        }
+      },
+      "id": "4cf5f6f6-1e74-43c0-b418-e070694fca4b",
+      "name": "SDR Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [
+        1104,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nconst clientName = $('Parse Requirements').first().json.clientName;\n\nconsole.log('=== Parsing SDR Output ===');\n\nlet rawOutput = '';\nif (items[0]?.json?.output) {\n  rawOutput = items[0].json.output;\n} else if (items[0]?.json?.text) {\n  rawOutput = items[0].json.text;\n} else {\n  rawOutput = JSON.stringify(items[0].json);\n}\n\nconsole.log('Raw output length:', rawOutput.length);\n\nlet sdrData;\ntry {\n  const jsonMatch = rawOutput.match(/\\{[\\s\\S]*\\}/);\n  if (jsonMatch) {\n    sdrData = JSON.parse(jsonMatch[0]);\n  } else {\n    sdrData = JSON.parse(rawOutput);\n  }\n} catch (error) {\n  console.error('Parse error:', error);\n  throw new Error(`Failed to parse SDR output`);\n}\n\nif (!sdrData.evars || !sdrData.props || !sdrData.events) {\n  throw new Error('SDR missing required fields');\n}\n\nconsole.log('Parsed:', sdrData.evars.length, 'evars,', sdrData.props.length, 'props,', sdrData.events.length, 'events');\n\nreturn [{\n  json: {\n    clientName: clientName,\n    sdrData: sdrData,\n    stats: {\n      evars: sdrData.evars.length,\n      props: sdrData.props.length,\n      events: sdrData.events.length\n    }\n  }\n}];"
+      },
+      "id": "9127eb95-e886-4855-a405-2e6677c2546d",
+      "name": "Parse SDR Output",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1392,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Return complete SDR as JSON (no Excel generation)\nconst data = $input.first().json;\nconst clientName = data.clientName;\nconst sdrData = data.sdrData;\nconst stats = data.stats;\n\nconsole.log('=== SDR Generation Complete ===');\nconsole.log('Client:', clientName);\nconsole.log('Stats:', stats);\n\nconst timestamp = new Date().toISOString().split('T')[0];\n\nreturn [{\n  json: {\n    success: true,\n    message: 'SDR generation complete',\n    clientName: clientName,\n    timestamp: timestamp,\n    stats: stats,\n    sdr: sdrData,\n    note: 'Download the original Excel file from n8n Executions, or use the JSON data below to populate your spreadsheet'\n  }\n}];"
+      },
+      "id": "85a1ba2b-6223-4b84-8e95-33b70a3ccca5",
+      "name": "Final Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1552,
+        0
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "Extract and Validate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract and Validate": {
+      "main": [
+        [
+          {
+            "node": "Create Binary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Binary": {
+      "main": [
+        [
+          {
+            "node": "Read Requirements Sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Requirements Sheet": {
+      "main": [
+        [
+          {
+            "node": "Parse Requirements",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Requirements": {
+      "main": [
+        [
+          {
+            "node": "SDR Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tool: Get Requirements": {
+      "ai_tool": [
+        [
+          {
+            "node": "SDR Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tool: Get SDR Guide": {
+      "ai_tool": [
+        [
+          {
+            "node": "SDR Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI GPT-4o": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "SDR Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SDR Agent": {
+      "main": [
+        [
+          {
+            "node": "Parse SDR Output",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse SDR Output": {
+      "main": [
+        [
+          {
+            "node": "Final Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "b7d44a61-4cb0-4666-8905-ef77eaf55486",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "27b5dcb41b67c40ceae60eb917aed7b7772e9a0ab13692c24a09fe5f013917ea"
+  },
+  "id": "EP5LIqhBD4SdoeJR",
+  "tags": []
+}
