@@ -36,3 +36,5 @@ chroma_db/
 nul
 
 base-docs/1_discovery/~$*.xlsx
+
+*secret.json

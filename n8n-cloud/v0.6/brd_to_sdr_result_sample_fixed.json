@@ -1,0 +1,180 @@
+[
+  {
+    "success": true,
+    "clientName": "eCommerce_Client_A",
+    "sdr": {
+      "evars": [
+        {
+          "Requirement ID": 1,
+          "Analytics Variable": "eVar1",
+          "Variable Name": "PageName",
+          "Variable Description": "Capture a clear and concise page name",
+          "eVar Allocation": "Most Recent (Last)",
+          "eVar Expiration": "Visit",
+          "eVar Merchandising": "n/a"
+        },
+        {
+          "Requirement ID": 4,
+          "Analytics Variable": "eVar3",
+          "Variable Name": "ECID",
+          "Variable Description": "Track Experience Cloud ID for potential integration with other Adobe solutions",
+          "eVar Allocation": "Most Recent (Last)",
+          "eVar Expiration": "Visitor",
+          "eVar Merchandising": "n/a"
+        },
+        {
+          "Requirement ID": 5,
+          "Analytics Variable": "eVar4",
+          "Variable Name": "Marketing Channel",
+          "Variable Description": "Identify which external marketing channels are most effective",
+          "eVar Allocation": "Most Recent (Last)",
+          "eVar Expiration": "Visit",
+          "eVar Merchandising": "n/a"
+        },
+        {
+          "Requirement ID": 6,
+          "Analytics Variable": "eVar5",
+          "Variable Name": "Traffic Source Metadata",
+          "Variable Description": "Provide more granular details about each traffic source",
+          "eVar Allocation": "Most Recent (Last)",
+          "eVar Expiration": "Visit",
+          "eVar Merchandising": "n/a"
+        },
+        {
+          "Requirement ID": 12,
+          "Analytics Variable": "eVar6",
+          "Variable Name": "Product Details",
+          "Variable Description": "Track name, SKU, brand, merchant of the product",
+          "eVar Allocation": "Most Recent (Last)",
+          "eVar Expiration": "Purchase",
+          "eVar Merchandising": "Product Syntax"
+        },
+        {
+          "Requirement ID": 13,
+          "Analytics Variable": "eVar7",
+          "Variable Name": "Product Category",
+          "Variable Description": "Track category and subcategories of the product",
+          "eVar Allocation": "Most Recent (Last)",
+          "eVar Expiration": "Purchase",
+          "eVar Merchandising": "Product Syntax"
+        },
+        {
+          "Requirement ID": 16,
+          "Analytics Variable": "eVar8",
+          "Variable Name": "Hashed User ID",
+          "Variable Description": "Track hashed user ID (email) when logging in",
+          "eVar Allocation": "Most Recent (Last)",
+          "eVar Expiration": "Visitor",
+          "eVar Merchandising": "n/a"
+        },
+        {
+          "Requirement ID": 18,
+          "Analytics Variable": "eVar9",
+          "Variable Name": "Membership Tier",
+          "Variable Description": "Track user's membership tier once logging in",
+          "eVar Allocation": "Most Recent (Last)",
+          "eVar Expiration": "Visitor",
+          "eVar Merchandising": "n/a"
+        }
+      ],
+      "props": [
+        {
+          "Requirement ID": 2,
+          "Analytics Variable": "prop1",
+          "Variable Name": "Page URL",
+          "Variable Description": "Track URL of the pages including parameters",
+          "Value Format": "String",
+          "Example Value": "https://example.com/page?param=value"
+        },
+        {
+          "Requirement ID": 3,
+          "Analytics Variable": "prop2",
+          "Variable Name": "Link Interaction",
+          "Variable Description": "Track the links that visitors interact with on each page",
+          "Value Format": "String",
+          "Example Value": "Home Page Link"
+        },
+        {
+          "Requirement ID": 8,
+          "Analytics Variable": "prop3",
+          "Variable Name": "FAQ Views",
+          "Variable Description": "Track FAQ Views with title of the FAQ",
+          "Value Format": "String",
+          "Example Value": "How to use product"
+        },
+        {
+          "Requirement ID": 9,
+          "Analytics Variable": "prop4",
+          "Variable Name": "User Engagement",
+          "Variable Description": "Track user's interaction and details on user-engagement features",
+          "Value Format": "String",
+          "Example Value": "Fragrance Recommender"
+        },
+        {
+          "Requirement ID": 10,
+          "Analytics Variable": "prop5",
+          "Variable Name": "Internal/External Parameters",
+          "Variable Description": "Track internal/external parameters",
+          "Value Format": "String",
+          "Example Value": "cid=12345"
+        }
+      ],
+      "events": [
+        {
+          "Requirement ID": 1,
+          "Event": "event1",
+          "Event Name": "Page View",
+          "Event Description": "Track the number of page/screen views that take place during each session",
+          "Event Type": "Counter"
+        },
+        {
+          "Requirement ID": 7,
+          "Event": "event2",
+          "Event Name": "Video View",
+          "Event Description": "Track the number of video views with title of the content",
+          "Event Type": "Counter"
+        },
+        {
+          "Requirement ID": 11,
+          "Event": "event3",
+          "Event Name": "Product Search",
+          "Event Description": "Capture the various methods and tools that visitors leverage to find products",
+          "Event Type": "Counter"
+        },
+        {
+          "Requirement ID": 14,
+          "Event": "event4",
+          "Event Name": "Purchase",
+          "Event Description": "Track purchase (order) and currency of the order",
+          "Event Type": "Currency"
+        },
+        {
+          "Requirement ID": 15,
+          "Event": "event5",
+          "Event Name": "Account Creation",
+          "Event Description": "Track Start & Complete of Create Account",
+          "Event Type": "Counter"
+        },
+        {
+          "Requirement ID": 17,
+          "Event": "event6",
+          "Event Name": "Login/Logout",
+          "Event Description": "Track user's login/logout actions & status",
+          "Event Type": "Counter"
+        },
+        {
+          "Requirement ID": 16,
+          "Event": "event4",
+          "Name": "Order Revenue",
+          "Event Type": "Currency",
+          "Description": "Order revenue amount (if you need a standalone currency event). If using products variable for revenue, this may be unnecessary."
+        }
+      ]
+    },
+    "stats": {
+      "evars": 8,
+      "props": 5,
+      "events": 6
+    }
+  }
+]

@@ -1,0 +1,696 @@
+{
+  "name": "BRD to SDR with TSD GoogleDrive - v0.6",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "22ad9668-47fd-4d5c-9cf7-69d72aa838e1",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "4dff36df-760b-456c-b37d-d696641364c2",
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        9376,
+        2128
+      ],
+      "webhookId": "22ad9668-47fd-4d5c-9cf7-69d72aa838e1"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extract input data\nconst input = $input.first().json;\n\nlet clientName, fileData, baseSheetName;\n\nif (input.body) {\n  clientName = input.body.clientName;\n  fileData = input.body.fileData;\n  baseSheetName = input.body.baseSheetName;\n} else {\n  clientName = input.clientName;\n  fileData = input.fileData;\n  baseSheetName = input.baseSheetName;\n}\n\nif (!clientName || !fileData || !baseSheetName) {\n  throw new Error('Missing required fields');\n}\n\nreturn [{\n  json: {\n    clientName,\n    fileData,\n    baseSheetName\n  }\n}];"
+      },
+      "id": "5287a15f-bdf1-42af-bd15-55eba0103c95",
+      "name": "Extract and Validate",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        9600,
+        2128
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Convert base64 to binary\nconst data = $input.first().json;\nconst base64Data = data.fileData;\n\nconst binaryData = {\n  data: base64Data,\n  mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',\n  fileName: 'original.xlsx'\n};\n\nreturn [{\n  json: {\n    clientName: data.clientName,\n    baseSheetName: data.baseSheetName\n  },\n  binary: {\n    file: binaryData\n  }\n}];"
+      },
+      "id": "e6393924-d8f4-4a32-87cf-d773e1f36621",
+      "name": "Create Binary",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        9824,
+        2128
+      ]
+    },
+    {
+      "parameters": {
+        "binaryPropertyName": "file",
+        "options": {
+          "headerRow": true,
+          "range": "B6:E75",
+          "sheetName": "={{ $json.baseSheetName }}"
+        }
+      },
+      "id": "ac698a69-d0d5-4c04-8591-776711040553",
+      "name": "Read Requirements Sheet",
+      "type": "n8n-nodes-base.spreadsheetFile",
+      "typeVersion": 2,
+      "position": [
+        10048,
+        2128
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse requirements\nconst items = $input.all();\nconst clientName = $('Create Binary').first().json.clientName;\n\nconsole.log('=== Processing Requirements ===');\nconsole.log('Client:', clientName);\nconsole.log('Rows received:', items.length);\n\nconst requirements = [];\nconst categoryGroups = {};\n\nitems.forEach((item, index) => {\n  const reqId = item.json['Requirement ID'];\n  const category = item.json['Category'];\n  const businessReq = item.json['Business Requirement'];\n  const notes = item.json['Additional Notes'];\n  \n  if (!category && !businessReq) return;\n  \n  const requirement = {\n    id: reqId || `REQ-${index + 1}`,\n    category: category || 'General',\n    requirement: businessReq || '',\n    notes: notes || ''\n  };\n  \n  requirements.push(requirement);\n  \n  const cat = requirement.category;\n  if (!categoryGroups[cat]) {\n    categoryGroups[cat] = [];\n  }\n  categoryGroups[cat].push(requirement);\n});\n\nlet formattedRequirements = '# BUSINESS REQUIREMENTS DOCUMENT\\n\\n';\nformattedRequirements += `**Client:** ${clientName}\\n`;\nformattedRequirements += `**Total Requirements:** ${requirements.length}\\n\\n`;\nformattedRequirements += '## REQUIREMENTS BY CATEGORY\\n\\n';\n\nObject.keys(categoryGroups).forEach(category => {\n  const reqs = categoryGroups[category];\n  formattedRequirements += `### ${category} (${reqs.length} requirements)\\n\\n`;\n  \n  reqs.forEach(req => {\n    if (req.id) formattedRequirements += `**[${req.id}]**\\n`;\n    if (req.requirement) formattedRequirements += `- **Requirement:** ${req.requirement}\\n`;\n    if (req.notes) formattedRequirements += `- **Notes:** ${req.notes}\\n`;\n    formattedRequirements += '\\n';\n  });\n});\n\nconsole.log('Requirements parsed:', requirements.length);\n\nreturn [{\n  json: {\n    clientName: clientName,\n    totalRequirements: requirements.length,\n    categories: Object.keys(categoryGroups),\n    requirements: requirements,\n    formattedRequirements: formattedRequirements\n  }\n}];"
+      },
+      "id": "cd88e736-b080-496a-8dd3-fc1b5acb456d",
+      "name": "Parse Requirements",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        10256,
+        2128
+      ]
+    },
+    {
+      "parameters": {
+        "name": "get_requirements_data",
+        "description": "Retrieves the complete BRD requirements data",
+        "jsCode": "const parseNode = $('Parse Requirements').first();\nif (!parseNode?.json) return { error: 'No requirements data' };\nreturn parseNode.json.formattedRequirements;"
+      },
+      "id": "56a92de2-d406-46a3-bbe7-245cce9d1d71",
+      "name": "Tool: Get Requirements",
+      "type": "@n8n/n8n-nodes-langchain.toolCode",
+      "typeVersion": 1.1,
+      "position": [
+        10576,
+        2320
+      ]
+    },
+    {
+      "parameters": {
+        "name": "get_sdr_guide",
+        "description": "Retrieves SDR conversion guidelines",
+        "jsCode": "return `# SDR CONVERSION GUIDELINES\\n\\n## Variable Types\\n\\n### eVars: Persistent values (Campaign ID, User Type)\\n### Props: Page-level data (Page Name, Device Type)\\n### Events: Countable actions (Purchase, Form Submit)\\n\\n## Mandatory\\n\\n**eVars:** eVar1 (Pagename), eVar2 (Site Section), eVar3 (ECID)\\n**Props:** prop1 (Pagename), prop2 (Site Section), prop3 (ECID)\\n**Events:** event1 (Custom Page View)\\n\\n## Rules\\n- MECE Principle\\n- Limits: 250 eVars, 75 Props, 1000 Events\\n- Target: 30-50 eVars, 20-30 Props, 15-25 Events\\n`;"
+      },
+      "id": "4d64c2aa-a816-4bf6-a31b-861e04eb9afc",
+      "name": "Tool: Get SDR Guide",
+      "type": "@n8n/n8n-nodes-langchain.toolCode",
+      "typeVersion": 1.1,
+      "position": [
+        10752,
+        2432
+      ]
+    },
+    {
+      "parameters": {
+        "model": "gpt-4o",
+        "options": {
+          "temperature": 0.2
+        }
+      },
+      "id": "867c3c63-6af7-47c1-a03c-119b4014f519",
+      "name": "OpenAI GPT-4o",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1,
+      "position": [
+        10400,
+        2288
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "KiSwyEkqK9cApEW9",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Analyze the provided BRD and generate SDR mapping requirements.\n\nClient: {{ $('Parse Requirements').item.json.clientName }}\nTotal Requirements: {{ $('Parse Requirements').item.json.totalRequirements }}\n\nGenerate the SDR mapping (eVar, Props, Events) based on the Excel file.\n",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "=You are an expert Adobe Analytics consultant specializing in SDR design.\n\nYour responsibilities:\n- Convert BRD requirements into Adobe Analytics SDR mappings\n- Follow Adobe Analytics variable standards (eVars, Props, Events)\n- Apply MECE principle at all times\n\nTool usage rules:\n- Always refer to BRD data using get_requirements_data\n- Always refer to SDR rules using get_sdr_guide before generating output\n\nOutput rules (STRICT):\n- All the requirements should be converted to eVar,props or events properly without any exception\n  - For instance, if there are 10 requirement ID, you must create use all those requirements.\n- Output ONLY valid JSON\n- Do NOT include markdown, comments, or explanations\n- JSON must include: evars, props, events\n  - Use the same 'Requirement ID' in the selected Requirement sheet.\n  - eVars implementation guide: https://experienceleague.adobe.com/en/docs/analytics/implementation/vars/page-vars/evar\n  - eVars row consists of 'Requirement ID','Analytics Variable','Variable Name','Value Format','Example Value','eVar Allocation','eVar Expiration','eVar Merchandising'\n    - Requirement ID: required\n    - Analytics Variable: required. e.g. eVar1\n    - Variable Name: required. e.g. PageName\n    - Variable Description: required. e.g. Capture a clear and concise page name\n    - eVar Allocation: required. e.g. Most Recent (Last)\n    - eVar Expiration: required. e.g. Visit\n    - eVar Merchandising: required. When 'Product Syntax' is enabled, the merchandising category is populated directly within the products variable, so selecting and setting a binding event is not required. e.g. n/a or 'Product Syntax'\n\n  - Props row consists of 'Requirement ID','Analytics Variable','Variable Name','Variable Description','Value Format','Example Value'\n    - Requirement ID: required\n    - Analytics Variable: required.\n    - Variable Name: required.\n    - Variable Description: required.\n    - Value Format: required.\n    - Example Value: required\n  - Events row consists of 'Requirements ID','Event','Event Name','Event Description','Event Type'\n    - Requirement ID: required.\n    - Event: required. e.g. event1 ... event21\n    - Event Name: required. e.g. Pagename\n    - Event Description: required. Captures the load time of the previous page in seconds\n    - Event Type: required. e.g. Counter or Numeric or Currency\n- Always include mandatory variables:\n  - eVar1-3, prop1-3, event1\n\nIf requirements are ambiguous:\n- Make reasonable assumptions\n- Do NOT ask questions\n- Proceed with best-practice analytics judgment\n"
+        }
+      },
+      "id": "42c68874-8a67-4d5f-afd9-df971fd3e9ca",
+      "name": "SDR Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [
+        10480,
+        2128
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse SDR JSON output and prepare for Node.js service\nconst rawOutput = $input.first().json.output || $input.first().json.text;\n\nlet sdrData;\ntry {\n  const jsonMatch = rawOutput.match(/\\{[\\s\\S]*\\}/);\n  sdrData = jsonMatch ? JSON.parse(jsonMatch[0]) : JSON.parse(rawOutput);\n} catch (error) {\n  throw new Error('Failed to parse SDR output');\n}\n\nif (!sdrData.evars || !sdrData.props || !sdrData.events) {\n  throw new Error('SDR missing required fields');\n}\n\n// Get original file data\nconst originalBinary = $('Create Binary').first().binary.file;\nconst clientName = $('Parse Requirements').first().json.clientName;\n\nreturn [{\n  json: {\n    success: true,\n    clientName: clientName,\n    originalFileBase64: originalBinary.data,\n    sdr: sdrData,\n    stats: {\n      evars: sdrData.evars.length,\n      props: sdrData.props.length,\n      events: sdrData.events.length\n    }\n  }\n}];"
+      },
+      "id": "811cfe3a-c43d-4b6e-802f-ec6a15c23665",
+      "name": "Parse SDR Output",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        10896,
+        2128
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          }
+        }
+      },
+      "id": "90f153e1-6d75-4ae7-84e7-fd2abd1e288e",
+      "name": "Respond with JSON",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        11120,
+        2128
+      ]
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4o"
+        },
+        "builtInTools": {},
+        "options": {
+          "temperature": 0.3
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        9584,
+        3168
+      ],
+      "id": "3c4b91a7-1180-45c0-9ed8-1354a60302ec",
+      "name": "OpenAI Chat Model for TSD",
+      "credentials": {
+        "openAiApi": {
+          "id": "KiSwyEkqK9cApEW9",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Generate Adobe Experience Platform Web SDK implementation code based on the SDR mapping.\n\n## Client: {{ $json.body[0].clientName }}\n\n## SDR Data:\n- eVars: {{ $json.body[0].sdr.evars.length }} variables\n- Props: {{ $json.body[0].sdr.props.length }} variables\n- Events: {{ $json.body[0].sdr.events.length }} events\n\n## Output Requirements:\nGenerate TWO outputs as a JSON object:\n\n1. \"javascript\": Executable JavaScript code file\n   - Use _experience.analytics.customDimensions.* for explicit mapping\n   - Organize by event types (pageLoaded, purchaseComplete, clickTracked, etc.)\n   - Create functions for each event scenario\n   - Use placeholders in <angle brackets>\n\n2. \"markdown\": Technical documentation file\n   - Overview section with variable summary\n   - Event-by-event breakdown with descriptions\n   - Mapping tables (eVar/prop/event → XDM path)\n   - Code examples for each event type\n\n## SDR Details:\neVars: {{ JSON.stringify($json.body[0].sdr.evars) }}\n\nProps: {{ JSON.stringify($json.body[0].sdr.props) }}\n\nEvents: {{ JSON.stringify($json.body[0].sdr.events) }}\n\nExpected JSON result: \n```\n{ \n  clientName: {{ $json.body[0].clientName }}, \n  output: {\"javascript\": \"...\", \"markdown\": \"...\"} \n}\n```",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "=You are an Adobe Analytics implementation expert specializing in AEP Web SDK with Implicit Mapping.\n\n## Your Task:\nAnalyze the SDR (eVars, props, events) provided in the input and generate Adobe Data Layer implementation code that maps each variable to appropriate XDM paths using implicit mapping.\n\n## XDM Mapping Strategy (CRITICAL):\n\n### Implicit Mapping Method:\nUse Adobe Data Layer structure that automatically maps to XDM. DO NOT use _experience.analytics.customDimensions path.\n\n### Data Layer Structure Template:\n```javascript\nwindow.adobeDataLayer.push({\n  event: \"<eventName>\",\n  web: {\n    webPageDetails: {\n      name: \"<pageName>\",\n      siteSection: \"<section>\",\n      URL: \"<url>\"\n    }\n  },\n  user: {\n    loginStatus: \"<status>\",\n    profile: {\n      customerId: \"<id>\",\n      memberTier: \"<tier>\"\n    }\n  },\n  product: {\n    id: \"<productId>\",\n    name: \"<productName>\",\n    category: \"<category>\",\n    brand: \"<brand>\",\n    price: <price>,\n    currency: \"<currency>\",\n    quantity: <qty>\n  },\n  productListItems: [{\n    SKU: \"<sku>\",\n    name: \"<name>\",\n    category: \"<category>\",\n    priceTotal: <price>,\n    quantity: <qty>\n  }],\n  commerce: {\n    order: {\n      purchaseID: \"<orderId>\",\n      currencyCode: \"<currency>\"\n    },\n    purchases: { value: 1 }\n  }\n});\n```\n\n## Dynamic Variable Analysis (CRITICAL):\n\nFor EACH eVar/prop/event in SDR, analyze Variable Name and Description:\n\n### 1. Variable Name Pattern Matching:\n- **Page, URL, Site Section** → web.webPageDetails.*\n- **User, Login, Customer, Member** → user.* or user.profile.*\n- **Product ID/Name/Category/Brand** → product.* or productListItems[].*\n- **Price, Currency, Quantity** → commerce/product context\n- **Order, Purchase, Transaction** → commerce.order.*\n- **Event, Action** → event name (e.g., event: \"pageLoaded\")\n- **Page Type, Template** → custom top-level property\n\n### 2. eVar Merchandising Analysis:\nCheck eVar Merchandising field:\n- **Product Syntax or merchandising = true** → Place inside product.* or productListItems[].*\n- **n/a or empty** → Place at appropriate top-level context\n\n### 3. Event Type Classification:\nAnalyze Event Description:\n- **Page View, Page Load** → event: \"pageLoaded\"\n- **Product View, PDP View** → event: \"productViewed\"\n- **Add to Cart** → event: \"addToCart\" + commerce.productListAdds.value\n- **Purchase, Order Complete** → event: \"purchase\" + commerce.purchases.value\n- **Click, Interaction** → event: \"clickTracked\"\n- **Form Submit, Registration** → event: \"formSubmitted\"\n- **Custom events** → Use descriptive camelCase names\n\n### 4. Props Placement:\n- Props are page-level traffic variables\n- Map to web.*, user.*, or custom top-level properties\n- Never inside product or productListItems\n\n## Implementation Rules:\n\n1. **Create Event-Specific Functions**: Based on SDR events, create trackPageLoad(), trackProductView(), trackAddToCart(), trackPurchase(), etc.\n\n2. **Merchandising eVar Handling**: If eVar has Product Syntax merchandising, include in both product object (single view) and productListItems[] (cart/purchase)\n\n3. **HTML Click Tracking**: For interaction events, generate data attribute handlers (data-aa-event, data-aa-product-id, etc.)\n\n## Markdown Output Structure (STRICT FORMAT):\n\nFollow this EXACT structure:\n\n```markdown\n# Technical Solution Design: {clientName}\n\n## 1. Overview\n- Total eVars: {count}\n- Total Props: {count}\n- Total Events: {count}\n- Merchandising eVars: {list}\n\n## 2. Variable Mapping Summary\n\n### eVars\n| eVar | Variable Name | Data Layer Path | Merchandising | Event Context |\n\n### Props\n| Prop | Variable Name | Data Layer Path | Event Context |\n\n### Events\n| Event | Event Name | Event Type | Commerce Mapping |\n\n## 6. Solution Component\n\n**Notes:**\n- All scripts use Adobe Data Layer (adobeDataLayer) with implicit XDM mapping\n- Data elements and rules are configured in Adobe Launch (Tags)\n\n### 6.1 Global\n\n#### 6.1.1 Page\n\n**Analytics Variables In this section:**\n\n| Analytics Variable | Used For | XDM Data | Source |\n|--------------------|----------|----------|--------|\n| eVar{N} | {Variable Name} | {Data Layer path} | DataLayer |\n\n**Deployment Instruction:**\n\n| Data Object | Note |\n|-------------|------|\n| event | <Event name to trigger tracking> |\n| web.webPageDetails.name | <Page name from page metadata> |\n\n**상세 Script (DataLayer Push):**\n\n```javascript\nfunction trackPageLoad() {\n  window.adobeDataLayer = window.adobeDataLayer || [];\n  window.adobeDataLayer.push({\n    event: \"pageLoaded\",\n    web: { webPageDetails: {...} }\n  });\n}\n```\n\n**Configuring Tracking:**\n\n| Data Element | Extension | Data Element Type | Path/Parameter | Adobe Launch Rules | Comments |\n|--------------|-----------|-------------------|----------------|-------------------|----------|\n| dl.event | Core | Data Layer | event | Page Load | <Event name from data layer> |\n\n**Create Adobe Launch Rules:**\n\n| Rule Name | Events | Condition | Action | Special Instruction |\n|-----------|--------|-----------|--------|---------------------|\n| Page Load | Custom Event: pageLoaded | None | Send Event (AEP Web SDK) | <Map page-level eVars> |\n\n#### 6.1.2 Product View (if product eVars exist)\n#### 6.1.3 Add to Cart (if cart events exist)\n#### 6.1.4 Purchase (if purchase events exist)\n#### 6.1.5 Click Tracking (if interaction events exist)\n\n(Repeat same 5-part structure for each section)\n```\n\n## Critical Output Rules:\n\n1. Output MUST be valid JSON: { \"javascript\": \"string\", \"markdown\": \"string\" }\n  1-1. Add clientName to the JSON\n2. Analyze SDR dynamically - DO NOT hardcode specific eVar numbers\n3. Use Variable Name + Description to determine Data Layer placement\n4. Check eVar Merchandising field for product context placement\n5. Each markdown section (6.1.1, 6.1.2, etc.) MUST include ALL FIVE parts:\n   - Analytics Variables In this section (table)\n   - Deployment Instruction (table)\n   - 상세 Script (DataLayer Push) (code)\n   - Configuring Tracking (table)\n   - Create Adobe Launch Rules (table)\n6. Use Korean header: 상세 Script (DataLayer Push)\n7. All placeholders in <angle brackets> with descriptive comments\n8. Escape quotes properly, use \\n for newlines\n9. DO NOT include markdown code fences within JSON values\n10. Use placeholders like <pageName>, <productId> for dynamic values\n\nRespond with ONLY the JSON object containing javascript and markdown keys, no additional commentary."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [
+        9584,
+        2960
+      ],
+      "id": "68a24e26-b0c1-4159-8dfa-6735c362c7ba",
+      "name": "TSD Agent"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse TSD Agent output\nconst input = $input.first().json;\n\n// TSD Agent returns: { output: { clientName, javascript, markdown } }\nconst tsdOutput = input.output || input;\n\nif (!tsdOutput.clientName) {\n  throw new Error('TSD output missing clientName field');\n}\n\nif (!tsdOutput.javascript || !tsdOutput.markdown) {\n  throw new Error('TSD output missing required fields: javascript and/or markdown');\n}\n\nconst clientName = tsdOutput.clientName;\n\n// Generate filenames with timestamp\nconst timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);\nconst jsFilename = `${clientName}_adobeDataLayer_${timestamp}.js`;\nconst mdFilename = `${clientName}_TSD_${timestamp}.md`;\n\nconsole.log('=== Parse TSD Output ===');\nconsole.log('Client:', clientName);\nconsole.log('JavaScript size:', tsdOutput.javascript.length);\nconsole.log('Markdown size:', tsdOutput.markdown.length);\n\nreturn [{\n  json: {\n    clientName: clientName,\n    files: {\n      javascript: {\n        filename: jsFilename,\n        content: tsdOutput.javascript,\n        size: tsdOutput.javascript.length\n      },\n      markdown: {\n        filename: mdFilename,\n        content: tsdOutput.markdown,\n        size: tsdOutput.markdown.length\n      }\n    },\n    stats: {\n      jsLines: tsdOutput.javascript.split('\\n').length,\n      mdLines: tsdOutput.markdown.split('\\n').length,\n      generatedAt: new Date().toISOString()\n    }\n  }\n}];"
+      },
+      "id": "57e5232a-0c32-47c3-a84f-2545f3d90869",
+      "name": "Parse TSD Output",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        9888,
+        2960
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "folder",
+        "name": "TSD",
+        "driveId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "My Drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "root",
+          "cachedResultName": "/ (Root folder)"
+        },
+        "options": {}
+      },
+      "id": "a3f18cbf-0318-4f07-92e6-2325072109c3",
+      "name": "Create TSD Folder",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        10496,
+        2960
+      ],
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "AYG1qOCT9TIoQ4ia",
+          "name": "Google Drive account"
+        }
+      },
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "resource": "folder",
+        "name": "={{ $('Parse TSD Output').item.json.clientName }}",
+        "driveId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "My Drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $json.id }}"
+        },
+        "options": {}
+      },
+      "id": "4718ec6f-76d7-418d-850f-7945355444eb",
+      "name": "Create Client Folder",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        10784,
+        3136
+      ],
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "AYG1qOCT9TIoQ4ia",
+          "name": "Google Drive account"
+        }
+      },
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "jsCode": "// Convert files to binary format for Google Drive\n// Get file data from Parse TSD Output node\nconst parsedData = $('Parse TSD Output').first().json;\n// Get folder ID from previous node (Create Client Folder)\nconst folderId = $input.first().json.id;\n\n// Create binary data for JavaScript file\nconst jsBinary = {\n  data: parsedData.files.javascript.content,\n  mimeType: 'application/javascript',\n  fileName: parsedData.files.javascript.filename\n};\n\n// Create binary data for Markdown file\nconst mdBinary = {\n  data: parsedData.files.markdown.content,\n  mimeType: 'text/markdown',\n  fileName: parsedData.files.markdown.filename\n};\n\n// Return both files as separate items with binary data and folderId\nreturn [\n  {\n    json: {\n      clientName: parsedData.clientName,\n      filename: parsedData.files.javascript.filename,\n      fileType: 'JavaScript',\n      folderId: folderId,\n      stats: parsedData.stats\n    },\n    binary: {\n      data: jsBinary\n    }\n  },\n  {\n    json: {\n      clientName: parsedData.clientName,\n      filename: parsedData.files.markdown.filename,\n      fileType: 'Markdown',\n      folderId: folderId,\n      stats: parsedData.stats\n    },\n    binary: {\n      data: mdBinary\n    }\n  }\n];"
+      },
+      "id": "08b7cb22-d432-4d6a-aeb7-7aecd3f32131",
+      "name": "Split Files for Upload",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        10752,
+        2976
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "upload",
+        "name": "={{ $json.filename }}",
+        "driveId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "MyDrive"
+        },
+        "folderId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $json.folderId }}"
+        },
+        "options": {},
+        "binaryData": true,
+        "binaryPropertyName": "data"
+      },
+      "id": "8cb9a40a-b9f9-4488-a372-cf2316b440a4",
+      "name": "Upload to Google Drive",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        10944,
+        2976
+      ],
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "AYG1qOCT9TIoQ4ia",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Collect all uploaded files info\nconst items = $input.all();\nconst clientName = items[0].json.name.split('_')[0];\n\nconsole.log('=== TSD Files Uploaded to Google Drive ===');\nconsole.log('Client:', clientName);\nconsole.log('Total files uploaded:', items.length);\n\nconst uploadedFiles = items.map(item => ({\n  fileId: item.json.id,\n  fileName: item.json.name,\n  mimeType: item.json.mimeType,\n  webViewLink: item.json.webViewLink,\n  webContentLink: item.json.webContentLink,\n  createdTime: item.json.createdTime\n}));\n\nuploadedFiles.forEach(file => {\n  console.log(`- ${file.fileName}`);\n  console.log(`  ID: ${file.fileId}`);\n  console.log(`  Link: ${file.webViewLink}`);\n});\n\nreturn [{\n  json: {\n    success: true,\n    clientName: clientName,\n    googleDrive: {\n      folder: `TSD/${clientName}`,\n      files: uploadedFiles\n    },\n    totalFiles: items.length\n  }\n}];"
+      },
+      "id": "efab5523-1233-4f2e-ba46-5e75e0211839",
+      "name": "Collect Upload Results",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        11152,
+        2976
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## BRD to SDR\n",
+        "height": 640,
+        "width": 2112
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        9296,
+        2016
+      ],
+      "typeVersion": 1,
+      "id": "c92e3625-e533-4d02-a7fe-8cd671d5a6a7",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "content": "## TSD",
+        "height": 640,
+        "width": 2320
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        9280,
+        2848
+      ],
+      "typeVersion": 1,
+      "id": "3766a002-5307-435c-a91b-f5b2eb28a701",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "0a631d33-75b5-4d89-b6f4-0bd1ac715df8",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        9392,
+        2960
+      ],
+      "id": "28e8a47c-deaf-4186-8377-b15d3446af96",
+      "name": "Webhook - Load SDR data",
+      "webhookId": "0a631d33-75b5-4d89-b6f4-0bd1ac715df8"
+    },
+    {
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\n\t\"type\": \"object\",\n\t\"properties\": {\n\t\t\"clientName\": {\n\t\t\t\"type\": \"string\"\n\t\t},\n\t\t\"javascript\": {\n\t\t\t\"type\": \"string\"\n\t\t},\n        \"markdown\": {\n            \"type\": \"string\"\n        }\n\t}\n}",
+        "autoFix": true
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        9760,
+        3168
+      ],
+      "id": "970357a0-74c4-4662-af7c-d85d1e9f1bbd",
+      "name": "Structured Output Parser"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4.1-mini"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        9696,
+        3376
+      ],
+      "id": "09ebbd06-7628-4727-bcd1-e544baa780d1",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "KiSwyEkqK9cApEW9",
+          "name": "OpenAi account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "Extract and Validate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract and Validate": {
+      "main": [
+        [
+          {
+            "node": "Create Binary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Binary": {
+      "main": [
+        [
+          {
+            "node": "Read Requirements Sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Requirements Sheet": {
+      "main": [
+        [
+          {
+            "node": "Parse Requirements",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Requirements": {
+      "main": [
+        [
+          {
+            "node": "SDR Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SDR Agent": {
+      "main": [
+        [
+          {
+            "node": "Parse SDR Output",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse SDR Output": {
+      "main": [
+        [
+          {
+            "node": "Respond with JSON",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "TSD Agent": {
+      "main": [
+        [
+          {
+            "node": "Parse TSD Output",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse TSD Output": {
+      "main": [
+        [
+          {
+            "node": "Create TSD Folder",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create TSD Folder": {
+      "main": [
+        [
+          {
+            "node": "Create Client Folder",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Client Folder": {
+      "main": [
+        [
+          {
+            "node": "Split Files for Upload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Files for Upload": {
+      "main": [
+        [
+          {
+            "node": "Upload to Google Drive",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload to Google Drive": {
+      "main": [
+        [
+          {
+            "node": "Collect Upload Results",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tool: Get Requirements": {
+      "ai_tool": [
+        [
+          {
+            "node": "SDR Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tool: Get SDR Guide": {
+      "ai_tool": [
+        [
+          {
+            "node": "SDR Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI GPT-4o": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "SDR Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model for TSD": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "TSD Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook - Load SDR data": {
+      "main": [
+        [
+          {
+            "node": "TSD Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "TSD Agent",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Structured Output Parser",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false
+  },
+  "versionId": "fa865ec0-0b98-4ee2-aea3-1ab894868274",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "faeb75ed5d46300d3fbd93298c5bdf260bbe39936a513a8de9a2ddae6fbadac6"
+  },
+  "id": "RZ5U2dnGrMbWEFH2",
+  "tags": [
+    {
+      "name": "tsd",
+      "id": "L0AxqV6hl3ONstlB",
+      "updatedAt": "2026-01-20T16:08:34.995Z",
+      "createdAt": "2026-01-20T16:08:34.995Z"
+    }
+  ]
+}

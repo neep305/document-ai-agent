@@ -1,0 +1,369 @@
+{
+  "name": "BRD to SDR - v0.6",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "22ad9668-47fd-4d5c-9cf7-69d72aa838e1",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "1b0eafb9-bbb0-43dd-8626-95a5b5fe93d1",
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "webhookId": "22ad9668-47fd-4d5c-9cf7-69d72aa838e1"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extract input data\nconst input = $input.first().json;\n\nlet clientName, fileData, baseSheetName;\n\nif (input.body) {\n  clientName = input.body.clientName;\n  fileData = input.body.fileData;\n  baseSheetName = input.body.baseSheetName;\n} else {\n  clientName = input.clientName;\n  fileData = input.fileData;\n  baseSheetName = input.baseSheetName;\n}\n\nif (!clientName || !fileData || !baseSheetName) {\n  throw new Error('Missing required fields');\n}\n\nreturn [{\n  json: {\n    clientName,\n    fileData,\n    baseSheetName\n  }\n}];"
+      },
+      "id": "30f5faea-7319-47ca-9a2b-d6c597855597",
+      "name": "Extract and Validate",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        224,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Convert base64 to binary\nconst data = $input.first().json;\nconst base64Data = data.fileData;\n\nconst binaryData = {\n  data: base64Data,\n  mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',\n  fileName: 'original.xlsx'\n};\n\nreturn [{\n  json: {\n    clientName: data.clientName,\n    baseSheetName: data.baseSheetName\n  },\n  binary: {\n    file: binaryData\n  }\n}];"
+      },
+      "id": "b92a18d0-2c30-47aa-88d2-fda76b793b2c",
+      "name": "Create Binary",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        448,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "binaryPropertyName": "file",
+        "options": {
+          "headerRow": true,
+          "range": "B6:E75",
+          "sheetName": "={{ $json.baseSheetName }}"
+        }
+      },
+      "id": "3834d841-6106-4c00-b3c2-9113cbedc94a",
+      "name": "Read Requirements Sheet",
+      "type": "n8n-nodes-base.spreadsheetFile",
+      "typeVersion": 2,
+      "position": [
+        672,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse requirements\nconst items = $input.all();\nconst clientName = $('Create Binary').first().json.clientName;\n\nconsole.log('=== Processing Requirements ===');\nconsole.log('Client:', clientName);\nconsole.log('Rows received:', items.length);\n\nconst requirements = [];\nconst categoryGroups = {};\n\nitems.forEach((item, index) => {\n  const reqId = item.json['Requirement ID'];\n  const category = item.json['Category'];\n  const businessReq = item.json['Business Requirement'];\n  const notes = item.json['Additional Notes'];\n  \n  if (!category && !businessReq) return;\n  \n  const requirement = {\n    id: reqId || `REQ-${index + 1}`,\n    category: category || 'General',\n    requirement: businessReq || '',\n    notes: notes || ''\n  };\n  \n  requirements.push(requirement);\n  \n  const cat = requirement.category;\n  if (!categoryGroups[cat]) {\n    categoryGroups[cat] = [];\n  }\n  categoryGroups[cat].push(requirement);\n});\n\nlet formattedRequirements = '# BUSINESS REQUIREMENTS DOCUMENT\\n\\n';\nformattedRequirements += `**Client:** ${clientName}\\n`;\nformattedRequirements += `**Total Requirements:** ${requirements.length}\\n\\n`;\nformattedRequirements += '## REQUIREMENTS BY CATEGORY\\n\\n';\n\nObject.keys(categoryGroups).forEach(category => {\n  const reqs = categoryGroups[category];\n  formattedRequirements += `### ${category} (${reqs.length} requirements)\\n\\n`;\n  \n  reqs.forEach(req => {\n    if (req.id) formattedRequirements += `**[${req.id}]**\\n`;\n    if (req.requirement) formattedRequirements += `- **Requirement:** ${req.requirement}\\n`;\n    if (req.notes) formattedRequirements += `- **Notes:** ${req.notes}\\n`;\n    formattedRequirements += '\\n';\n  });\n});\n\nconsole.log('Requirements parsed:', requirements.length);\n\nreturn [{\n  json: {\n    clientName: clientName,\n    totalRequirements: requirements.length,\n    categories: Object.keys(categoryGroups),\n    requirements: requirements,\n    formattedRequirements: formattedRequirements\n  }\n}];"
+      },
+      "id": "36c18bb8-12d0-4f9d-b1d8-1d4595736db0",
+      "name": "Parse Requirements",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        880,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "name": "get_requirements_data",
+        "description": "Retrieves the complete BRD requirements data",
+        "jsCode": "const parseNode = $('Parse Requirements').first();\nif (!parseNode?.json) return { error: 'No requirements data' };\nreturn parseNode.json.formattedRequirements;"
+      },
+      "id": "39c33cd0-7652-4a39-ad1d-e1bc3bd5e03a",
+      "name": "Tool: Get Requirements",
+      "type": "@n8n/n8n-nodes-langchain.toolCode",
+      "typeVersion": 1.1,
+      "position": [
+        1200,
+        192
+      ]
+    },
+    {
+      "parameters": {
+        "name": "get_sdr_guide",
+        "description": "Retrieves SDR conversion guidelines",
+        "jsCode": "return `# SDR CONVERSION GUIDELINES\\n\\n## Variable Types\\n\\n### eVars: Persistent values (Campaign ID, User Type)\\n### Props: Page-level data (Page Name, Device Type)\\n### Events: Countable actions (Purchase, Form Submit)\\n\\n## Mandatory\\n\\n**eVars:** eVar1 (Pagename), eVar2 (Site Section), eVar3 (ECID)\\n**Props:** prop1 (Pagename), prop2 (Site Section), prop3 (ECID)\\n**Events:** event1 (Custom Page View)\\n\\n## Rules\\n- MECE Principle\\n- Limits: 250 eVars, 75 Props, 1000 Events\\n- Target: 30-50 eVars, 20-30 Props, 15-25 Events\\n`;"
+      },
+      "id": "8866688c-117b-4faa-92db-46961c30a837",
+      "name": "Tool: Get SDR Guide",
+      "type": "@n8n/n8n-nodes-langchain.toolCode",
+      "typeVersion": 1.1,
+      "position": [
+        1376,
+        304
+      ]
+    },
+    {
+      "parameters": {
+        "model": "gpt-4o",
+        "options": {
+          "temperature": 0.2
+        }
+      },
+      "id": "96180c55-96b5-454a-b315-27dbb927b7cc",
+      "name": "OpenAI GPT-4o",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1,
+      "position": [
+        1024,
+        160
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "KiSwyEkqK9cApEW9",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Analyze the provided BRD and generate SDR mapping requirements.\n\nClient: {{ $('Parse Requirements').item.json.clientName }}\nTotal Requirements: {{ $('Parse Requirements').item.json.totalRequirements }}\n\nGenerate the SDR mapping (eVar, Props, Events) based on the Excel file.\n",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "=You are an expert Adobe Analytics consultant specializing in SDR design.\n\nYour responsibilities:\n- Convert BRD requirements into Adobe Analytics SDR mappings\n- Follow Adobe Analytics variable standards (eVars, Props, Events)\n- Apply MECE principle at all times\n\nTool usage rules:\n- Always refer to BRD data using get_requirements_data\n- Always refer to SDR rules using get_sdr_guide before generating output\n\nOutput rules (STRICT):\n- All the requirements should be converted to eVar,props or events properly without any exception\n  - For instance, if there are 10 requirement ID, you must create use all those requirements.\n- Output ONLY valid JSON\n- Do NOT include markdown, comments, or explanations\n- JSON must include: evars, props, events\n  - Use the same 'Requirement ID' in the selected Requirement sheet.\n  - eVars implementation guide: https://experienceleague.adobe.com/en/docs/analytics/implementation/vars/page-vars/evar\n  - eVars row consists of 'Requirement ID','Analytics Variable','Variable Name','Value Format','Example Value','eVar Allocation','eVar Expiration','eVar Merchandising'\n    - Requirement ID: required\n    - Analytics Variable: required. e.g. eVar1\n    - Variable Name: required. e.g. PageName\n    - Variable Description: required. e.g. Capture a clear and concise page name\n    - eVar Allocation: required. e.g. Most Recent (Last)\n    - eVar Expiration: required. e.g. Visit\n    - eVar Merchandising: required. When 'Product Syntax' is enabled, the merchandising category is populated directly within the products variable, so selecting and setting a binding event is not required. e.g. n/a or 'Product Syntax'\n\n  - Props row consists of 'Requirement ID','Analytics Variable','Variable Name','Variable Description','Value Format','Example Value'\n    - Requirement ID: required\n    - Analytics Variable: required.\n    - Variable Name: required.\n    - Variable Description: required.\n    - Value Format: required.\n    - Example Value: required\n  - Events row consists of 'Requirements ID','Event','Event Name','Event Description','Event Type'\n    - Requirement ID: required.\n    - Event: required. e.g. event1 ... event21\n    - Event Name: required. e.g. Pagename\n    - Event Description: required. Captures the load time of the previous page in seconds\n    - Event Type: required. e.g. Counter or Numeric or Currency\n- Always include mandatory variables:\n  - eVar1-3, prop1-3, event1\n\nIf requirements are ambiguous:\n- Make reasonable assumptions\n- Do NOT ask questions\n- Proceed with best-practice analytics judgment\n"
+        }
+      },
+      "id": "3d1a19f3-f9a4-4c55-8f18-d7196098582f",
+      "name": "SDR Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [
+        1104,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse SDR JSON output and prepare for Node.js service\nconst rawOutput = $input.first().json.output || $input.first().json.text;\n\nlet sdrData;\ntry {\n  const jsonMatch = rawOutput.match(/\\{[\\s\\S]*\\}/);\n  sdrData = jsonMatch ? JSON.parse(jsonMatch[0]) : JSON.parse(rawOutput);\n} catch (error) {\n  throw new Error('Failed to parse SDR output');\n}\n\nif (!sdrData.evars || !sdrData.props || !sdrData.events) {\n  throw new Error('SDR missing required fields');\n}\n\n// Get original file data\nconst originalBinary = $('Create Binary').first().binary.file;\nconst clientName = $('Parse Requirements').first().json.clientName;\n\nreturn [{\n  json: {\n    success: true,\n    clientName: clientName,\n    originalFileBase64: originalBinary.data,\n    sdr: sdrData,\n    stats: {\n      evars: sdrData.evars.length,\n      props: sdrData.props.length,\n      events: sdrData.events.length\n    }\n  }\n}];"
+      },
+      "id": "65a750a3-f592-41c8-90b4-ed23c85e766e",
+      "name": "Parse SDR Output",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1520,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          }
+        }
+      },
+      "id": "e18d5d25-ccaa-46c9-8be5-a45446904f41",
+      "name": "Respond with JSON",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1840,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4.1-mini"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        1712,
+        464
+      ],
+      "id": "941c0756-e349-4b65-b668-dde82432a8dc",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "KiSwyEkqK9cApEW9",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are a web analytics automation assistant. Your job is to generate a Web SDK-compatible adobeDataLayer JSON payload to be used in Adobe Experience Platform, based on the event scenario described below.\n\n## Client Name: {{ $json.clientName }}\n\n## Requirements:\n1. Analyze the {{ $json.sdr }} and generate JSON output using correct field hierarchy for the Web SDK schema.\n2. Include nested objects as required (e.g., _techcombank.userInfo, web.webInteractions).\n3. Assume all values are placeholders and use <angle brackets>.\n4. Output as a technical document with the Adobe WEB SDK code. Must include explanations or any other content.\n\n\n## Event Scenario:\n<Insert detailed user scenario or event name here, e.g., \"User clicks banner on homepage promoting savings account\">\nUse the JSON ouput from previous workflow to create a TSD.",
+        "options": {
+          "systemMessage": "=You are an expert in Adobe Web SDK implementation. Your job is to translate user-defined tracking event scenarios into Adobe Web SDK-compliant adobeDataLayer payloads.\n\n## Responsibilities:\n- Parse {{ $json.sdr }} object and identify relevant page-level, user, form, click, error, or custom event information.\n- You must create a follow the Adobe tagging rule.\n- Refer to the code\n```\nwindow.adobeDataLayer = window.adobeDataLayer || [];\n\n//Setting only Page Level variables on page loading complete\nwindow.adobeDataLayer.push({\n\"event\":\"pageLoaded\",\n\"_{{$json.clientName}}\":{\n\t    “pageName”: “<pagename>”,\n\t    “pageURL”: “<page URL>”,\n\t    “pageURLParam”: “<page URL parameters>”,\n\t    \"siteSection\": “<site section>”,\n            \"language\": \"<language>\",\n\t    “environment”: “<environment>”,\n\t    “businessUnit”: “<business unit>”,\n\t    “platform”: “<Web/App>”,\n\t    “productName”: “<product name>”,\n\t    “journey”: “<journey name>”,\n\t    “timestamp”: “<timestamp>”,\n\t    “cookiesEnabled”: “<y/n>”,\n            “defaultBrowserLanguage”: “<default browser language>”,\n\t    \"userInfo\": {     \n         \t\"status\": \"<logged-in/not logged-in>\",\n\t\t“customerID”:\"<backed generated customerID>\",\n\t\t\"idfa\": \"<capture the IDFA>\",\n\t\t“gaid”:\"<capture the GAID>\"\n          \t}\n}\n});\n\n```\n- All keys must reflect the TSD naming convention: _clientname.pageTracking.*, _clientname.userInfo.*, _clientname.clickInfo.*, etc.\n- Use proper nesting for web.webPageDetails, web.webInteractions, and any platform-specific structures.\n- Omit null or missing values unless explicitly marked.\n- Enclose all variable placeholders in <angle brackets>.\n- Events must include an \"event\" key, such as \"pageLoaded\", \"formStart\", \"bookConsultation\" etc.\n\n\nRespond with ONLY the resulting JSON payload, without commentary or Markdown code block wrappers."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        1840,
+        256
+      ],
+      "id": "5077af1b-c5f6-4e53-b6dc-c47cfdfe0b60",
+      "name": "TSD Agent"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "Extract and Validate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract and Validate": {
+      "main": [
+        [
+          {
+            "node": "Create Binary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Binary": {
+      "main": [
+        [
+          {
+            "node": "Read Requirements Sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Requirements Sheet": {
+      "main": [
+        [
+          {
+            "node": "Parse Requirements",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Requirements": {
+      "main": [
+        [
+          {
+            "node": "SDR Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SDR Agent": {
+      "main": [
+        [
+          {
+            "node": "Parse SDR Output",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse SDR Output": {
+      "main": [
+        [
+          {
+            "node": "Respond with JSON",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "TSD Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tool: Get Requirements": {
+      "ai_tool": [
+        [
+          {
+            "node": "SDR Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tool: Get SDR Guide": {
+      "ai_tool": [
+        [
+          {
+            "node": "SDR Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI GPT-4o": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "SDR Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "TSD Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false
+  },
+  "versionId": "21e44196-990d-4ba0-8f12-a6332d031da4",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "faeb75ed5d46300d3fbd93298c5bdf260bbe39936a513a8de9a2ddae6fbadac6"
+  },
+  "id": "RZ5U2dnGrMbWEFH2",
+  "tags": []
+}
