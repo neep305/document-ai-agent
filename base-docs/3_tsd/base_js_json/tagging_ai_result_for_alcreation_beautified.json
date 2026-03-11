@@ -1,0 +1,566 @@
+{
+  "property_info": {
+    "name": "Auto-Generated WebSDK Property",
+    "platform": "web"
+  },
+  "extensions": [
+    {
+      "name": "core",
+      "package_name": "core"
+    },
+    {
+      "name": "adobe-alchemy",
+      "package_name": "adobe-alchemy",
+      "settings": {
+        "edgeConfigId": "REPLACE_WITH_DATASTREAM_ID"
+      }
+    }
+  ],
+  "rules": [
+    {
+      "name": "Click - Add to Cart",
+      "notes": "Generated from HTML data-aa-event='add_to_cart'",
+      "events": [
+        {
+          "delegate_id": "adobe-launch-extension-core:event-click",
+          "extension_name": "core",
+          "settings": {
+            "elementSelector": "button.btn-add-to-cart[data-aa-event='add_to_cart']",
+            "bubble": true
+          }
+        }
+      ],
+      "actions": [
+        {
+          "delegate_id": "adobe-alchemy:action-send-event",
+          "extension_name": "adobe-alchemy",
+          "settings": {
+            "xdm": {
+              "eventType": "commerce.productListAdds",
+              "commerce": {
+                "productListAdds": {
+                  "value": 1
+                },
+                "order": {
+                  "currencyCode": "%this.getAttribute('data-aa-currency')%"
+                }
+              },
+              "_experience": {
+                "analytics": {
+                  "customDimensions": {
+                    "eVars": {
+                      "eVar10": "%this.getAttribute('data-aa-event')%"
+                    }
+                  }
+                }
+              },
+              "productListItems": [
+                {
+                  "SKU": "%this.getAttribute('data-aa-product-id')%",
+                  "name": "%this.getAttribute('data-aa-product-name')%",
+                  "priceTotal": "%this.getAttribute('data-aa-price')%",
+                  "quantity": 1,
+                  "productCategories": [
+                    {
+                      "categoryID": "%this.getAttribute('data-aa-category')%"
+                    }
+                  ],
+                  "_experience": {
+                    "analytics": {
+                      "customDimensions": {
+                        "eVars": {
+                          "eVar20": "%this.getAttribute('data-aa-product-id')%",
+                          "eVar21": "%this.getAttribute('data-aa-product-name')%",
+                          "eVar22": "%this.getAttribute('data-aa-category')%",
+                          "eVar23": "%this.getAttribute('data-aa-brand')%"
+                        }
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Click - Purchase",
+      "notes": "Generated from HTML data-aa-event='purchase'",
+      "events": [
+        {
+          "delegate_id": "adobe-launch-extension-core:event-click",
+          "extension_name": "core",
+          "settings": {
+            "elementSelector": "button.btn-purchase[data-aa-event='purchase']",
+            "bubble": true
+          }
+        }
+      ],
+      "actions": [
+        {
+          "delegate_id": "adobe-alchemy:action-send-event",
+          "extension_name": "adobe-alchemy",
+          "settings": {
+            "xdm": {
+              "eventType": "commerce.purchases",
+              "commerce": {
+                "purchases": {
+                  "value": 1
+                },
+                "order": {
+                  "purchaseID": "%this.getAttribute('data-aa-order-id')%",
+                  "currencyCode": "%this.getAttribute('data-aa-currency')%"
+                }
+              },
+              "_experience": {
+                "analytics": {
+                  "customDimensions": {
+                    "eVars": {
+                      "eVar10": "%this.getAttribute('data-aa-event')%"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Click - Login Success",
+      "notes": "Generated from HTML data-aa-event='login_success'",
+      "events": [
+        {
+          "delegate_id": "adobe-launch-extension-core:event-click",
+          "extension_name": "core",
+          "settings": {
+            "elementSelector": "button.btn-login[data-aa-event='login_success']",
+            "bubble": true
+          }
+        }
+      ],
+      "actions": [
+        {
+          "delegate_id": "adobe-alchemy:action-send-event",
+          "extension_name": "adobe-alchemy",
+          "settings": {
+            "xdm": {
+              "eventType": "web.webInteraction",
+              "_experience": {
+                "analytics": {
+                  "customDimensions": {
+                    "eVars": {
+                      "eVar10": "%this.getAttribute('data-aa-event')%"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Click - Signup Complete",
+      "notes": "Generated from HTML data-aa-event='signup_complete'",
+      "events": [
+        {
+          "delegate_id": "adobe-launch-extension-core:event-click",
+          "extension_name": "core",
+          "settings": {
+            "elementSelector": "button.btn-signup[data-aa-event='signup_complete']",
+            "bubble": true
+          }
+        }
+      ],
+      "actions": [
+        {
+          "delegate_id": "adobe-alchemy:action-send-event",
+          "extension_name": "adobe-alchemy",
+          "settings": {
+            "xdm": {
+              "eventType": "web.webInteraction",
+              "_experience": {
+                "analytics": {
+                  "customDimensions": {
+                    "eVars": {
+                      "eVar10": "%this.getAttribute('data-aa-event')%"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Page View - Home/PLP",
+      "notes": "Generated from JS adobeDataLayer.push({event: 'page-view', pageType: 'home'/'product-list'})",
+      "events": [
+        {
+          "delegate_id": "adobe-launch-extension-core:event-data-element-change",
+          "extension_name": "core",
+          "settings": {
+            "path": "event",
+            "condition": "%event.message.event% === 'page-view' && (%event.message.pageType% === 'home' || %event.message.pageType% === 'product-list')"
+          }
+        }
+      ],
+      "actions": [
+        {
+          "delegate_id": "adobe-alchemy:action-send-event",
+          "extension_name": "adobe-alchemy",
+          "settings": {
+            "xdm": {
+              "eventType": "web.webPageDetails.pageViews",
+              "web": {
+                "webPageDetails": {
+                  "pageViews": {
+                    "value": 1
+                  },
+                  "name": "%event.message.web.webPageDetails.name%",
+                  "siteSection": "%event.message.web.webPageDetails.siteSection%",
+                  "URL": "%event.message.web.webPageDetails.URL%"
+                }
+              },
+              "_experience": {
+                "analytics": {
+                  "customDimensions": {
+                    "eVars": {
+                      "eVar9": "%event.message.pageType%",
+                      "eVar10": "%event.message.event%",
+                      "eVar11": "%event.message.user.loginStatus%",
+                      "eVar12": "%event.message.user.profile.customerId%",
+                      "eVar13": "%event.message.user.profile.memberTier%"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Page View - Product Detail (PDP)",
+      "notes": "Generated from JS adobeDataLayer.push({event: 'page-view', pageType: 'product-detail'})",
+      "events": [
+        {
+          "delegate_id": "adobe-launch-extension-core:event-data-element-change",
+          "extension_name": "core",
+          "settings": {
+            "path": "event",
+            "condition": "%event.message.event% === 'page-view' && %event.message.pageType% === 'product-detail'"
+          }
+        }
+      ],
+      "actions": [
+        {
+          "delegate_id": "adobe-alchemy:action-send-event",
+          "extension_name": "adobe-alchemy",
+          "settings": {
+            "xdm": {
+              "eventType": "commerce.productViews",
+              "commerce": {
+                "productViews": {
+                  "value": 1
+                },
+                "order": {
+                  "currencyCode": "%event.message.product.currency%"
+                }
+              },
+              "web": {
+                "webPageDetails": {
+                  "pageViews": {
+                    "value": 1
+                  },
+                  "name": "%event.message.web.webPageDetails.name%",
+                  "siteSection": "%event.message.web.webPageDetails.siteSection%",
+                  "URL": "%event.message.web.webPageDetails.URL%"
+                }
+              },
+              "_experience": {
+                "analytics": {
+                  "customDimensions": {
+                    "eVars": {
+                      "eVar9": "%event.message.pageType%",
+                      "eVar10": "%event.message.event%",
+                      "eVar11": "%event.message.user.loginStatus%",
+                      "eVar12": "%event.message.user.profile.customerId%",
+                      "eVar13": "%event.message.user.profile.memberTier%"
+                    }
+                  }
+                }
+              },
+              "productListItems": [
+                {
+                  "SKU": "%event.message.product.id%",
+                  "name": "%event.message.product.name%",
+                  "productCategories": [
+                    {
+                      "categoryID": "%event.message.product.category%"
+                    }
+                  ],
+                  "priceTotal": "%event.message.product.price%",
+                  "quantity": 1,
+                  "_experience": {
+                    "analytics": {
+                      "customDimensions": {
+                        "eVars": {
+                          "eVar20": "%event.message.product.id%",
+                          "eVar21": "%event.message.product.name%",
+                          "eVar22": "%event.message.product.category%",
+                          "eVar23": "%event.message.product.brand%"
+                        }
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Page View - Cart",
+      "notes": "Generated from JS adobeDataLayer.push({event: 'page-view', pageType: 'cart'})",
+      "events": [
+        {
+          "delegate_id": "adobe-launch-extension-core:event-data-element-change",
+          "extension_name": "core",
+          "settings": {
+            "path": "event",
+            "condition": "%event.message.event% === 'page-view' && %event.message.pageType% === 'cart'"
+          }
+        }
+      ],
+      "actions": [
+        {
+          "delegate_id": "adobe-alchemy:action-send-event",
+          "extension_name": "adobe-alchemy",
+          "settings": {
+            "xdm": {
+              "eventType": "commerce.productListOpens",
+              "commerce": {
+                "productListOpens": {
+                  "value": 1
+                },
+                "order": {
+                  "currencyCode": "%event.message.productListItems[0].currencyCode%"
+                }
+              },
+              "web": {
+                "webPageDetails": {
+                  "pageViews": {
+                    "value": 1
+                  },
+                  "name": "%event.message.web.webPageDetails.name%",
+                  "siteSection": "%event.message.web.webPageDetails.siteSection%",
+                  "URL": "%event.message.web.webPageDetails.URL%"
+                }
+              },
+              "_experience": {
+                "analytics": {
+                  "customDimensions": {
+                    "eVars": {
+                      "eVar9": "%event.message.pageType%",
+                      "eVar10": "%event.message.event%",
+                      "eVar11": "%event.message.user.loginStatus%",
+                      "eVar12": "%event.message.user.profile.customerId%",
+                      "eVar13": "%event.message.user.profile.memberTier%"
+                    }
+                  }
+                }
+              },
+              "productListItems": {
+                "SKU": "%event.message.productListItems[].SKU%",
+                "name": "%event.message.productListItems[].name%",
+                "productCategories": [
+                  {
+                    "categoryID": "%event.message.productListItems[].category%"
+                  }
+                ],
+                "priceTotal": "%event.message.productListItems[].priceTotal%",
+                "quantity": "%event.message.productListItems[].quantity%",
+                "_experience": {
+                  "analytics": {
+                    "customDimensions": {
+                      "eVars": {
+                        "eVar20": "%event.message.productListItems[].SKU%",
+                        "eVar21": "%event.message.productListItems[].name%",
+                        "eVar22": "%event.message.productListItems[].category%",
+                        "eVar23": "%event.message.productListItems[].brand%"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Page View - Checkout",
+      "notes": "Generated from JS adobeDataLayer.push({event: 'page-view', pageType: 'checkout'})",
+      "events": [
+        {
+          "delegate_id": "adobe-launch-extension-core:event-data-element-change",
+          "extension_name": "core",
+          "settings": {
+            "path": "event",
+            "condition": "%event.message.event% === 'page-view' && %event.message.pageType% === 'checkout'"
+          }
+        }
+      ],
+      "actions": [
+        {
+          "delegate_id": "adobe-alchemy:action-send-event",
+          "extension_name": "adobe-alchemy",
+          "settings": {
+            "xdm": {
+              "eventType": "commerce.checkouts",
+              "commerce": {
+                "checkouts": {
+                  "value": 1
+                },
+                "order": {
+                  "currencyCode": "%event.message.productListItems[0].currencyCode%"
+                }
+              },
+              "web": {
+                "webPageDetails": {
+                  "pageViews": {
+                    "value": 1
+                  },
+                  "name": "%event.message.web.webPageDetails.name%",
+                  "siteSection": "%event.message.web.webPageDetails.siteSection%",
+                  "URL": "%event.message.web.webPageDetails.URL%"
+                }
+              },
+              "_experience": {
+                "analytics": {
+                  "customDimensions": {
+                    "eVars": {
+                      "eVar9": "%event.message.pageType%",
+                      "eVar10": "%event.message.event%",
+                      "eVar11": "%event.message.user.loginStatus%",
+                      "eVar12": "%event.message.user.profile.customerId%",
+                      "eVar13": "%event.message.user.profile.memberTier%"
+                    }
+                  }
+                }
+              },
+              "productListItems": {
+                "SKU": "%event.message.productListItems[].SKU%",
+                "name": "%event.message.productListItems[].name%",
+                "productCategories": [
+                  {
+                    "categoryID": "%event.message.productListItems[].category%"
+                  }
+                ],
+                "priceTotal": "%event.message.productListItems[].priceTotal%",
+                "quantity": "%event.message.productListItems[].quantity%",
+                "_experience": {
+                  "analytics": {
+                    "customDimensions": {
+                      "eVars": {
+                        "eVar20": "%event.message.productListItems[].SKU%",
+                        "eVar21": "%event.message.productListItems[].name%",
+                        "eVar22": "%event.message.productListItems[].category%",
+                        "eVar23": "%event.message.productListItems[].brand%"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Page View - Order Confirmation",
+      "notes": "Generated from JS adobeDataLayer.push({event: 'page-view', pageType: 'order-confirmation'})",
+      "events": [
+        {
+          "delegate_id": "adobe-launch-extension-core:event-data-element-change",
+          "extension_name": "core",
+          "settings": {
+            "path": "event",
+            "condition": "%event.message.event% === 'page-view' && %event.message.pageType% === 'order-confirmation'"
+          }
+        }
+      ],
+      "actions": [
+        {
+          "delegate_id": "adobe-alchemy:action-send-event",
+          "extension_name": "adobe-alchemy",
+          "settings": {
+            "xdm": {
+              "eventType": "commerce.purchases",
+              "commerce": {
+                "purchases": {
+                  "value": 1
+                },
+                "order": {
+                  "purchaseID": "%event.message.commerce.order.purchaseID%",
+                  "currencyCode": "%event.message.commerce.order.currencyCode%"
+                }
+              },
+              "web": {
+                "webPageDetails": {
+                  "pageViews": {
+                    "value": 1
+                  },
+                  "name": "%event.message.web.webPageDetails.name%",
+                  "siteSection": "%event.message.web.webPageDetails.siteSection%",
+                  "URL": "%event.message.web.webPageDetails.URL%"
+                }
+              },
+              "_experience": {
+                "analytics": {
+                  "customDimensions": {
+                    "eVars": {
+                      "eVar9": "%event.message.pageType%",
+                      "eVar10": "%event.message.event%",
+                      "eVar11": "%event.message.user.loginStatus%",
+                      "eVar12": "%event.message.user.profile.customerId%",
+                      "eVar13": "%event.message.user.profile.memberTier%"
+                    }
+                  }
+                }
+              },
+              "productListItems": {
+                "SKU": "%event.message.productListItems[].SKU%",
+                "name": "%event.message.productListItems[].name%",
+                "productCategories": [
+                  {
+                    "categoryID": "%event.message.productListItems[].category%"
+                  }
+                ],
+                "priceTotal": "%event.message.productListItems[].priceTotal%",
+                "quantity": "%event.message.productListItems[].quantity%",
+                "_experience": {
+                  "analytics": {
+                    "customDimensions": {
+                      "eVars": {
+                        "eVar20": "%event.message.productListItems[].SKU%",
+                        "eVar21": "%event.message.productListItems[].name%",
+                        "eVar22": "%event.message.productListItems[].category%",
+                        "eVar23": "%event.message.productListItems[].brand%"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

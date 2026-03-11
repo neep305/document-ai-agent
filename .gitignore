@@ -30,6 +30,14 @@ Thumbs.db
 output/
 *.log
 
+# webhook-service generated files
+webhook-service/output/
+webhook-service/.env
+
+# Node.js
+node_modules/
+package-lock.json
+
 # Vector DB
 chroma_db/
 
@@ -38,3 +46,6 @@ nul
 base-docs/1_discovery/~$*.xlsx
 
 *secret.json
+
+azure-openai-key.txt
+n8n-document-ai-gcp-client-secret.json

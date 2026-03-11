@@ -2,6 +2,15 @@ const express = require('express');
 const ExcelJS = require('exceljs');
 const path = require('path');
 const fs = require('fs');
+require('dotenv').config();
+
+// Configuration from environment variables
+const PORT = process.env.PORT || 3000;
+const SHEET_NAMES = {
+  evars: process.env.SHEET_NAME_EVARS || 'eVars',
+  props: process.env.SHEET_NAME_PROPS || 'props',
+  events: process.env.SHEET_NAME_EVENTS || 'custom events (metrics)'
+};
 
 const app = express();
 
@@ -50,7 +59,7 @@ app.post('/generate-excel', async (req, res) => {
         
         // eVars 시트 작성
         if (sdrData.evars && sdrData.evars.length > 0) {
-            const wsEvars = workbook.getWorksheet('eVars');
+            const wsEvars = workbook.getWorksheet(SHEET_NAMES.evars);
             if (wsEvars) {
                 clearDataRows(wsEvars, 7);
                 sdrData.evars.forEach((evar, index) => {
@@ -73,7 +82,7 @@ app.post('/generate-excel', async (req, res) => {
         
         // Props 시트 작성
         if (sdrData.props && sdrData.props.length > 0) {
-            const wsProps = workbook.getWorksheet('props');
+            const wsProps = workbook.getWorksheet(SHEET_NAMES.props);
             if (wsProps) {
                 clearDataRows(wsProps, 7);
                 sdrData.props.forEach((prop, index) => {
@@ -96,7 +105,7 @@ app.post('/generate-excel', async (req, res) => {
         
         // Events 시트 작성
         if (sdrData.events && sdrData.events.length > 0) {
-            const wsEvents = workbook.getWorksheet('custom events (metrics)');
+            const wsEvents = workbook.getWorksheet(SHEET_NAMES.events);
             if (wsEvents) {
                 clearDataRows(wsEvents, 7);
                 sdrData.events.forEach((event, index) => {
@@ -180,7 +189,7 @@ app.get('/health', (req, res) => {
     });
 });
 
-const PORT = process.env.PORT || 3000;
+// 서버 시작
 app.listen(PORT, () => {
     console.log('');
     console.log('🚀 Adobe Excel Service v0.5 started');
@@ -188,6 +197,11 @@ app.listen(PORT, () => {
     console.log(`   Web UI:  http://localhost:${PORT}/`);
     console.log(`   API:     http://localhost:${PORT}/generate-excel`);
     console.log(`   Health:  http://localhost:${PORT}/health`);
+    console.log('================================================');
+    console.log(`   Sheet Names:`);
+    console.log(`     eVars:  ${SHEET_NAMES.evars}`);
+    console.log(`     Props:  ${SHEET_NAMES.props}`);
+    console.log(`     Events: ${SHEET_NAMES.events}`);
     console.log('================================================');
     console.log('');
 });
