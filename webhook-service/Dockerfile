@@ -1,14 +1,21 @@
-FROM node:18-alpine
+FROM node:18-bookworm-slim
 
 WORKDIR /app
 
-# Install dependencies
+# Install Python 3 + pip + openpyxl + pandas
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    python3 python3-pip python3-venv \
+    && pip3 install --no-cache-dir --break-system-packages openpyxl pandas \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# Install Node dependencies
 COPY package*.json ./
 RUN npm ci --only=production
 
 # Copy application
 COPY server.js ./
 COPY public ./public
+COPY scripts ./scripts
 
 EXPOSE 3000
 

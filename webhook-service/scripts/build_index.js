@@ -1,4 +1,13 @@
-<!DOCTYPE html>
+/**
+ * build_index.js — regenerate public/index.html (3-tab UI)
+ * Run: node scripts/build_index.js  (from webhook-service/ root)
+ */
+const fs   = require('fs');
+const path = require('path');
+
+const OUT = path.join(__dirname, '..', 'public', 'index.html');
+
+const html = `<!DOCTYPE html>
 <html lang="en" data-theme="dark">
 <head>
   <meta charset="UTF-8" />
@@ -822,7 +831,7 @@ function handleFile(file, tab) {
   zone.classList.add('has-file');
   zone.querySelector('.dz-label').textContent = 'File selected (click to replace)';
   zone.querySelector('.dz-sub').textContent  = '';
-  const slug = file.name.replace(/\.[^.]+$/, '').replace(/[_\-]+/g, ' ');
+  const slug = file.name.replace(/\\.[^.]+$/, '').replace(/[_\\-]+/g, ' ');
   const cn = document.getElementById(tab + '-clientName');
   if (cn && !cn.value) cn.value = slug;
 
@@ -1002,7 +1011,7 @@ function showResult(stage, data) {
     let html = '';
     if (sdrLink) html += dlLink('📊', 'SDR Excel', '.xlsx', sdrLink);
     files.forEach(function(f){
-      const ext = (f.fileName||'').match(/\.[^.]+$/);
+      const ext = (f.fileName||'').match(/\\.[^.]+$/);
       const icons = {'.xlsx':'📊','.docx':'📄','.js':'📜','.md':'📝','.json':'🗃️'};
       html += dlLink((ext && icons[ext[0]]) || '📁', f.fileName || 'File', (ext && ext[0]) || '', f.webViewLink);
     });
@@ -1012,7 +1021,7 @@ function showResult(stage, data) {
     const files = (data.result && data.result.googleDrive && data.result.googleDrive.files) ? data.result.googleDrive.files : [];
     let html = '';
     files.forEach(function(f){
-      const ext = (f.fileName||'').match(/\.[^.]+$/);
+      const ext = (f.fileName||'').match(/\\.[^.]+$/);
       const icons = {'.xlsx':'📊','.docx':'📄','.js':'📜','.md':'📝','.json':'🗃️'};
       html += dlLink((ext && icons[ext[0]]) || '📁', f.fileName || 'File', (ext && ext[0]) || '', f.webViewLink);
     });
@@ -1053,8 +1062,8 @@ async function loadJobs() {
         (j.stage ? '<span class="job-stage-pill">' + j.stage.toUpperCase() + '</span>' : '') +
         '<div class="job-info"><div class="job-name">' + (j.clientName || j.jobId) + '</div>' +
         '<div class="job-time">' + j.jobId + ' &middot; ' + fmtTime(j.createdAt) + '</div></div>' +
-        (j.status === 'processing' ? '<button class="job-resume-btn" onclick="resumeJob(\'' + j.jobId + '\',\'' + (j.stage||'sdr') + '\')">Monitor</button>' : '') +
-        '<button class="job-delete-btn" onclick="delJob(\'' + j.jobId + '\')">&#128465;</button>' +
+        (j.status === 'processing' ? '<button class="job-resume-btn" onclick="resumeJob(\\'' + j.jobId + '\\',\\'' + (j.stage||'sdr') + '\\')">Monitor</button>' : '') +
+        '<button class="job-delete-btn" onclick="delJob(\\'' + j.jobId + '\\')">&#128465;</button>' +
         '</div>';
     }).join('');
   } catch {}
@@ -1159,4 +1168,8 @@ function fmtTime(iso) {
 setInterval(loadJobs, 10000);
 </script>
 </body>
-</html>
+</html>`;
+
+fs.writeFileSync(OUT, html, 'utf8');
+const lines = html.split('\n').length;
+console.log('✅ index.html written → ' + OUT + ' (' + lines + ' lines)');

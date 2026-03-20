@@ -1,0 +1,777 @@
+{
+  "name": "Document AI - Tags v2.0",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "tags",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "33333333-3333-3333-3333-333333333331",
+      "name": "Webhook Trigger Tags",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        200,
+        300
+      ],
+      "webhookId": "33333333-3333-3333-3333-333333333331"
+    },
+    {
+      "parameters": {
+        "jsCode": "const input = $input.first().json;\nconst body = input.body || input;\nconst jobId = body.jobId || ('tags-' + Date.now() + '-' + Math.random().toString(36).substr(2, 8));\nconst clientName = body.clientName;\nconst sdrData = body.sdrData || body.sdr;\nconst callbackUrl = body.callbackUrl || null;\n\nif (!clientName || !sdrData) throw new Error('Missing required fields: clientName, sdrData');\nif (!sdrData.evars || !sdrData.events) {\n  throw new Error('sdrData must contain evars and events for Tags creation');\n}\n\nconsole.log('=== Tags Job ===');\nconsole.log('Job ID:', jobId);\nconsole.log('Client:', clientName);\nconsole.log('eVars:', sdrData.evars.length, 'Events:', sdrData.events.length);\n\nreturn [{ json: { jobId, clientName, sdrData, callbackUrl, jobStartedAt: new Date().toISOString() } }];"
+      },
+      "id": "33333333-3333-3333-3333-333333333332",
+      "name": "Validate Tags Input",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        600,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ success: true, jobId: $('Validate Tags Input').first().json.jobId, message: 'Tags 생성이 시작되었습니다.' }) }}",
+        "options": {}
+      },
+      "id": "33333333-3333-3333-3333-333333333333",
+      "name": "Respond Tags",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1000,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const input = $('Validate Tags Input').first().json;\n// Emulate the shape that Prepare Rules (Dynamic) expects from Parse SDR Output\nreturn [{ json: {\n  success: true,\n  clientName: input.clientName,\n  sdr: input.sdrData,\n  stats: {\n    evars: input.sdrData.evars?.length || 0,\n    props: input.sdrData.props?.length || 0,\n    events: input.sdrData.events?.length || 0,\n  },\n  validation: { coverage_pct: 100, warnings: [] },\n} }];"
+      },
+      "id": "33333333-3333-3333-3333-333333333334",
+      "name": "Parse SDR Output",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1000,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Validate Tags Input').first().json.callbackUrl || 'http://host.docker.internal:3000/webhook/sdr-result' }}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ jobId: $('Validate Tags Input').first().json.jobId, status: 'completed', message: 'Adobe Launch Tags 생성 완료', completedAt: new Date().toISOString() }) }}",
+        "options": {
+          "timeout": 10000
+        }
+      },
+      "id": "33333333-3333-3333-3333-333333333335",
+      "name": "Notify Tags Done",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        3600,
+        300
+      ],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Validate Tags Input').first().json.callbackUrl || 'http://host.docker.internal:3000/webhook/sdr-result' }}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ jobId: $('Validate Tags Input').first().json.jobId, status: 'failed', error: $json.error?.message || 'Tags creation failed', failedAt: new Date().toISOString() }) }}",
+        "options": {
+          "timeout": 10000
+        }
+      },
+      "id": "33333333-3333-3333-3333-333333333336",
+      "name": "Notify Tags Error",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1400,
+        600
+      ],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ success: true, jobId: $('Validate Tags Input').first().json.jobId, message: 'Adobe Launch Tags 생성 완료' }) }}",
+        "options": {}
+      },
+      "id": "33333333-3333-3333-3333-333333333337",
+      "name": "Respond Tags Final",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        3800,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "{\n  \"CLIENT_SECRET\": \"REPLACE_WITH_CLIENT_SECRET\",\n  \"API_KEY\": \"REPLACE_WITH_API_KEY\",\n  \"IMS_ORG\": \"REPLACE_WITH_IMS_ORG@AdobeOrg\",\n  \"PROPERTY_ID\": \"REPLACE_WITH_PROPERTY_ID\",\n  \"DATASTREAM_ID\": \"REPLACE_WITH_DATASTREAM_ID\"\n}",
+        "options": {}
+      },
+      "id": "f1da97dd-6dc4-487c-b70b-bbb59162c7f5",
+      "name": "Set Credentials",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        32000,
+        2688
+      ],
+      "notesInFlow": true,
+      "notes": "⚠️ Replace all REPLACE_WITH_* values with actual credentials before activating"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://ims-na1.adobelogin.com/ims/token/v3",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/x-www-form-urlencoded"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "form-urlencoded",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "grant_type",
+              "value": "client_credentials"
+            },
+            {
+              "name": "client_id",
+              "value": "={{ $json.API_KEY }}"
+            },
+            {
+              "name": "client_secret",
+              "value": "={{ $json.CLIENT_SECRET }}"
+            },
+            {
+              "name": "scope",
+              "value": "AdobeID,openid,read_organizations,additional_info.job_function,additional_info.projectedProductContext,additional_info.roles"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "6ff282b2-5b34-442a-b17d-8d904480483b",
+      "name": "Get IMS Access Token",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        32224,
+        2688
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "={\n  \"access_token\": \"{{ $json.access_token }}\",\n  \"credentials\": {{ JSON.stringify($('Set Credentials').item.json) }}\n}",
+        "options": {}
+      },
+      "id": "e1bb5404-b4e7-4adc-9803-8aa0fec0100b",
+      "name": "Merge Token & Credentials",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        32448,
+        2688
+      ]
+    },
+    {
+      "parameters": {
+        "url": "=https://reactor.adobe.io/properties/{{ $json.credentials.PROPERTY_ID }}/extensions",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $json.access_token }}"
+            },
+            {
+              "name": "x-gw-ims-org-id",
+              "value": "={{ $json.credentials.IMS_ORG }}"
+            },
+            {
+              "name": "Accept",
+              "value": "application/vnd.api+json;revision=1"
+            },
+            {
+              "name": "x-api-key",
+              "value": "={{ $json.credentials.API_KEY }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "b063dd15-c1d2-4a1c-9258-0f802f1127a3",
+      "name": "Get Existing Extensions",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        32672,
+        2688
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse extension info and prepare config\nconst input = $input.first().json[\"data\"];\nconst { data: arrInput } = JSON.parse(input);\nconst tokenData = $('Merge Token & Credentials').first().json;\n\nconst existingExtensions = (arrInput || []).map(ext => ({\n  id: ext.id,\n  name: ext.attributes?.name,\n  delegateDescriptorId: ext.attributes?.delegate_descriptor_id,\n  extensionPackage: ext.relationships.extension_package.data.id\n}));\n\nconst coreExt = existingExtensions.find(ext =>\n  ext.delegateDescriptorId?.includes('core::') || ext.name?.toLowerCase() === 'core'\n);\n\nconst alloyExt = existingExtensions.find(ext =>\n  ext.delegateDescriptorId?.includes('alloy') ||\n  ext.delegateDescriptorId?.includes('adobe-cloud-connector') ||\n  ext.name?.toLowerCase().includes('web sdk') ||\n  ext.name?.toLowerCase().includes('alloy')\n);\n\nreturn [{\n  json: {\n    accessToken: tokenData.access_token,\n    credentials: tokenData.credentials,\n    existingExtensions,\n    coreExtensionId: coreExt?.id,\n    alloyExtensionId: alloyExt?.id,\n    alloyInstalled: !!alloyExt\n  }\n}];"
+      },
+      "id": "9da87f1a-03ce-49fb-9766-9c670dc63fdc",
+      "name": "Parse Extensions",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        32896,
+        2688
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Dynamically load rules from TSD Agent's launchPayload output\nconst input = $input.first().json;\n\nconst tsdData = $('Parse TSD Output').first().json;\nconst launchPayloadContent = tsdData.files?.launchPayload?.content;\n\nif (!launchPayloadContent) {\n  console.warn('⚠️  No launchPayload found in TSD output — skipping Adobe Launch deployment');\n  return [];\n}\n\nlet launchConfig;\ntry {\n  launchConfig = typeof launchPayloadContent === 'string'\n    ? JSON.parse(launchPayloadContent)\n    : launchPayloadContent;\n} catch (e) {\n  throw new Error('Failed to parse launchPayload JSON: ' + e.message);\n}\n\nconst rules = launchConfig.rules || [];\nif (rules.length === 0) {\n  console.warn('⚠️  launchPayload contains no rules');\n  return [];\n}\n\nconsole.log(`Preparing ${rules.length} rules from launchPayload for Adobe Launch deployment`);\n\nreturn rules.map((rule, idx) => ({\n  json: {\n    ...input,\n    ruleIndex: idx,\n    ruleName: rule.name,\n    ruleEvents: rule.events || [],\n    ruleConditions: rule.conditions || [],\n    ruleActions: rule.actions || [],\n    totalRules: rules.length\n  }\n}));"
+      },
+      "id": "92bda946-847a-4717-84cd-6a061ffa0c73",
+      "name": "Prepare Rules (Dynamic)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        33120,
+        2688
+      ]
+    },
+    {
+      "parameters": {
+        "options": {
+          "reset": false
+        }
+      },
+      "id": "fb2eaae1-6ef3-4e6f-8fb4-3860c6d75bda",
+      "name": "Loop Rules",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        33344,
+        2688
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://reactor.adobe.io/properties/{{ $('Merge Token & Credentials').item.json.credentials.PROPERTY_ID }}/rules",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $('Merge Token & Credentials').item.json.access_token }}"
+            },
+            {
+              "name": "x-api-key",
+              "value": "={{ $('Merge Token & Credentials').item.json.credentials.API_KEY }}"
+            },
+            {
+              "name": "x-gw-ims-org-id",
+              "value": "={{ $('Merge Token & Credentials').item.json.credentials.IMS_ORG }}"
+            },
+            {
+              "name": "Accept",
+              "value": "application/vnd.api+json;revision=1"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/vnd.api+json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"data\": {\n    \"type\": \"rules\",\n    \"attributes\": {\n      \"name\": \"{{ $json.ruleName }}\",\n      \"enabled\": true\n    }\n  }\n}",
+        "options": {}
+      },
+      "id": "acf8ca62-89e6-4442-b87d-bf712643845c",
+      "name": "Create Rule",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        33568,
+        2688
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extract rule ID and prepare rule components (Events, Conditions, Actions)\nconst ruleResult = $input.first().json;\nconst prevData = $('Loop Rules').first().json;\n\nconst ruleObj = JSON.parse(ruleResult.data);\nconst ruleId = ruleObj?.data.id;\n\nconst descriptorMapping = {\n  \"adobe-alloy/src/lib/actions/sendEvent.js\": \"adobe-alloy::actions::send-event\",\n  \"core/src/lib/events/click.js\": \"core::events::click\",\n  \"core/src/lib/events/libraryLoaded.js\": \"core::events::library-loaded\",\n  \"core/src/lib/events/domReady.js\": \"core::events::dom-ready\",\n  \"core/src/lib/conditions/customCode.js\": \"core::conditions::custom-code\"\n};\n\nif (!ruleId) {\n  throw new Error(`Rule creation failed (${prevData.ruleName}): ${JSON.stringify(ruleResult)}`);\n}\n\nconst components = [];\n\n// Events\n(prevData.ruleEvents || []).forEach((evt, idx) => {\n  components.push({\n    componentType: 'events',\n    order: idx,\n    modulePath: evt.modulePath,\n    extensionDescriptorId: descriptorMapping[evt.modulePath] || evt.modulePath,\n    extensionId: prevData.coreExtensionId,\n    settings: JSON.stringify(evt.settings || {}),\n    name: `Event ${idx + 1}`\n  });\n});\n\n// Conditions\n(prevData.ruleConditions || []).forEach((cond, idx) => {\n  components.push({\n    componentType: 'conditions',\n    order: idx,\n    modulePath: cond.modulePath,\n    extensionDescriptorId: descriptorMapping[cond.modulePath] || cond.modulePath,\n    extensionId: prevData.coreExtensionId,\n    settings: JSON.stringify(cond.settings || {}),\n    name: `Condition ${idx + 1}`,\n    negate: false\n  });\n});\n\n// Actions\n(prevData.ruleActions || []).forEach((act, idx) => {\n  const isAlloy = act.modulePath?.includes('alloy') || act.modulePath?.includes('adobe-alloy') || act.modulePath?.includes('adobe-alchemy');\n  components.push({\n    componentType: 'actions',\n    order: idx,\n    modulePath: act.modulePath,\n    extensionDescriptorId: descriptorMapping[act.modulePath] || act.modulePath,\n    extensionId: isAlloy ? prevData.alloyExtensionId : prevData.coreExtensionId,\n    settings: JSON.stringify(act.settings || {}),\n    name: `Action ${idx + 1}`\n  });\n});\n\nreturn components.map(comp => ({\n  json: { ...prevData, ruleId, component: comp }\n}));"
+      },
+      "id": "bf6d6474-d1d7-4262-a09e-f89ea37bde4f",
+      "name": "Prepare Components",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        33792,
+        2688
+      ]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "6696a3a2-a9d1-45d0-a1bc-53c523979de4",
+      "name": "Loop Components",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        34016,
+        2688
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://reactor.adobe.io/properties/{{ $json.credentials.PROPERTY_ID }}/rule_components",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $json.accessToken }}"
+            },
+            {
+              "name": "x-api-key",
+              "value": "={{ $json.credentials.API_KEY }}"
+            },
+            {
+              "name": "x-gw-ims-org-id",
+              "value": "={{ $json.credentials.IMS_ORG }}"
+            },
+            {
+              "name": "Accept",
+              "value": "application/vnd.api+json;revision=1"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/vnd.api+json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"data\": {\n    \"type\": \"rule_components\",\n    \"attributes\": {\n      \"name\": \"{{ $json.component.name }}\",\n      \"delegate_descriptor_id\": \"{{ $json.component.extensionDescriptorId }}\",\n      \"settings\": {{ JSON.stringify($json.component.settings) }},\n      \"order\": {{ $json.component.order }}\n    },\n    \"relationships\": {\n      \"extension\": {\n        \"data\": { \"id\": \"{{ $json.component.extensionId }}\", \"type\": \"extensions\" }\n      },\n      \"rules\": {\n        \"data\": [{ \"id\": \"{{ $json.ruleId }}\", \"type\": \"rules\" }]\n      }\n    }\n  }\n}",
+        "options": {}
+      },
+      "id": "2c45a2c9-cf28-4d81-bff5-f062e242b6b6",
+      "name": "Create Rule Component",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        34240,
+        2688
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "check-done",
+              "leftValue": "={{ $json.data }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "exists",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "e160f7a3-3604-4e7f-916d-4158824beba9",
+      "name": "Component Created?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        34464,
+        2904
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const credentials = {\n  accessToken: $('Merge Token & Credentials').first().json.access_token,\n  apiKey: $('Merge Token & Credentials').first().json.credentials.API_KEY,\n  imgOrg: $('Merge Token & Credentials').first().json.credentials.IMS_ORG\n};\n\nreturn [{\n  json: Object.assign(credentials, JSON.parse($('Create Rule').first().json.data))\n}];"
+      },
+      "id": "db9c34c7-4d3f-4994-9021-fb0d4fd60aa2",
+      "name": "Check Rule Setup",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        34240,
+        2496
+      ]
+    },
+    {
+      "parameters": {
+        "url": "=https://reactor.adobe.io/rules/{{ $json.data.id }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $json.accessToken }}"
+            },
+            {
+              "name": "x-api-key",
+              "value": "={{ $json.apiKey }}"
+            },
+            {
+              "name": "x-gw-ims-org-id",
+              "value": "={{ $json.imgOrg }}"
+            },
+            {
+              "name": "Accept",
+              "value": "application/vnd.api+json;revision=1"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/vnd.api+json"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "74ac8887-f992-4a78-8242-ac1f078745dd",
+      "name": "Verify Rule",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        34464,
+        2712
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nconst clientName = $('Validate Tags Input').first().json.clientName || 'Unknown';\n\nreturn [{\n  json: {\n    success: true,\n    clientName: clientName,\n    message: 'Adobe Launch Rules deployed successfully',\n    summary: {\n      rulesCreated: items.length,\n      componentsCreated: 'Events, Conditions, Actions included',\n    },\n    nextSteps: [\n      '1. Verify created rules in Adobe Launch UI',\n      '2. Create Library and build to Development environment',\n      '3. QA test all tracking events',\n      '4. Promote to Production after sign-off',\n    ],\n  }\n}];"
+      },
+      "id": "a06a8506-21ee-47eb-a9eb-02744b9f092f",
+      "name": "Final Summary",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        33568,
+        2496
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "05209399-97a5-482a-a513-972fa1cb3aab",
+      "name": "Log Error",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        34688,
+        2904
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Validate Tags Input').first().json.callbackUrl || 'http://host.docker.internal:3000/webhook/sdr-result' }}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ jobId: $('Validate Tags Input').first().json.jobId, status: 'step_tags_start', message: 'Adobe Launch Tags 생성 시작' }) }}",
+        "options": {
+          "timeout": 5000
+        }
+      },
+      "id": "progress-done-start-0012-000000000012",
+      "name": "Notify Done Start",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        31050,
+        2688
+      ],
+      "continueOnFail": true
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Parse SDR Output": {
+      "main": [
+        [
+          {
+            "node": "Set Credentials",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Notify Done Start": {
+      "main": [
+        []
+      ]
+    },
+    "Set Credentials": {
+      "main": [
+        [
+          {
+            "node": "Get IMS Access Token",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get IMS Access Token": {
+      "main": [
+        [
+          {
+            "node": "Merge Token & Credentials",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Token & Credentials": {
+      "main": [
+        [
+          {
+            "node": "Get Existing Extensions",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Existing Extensions": {
+      "main": [
+        [
+          {
+            "node": "Parse Extensions",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Extensions": {
+      "main": [
+        [
+          {
+            "node": "Prepare Rules (Dynamic)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Rules (Dynamic)": {
+      "main": [
+        [
+          {
+            "node": "Loop Rules",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Rules": {
+      "main": [
+        [
+          {
+            "node": "Final Summary",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Create Rule",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Rule": {
+      "main": [
+        [
+          {
+            "node": "Prepare Components",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Components": {
+      "main": [
+        [
+          {
+            "node": "Loop Components",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Components": {
+      "main": [
+        [
+          {
+            "node": "Check Rule Setup",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Create Rule Component",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Rule Component": {
+      "main": [
+        [
+          {
+            "node": "Component Created?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Component Created?": {
+      "main": [
+        [
+          {
+            "node": "Loop Components",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Log Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Rule Setup": {
+      "main": [
+        [
+          {
+            "node": "Verify Rule",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify Rule": {
+      "main": [
+        [
+          {
+            "node": "Loop Rules",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Final Summary": {
+      "main": [
+        [
+          {
+            "node": "Notify Tags Done",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook Trigger Tags": {
+      "main": [
+        [
+          {
+            "node": "Validate Tags Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Tags Input": {
+      "main": [
+        [
+          {
+            "node": "Respond Tags",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Parse SDR Output",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Notify Tags Done": {
+      "main": [
+        [
+          {
+            "node": "Respond Tags Final",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "tags-v2-0001-0001-000000000001",
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "id": "TAGS-V2",
+  "tags": [
+    {
+      "id": "tag-tags",
+      "name": "tags",
+      "createdAt": "2026-03-20T00:00:00.000Z",
+      "updatedAt": "2026-03-20T00:00:00.000Z"
+    }
+  ]
+}
