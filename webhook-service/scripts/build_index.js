@@ -253,6 +253,7 @@ const html = `<!DOCTYPE html>
     .alert.error   { background: rgba(239,68,68,0.09);  border: 1px solid var(--border-r); color: var(--red-l); }
     .alert.success { background: rgba(16,185,129,0.09); border: 1px solid var(--border-g); color: var(--green-l); }
     .alert.info    { background: rgba(59,130,246,0.09); border: 1px solid var(--border-b); color: var(--blue-l); }
+    .alert.warning  { background: rgba(245,158,11,0.09); border: 1px solid rgba(245,158,11,0.38); color: var(--amber-l); }
 
     /* ── PROGRESS ── */
     .progress-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; }
@@ -364,6 +365,55 @@ const html = `<!DOCTYPE html>
     .btn-stop:hover:not(:disabled) { background: rgba(239,68,68,0.1); }
     .btn-stop:disabled { opacity: 0.5; cursor: not-allowed; }
 
+    /* ── CANCEL MODAL ── */
+    .modal-overlay {
+      position: fixed; inset: 0; z-index: 9000;
+      background: rgba(0,0,0,0.6);
+      backdrop-filter: blur(4px);
+      display: flex; align-items: center; justify-content: center;
+      opacity: 0; pointer-events: none;
+      transition: opacity 0.18s ease;
+    }
+    .modal-overlay.open { opacity: 1; pointer-events: all; }
+    .modal-box {
+      background: var(--bg-2);
+      border: 1px solid var(--border-md);
+      border-radius: var(--r-lg);
+      padding: 28px 28px 24px;
+      width: 100%; max-width: 380px;
+      box-shadow: 0 24px 60px rgba(0,0,0,0.45);
+      transform: translateY(12px) scale(0.97);
+      transition: transform 0.18s ease;
+    }
+    .modal-overlay.open .modal-box { transform: translateY(0) scale(1); }
+    .modal-icon {
+      width: 44px; height: 44px; border-radius: 50%;
+      background: rgba(239,68,68,0.12);
+      border: 1px solid rgba(239,68,68,0.28);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px; margin-bottom: 16px;
+    }
+    .modal-title { font-size: 15px; font-weight: 800; color: var(--text); margin-bottom: 6px; }
+    .modal-desc  { font-size: 13px; color: var(--text-2); line-height: 1.6; margin-bottom: 22px; }
+    .modal-btns  { display: flex; gap: 10px; justify-content: flex-end; }
+    .modal-btn-cancel {
+      padding: 8px 18px; border-radius: var(--r-sm);
+      border: 1px solid var(--border-md); background: transparent;
+      color: var(--text-2); font-size: 13px; font-weight: 600;
+      cursor: pointer; font-family: inherit;
+      transition: background 0.15s, color 0.15s;
+    }
+    .modal-btn-cancel:hover { background: var(--bg-4); color: var(--text); }
+    .modal-btn-confirm {
+      padding: 8px 18px; border-radius: var(--r-sm);
+      border: 1px solid rgba(239,68,68,0.5);
+      background: rgba(239,68,68,0.1); color: var(--red-l);
+      font-size: 13px; font-weight: 700;
+      cursor: pointer; font-family: inherit;
+      transition: background 0.15s;
+    }
+    .modal-btn-confirm:hover { background: rgba(239,68,68,0.2); }
+
     @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
 
     @media (max-width: 620px) {
@@ -427,6 +477,7 @@ const html = `<!DOCTYPE html>
         </div>
       </div>
       <div id="sdr-error" class="alert error" style="display:none"><span>&#9888;</span><span id="sdr-errorMsg"></span></div>
+      <div id="sdr-warning" class="alert warning" style="display:none"><span>&#9888;</span><span id="sdr-warningMsg"></span></div>
       <div class="form-group">
         <label class="field-label">Select BRD File</label>
         <div class="drop-zone" id="sdr-dropZone">
@@ -516,6 +567,7 @@ const html = `<!DOCTYPE html>
         </div>
       </div>
       <div id="tsd-error" class="alert error" style="display:none"><span>&#9888;</span><span id="tsd-errorMsg"></span></div>
+      <div id="tsd-warning" class="alert warning" style="display:none"><span>&#9888;</span><span id="tsd-warningMsg"></span></div>
       <div id="tsd-sdrPill"></div>
       <div class="form-group">
         <label class="field-label" for="tsd-clientName">Client Name</label>
@@ -585,6 +637,7 @@ const html = `<!DOCTYPE html>
         </div>
       </div>
       <div id="tags-error" class="alert error" style="display:none"><span>&#9888;</span><span id="tags-errorMsg"></span></div>
+      <div id="tags-warning" class="alert warning" style="display:none"><span>&#9888;</span><span id="tags-warningMsg"></span></div>
       <div id="tags-sdrPill"></div>
       <div class="form-group">
         <label class="field-label" for="tags-clientName">Client Name</label>
@@ -716,20 +769,60 @@ function toggleN8nMode() {
 // ── Stop / cancel ─────────────────────────────────────────────────────────
 function showStopBtn(stage) {
   var btn = document.getElementById(stage + '-stopBtn');
-  if (btn) btn.style.display = 'block';
+  if (btn) { btn.style.display = 'block'; btn.disabled = false; btn.innerHTML = '&#9632; Stop'; }
 }
 function hideStopBtn(stage) {
   var btn = document.getElementById(stage + '-stopBtn');
   if (btn) btn.style.display = 'none';
 }
-async function cancelJob(stage) {
+
+// ── Cancel modal ──────────────────────────────────────────────────────────
+var _cancelStage = null;
+
+function openCancelModal(stage) {
+  _cancelStage = stage;
+  var overlay = document.getElementById('cancelModal');
+  if (overlay) overlay.classList.add('open');
+}
+
+function closeCancelModal() {
+  var overlay = document.getElementById('cancelModal');
+  if (overlay) overlay.classList.remove('open');
+  _cancelStage = null;
+}
+
+async function confirmCancel() {
+  var stage = _cancelStage;
+  closeCancelModal();
+  if (!stage) return;
+
   var jobId = state[stage].jobId;
   if (!jobId) return;
-  if (!confirm('Cancel this job?')) return;
-  try { await fetch('/jobs/' + jobId + '/cancel', { method: 'POST' }); } catch {}
-  finishStage(stage, 'failed', { error: 'Cancelled by user.' });
-  hideStopBtn(stage);
-  loadJobs();
+
+  var btn = document.getElementById(stage + '-stopBtn');
+  if (btn) { btn.innerHTML = '&#9203; Cancelling...'; btn.disabled = true; }
+
+  try {
+    var r = await fetch('/jobs/' + jobId + '/cancel', { method: 'POST' });
+    if (!r.ok) throw new Error('cancel request failed: ' + r.status);
+    var currentJobId = jobId;
+    setTimeout(function() {
+      if (state[stage].jobId === currentJobId) {
+        finishStage(stage, 'cancelled', { error: 'Cancelled by user.' });
+        loadJobs();
+      }
+    }, 3000);
+  } catch (e) {
+    finishStage(stage, 'cancelled', { error: 'Cancelled by user.' });
+    hideStopBtn(stage);
+    loadJobs();
+  }
+}
+
+function cancelJob(stage) {
+  var jobId = state[stage].jobId;
+  if (!jobId) return;
+  openCancelModal(stage);
 }
 
 // ── Init ─────────────────────────────────────────────────────────────────
@@ -745,6 +838,18 @@ document.addEventListener('DOMContentLoaded', () => {
   loadN8nMode();
   var n8nBtn = document.getElementById('n8nModeToggle');
   if (n8nBtn) n8nBtn.addEventListener('click', toggleN8nMode);
+  // Cancel modal
+  var modalNo  = document.getElementById('cancelModalNo');
+  var modalYes = document.getElementById('cancelModalYes');
+  if (modalNo)  modalNo.addEventListener('click', closeCancelModal);
+  if (modalYes) modalYes.addEventListener('click', confirmCancel);
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') closeCancelModal();
+  });
+  var cancelOverlay = document.getElementById('cancelModal');
+  if (cancelOverlay) cancelOverlay.addEventListener('click', function(e) {
+    if (e.target === cancelOverlay) closeCancelModal();
+  });
   loadJobs();
   setupDropZone('sdr');
   loadSdrDataToTabs();
@@ -882,6 +987,7 @@ async function loadSheets(base64, tab) {
 // ── Trigger stages ────────────────────────────────────────────────────────
 async function triggerStage(stage) {
   showErr(stage, null);
+  hideWarning(stage);
   const clientName = (document.getElementById(stage + '-clientName').value || '').trim();
   if (!clientName) { showErr(stage, 'Please enter a client name.'); return; }
 
@@ -910,6 +1016,7 @@ async function triggerStage(stage) {
   document.getElementById(stage + '-result').classList.remove('show');
   setStep(stage, 'trigger', 'active');
   startTimer(stage);
+  showStopBtn(stage);
 
   const endpoints = { sdr: '/trigger/sdr', tsd: '/trigger/tsd', tags: '/trigger/tags' };
   try {
@@ -959,6 +1066,7 @@ function handleJobUpdate(stage, job) {
       if      (s.status === 'completed') setStep(stage, s.name, 'done');
       else if (s.status === 'active')    setStep(stage, s.name, 'active');
       else if (s.status === 'failed')    setStep(stage, s.name, 'error');
+      else if (s.status === 'cancelled') setStep(stage, s.name, 'cancelled');
     });
     // Fallback: 모든 step이 completed인데 job.status가 아직 'processing'이면 완료 처리
     if (job.status === 'processing' && job.steps.length > 0 && job.steps.every(s => s.status === 'completed')) {
@@ -973,6 +1081,9 @@ function handleJobUpdate(stage, job) {
   } else if (job.status === 'failed') {
     finishStage(stage, 'failed', job);
     loadJobs();
+  } else if (job.status === 'cancelled') {
+    finishStage(stage, 'cancelled', job);
+    loadJobs();
   }
 }
 
@@ -981,7 +1092,18 @@ function finishStage(stage, outcome, job) {
   if (state[stage].sse) { state[stage].sse.close(); state[stage].sse = null; }
   stopTimer(stage);
   setBtn(stage, false);
+  hideStopBtn(stage);
   if (outcome === 'done') showResult(stage, job);
+  else if (outcome === 'cancelled') {
+    var pane = document.getElementById('tab-' + stage);
+    if (pane) {
+      pane.querySelectorAll('.step-item.active, .step-item.idle').forEach(function(el) {
+        var name = el.id.replace(stage + '-step-', '');
+        setStep(stage, name, 'cancelled');
+      });
+    }
+    showWarning(stage, '작업이 취소되었습니다.');
+  }
   else showErr(stage, (job && job.error) || 'An error occurred during processing.');
 }
 
@@ -1100,13 +1222,15 @@ function setStep(stage, name, cls) {
   if (num) {
     if (cls === 'done')        num.textContent = '✓';
     else if (cls === 'active') num.textContent = '●';
-    else if (cls === 'error')  num.textContent = '✕';
-    else                       num.textContent = num.getAttribute('data-num') || '';
+    else if (cls === 'error')     num.textContent = '✕';
+    else if (cls === 'cancelled') num.textContent = '◌';
+    else                          num.textContent = num.getAttribute('data-num') || '';
   }
   if (tag) {
     if (cls === 'done')        tag.textContent = '✓ Done';
     else if (cls === 'active') tag.textContent = '⬤ Running...';
     else if (cls === 'error')  tag.textContent = '✕ Failed';
+    else if (cls === 'cancelled') tag.textContent = '◌ Cancelled';
     else                       tag.textContent = '○ Waiting';
   }
 }
@@ -1143,6 +1267,19 @@ function showErr(stage, msg) {
   } else {
     errEl.style.display = 'none';
   }
+}
+
+function showWarning(stage, msg) {
+  var el    = document.getElementById(stage + '-warning');
+  var msgEl = document.getElementById(stage + '-warningMsg');
+  if (!el) return;
+  msgEl.textContent = msg || '작업이 취소되었습니다.';
+  el.style.display = 'flex';
+}
+
+function hideWarning(stage) {
+  var el = document.getElementById(stage + '-warning');
+  if (el) el.style.display = 'none';
 }
 
 function startTimer(stage) {

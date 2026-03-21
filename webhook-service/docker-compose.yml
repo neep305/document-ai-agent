@@ -9,6 +9,23 @@ services:
     environment:
       - NODE_ENV=production
       - PORT=3000
+      # n8n webhook URLs
+      - N8N_WEBHOOK_URL=${N8N_WEBHOOK_URL}
+      - N8N_SDR_WEBHOOK_URL=${N8N_SDR_WEBHOOK_URL}
+      - N8N_TSD_WEBHOOK_URL=${N8N_TSD_WEBHOOK_URL}
+      - N8N_TAGS_WEBHOOK_URL=${N8N_TAGS_WEBHOOK_URL}
+      # n8n API — Stop/Cancel 기능에 필수
+      - N8N_API_KEY=${N8N_API_KEY}
+      - N8N_API_BASE_URL=${N8N_API_BASE_URL:-http://host.docker.internal:5678}
+      # n8n Basic Auth — public API 404 시 내부 REST API fallback 인증
+      - N8N_BASIC_AUTH_USER=${N8N_BASIC_AUTH_USER}
+      - N8N_BASIC_AUTH_PASSWORD=${N8N_BASIC_AUTH_PASSWORD}
+      # Callback host (컨테이너 안에서 호스트 주소)
+      - CALLBACK_HOST=${CALLBACK_HOST:-host.docker.internal}
+      # Excel sheet names
+      - SHEET_NAME_EVARS=${SHEET_NAME_EVARS:-eVars}
+      - SHEET_NAME_PROPS=${SHEET_NAME_PROPS:-props}
+      - SHEET_NAME_EVENTS=${SHEET_NAME_EVENTS:-custom events (metrics)}
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"]
