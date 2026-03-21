@@ -20,7 +20,10 @@
     },
     {
       "parameters": {
-        "jsCode": "const input = $input.first().json;\nconst body = input.body || input;\nconst jobId = body.jobId || ('tsd-' + Date.now() + '-' + Math.random().toString(36).substr(2, 8));\nconst clientName = body.clientName;\nconst sdrData = body.sdrData || body.sdr;\nconst callbackUrl = body.callbackUrl || null;\n\nif (!clientName || !sdrData) throw new Error('Missing required fields: clientName, sdrData');\nif (!sdrData.evars || !sdrData.props || !sdrData.events) {\n  throw new Error('sdrData must contain evars, props, and events');\n}\n\nconsole.log('=== TSD Job ===');\nconsole.log('Job ID:', jobId);\nconsole.log('Client:', clientName);\nconsole.log('eVars:', sdrData.evars.length, 'Props:', sdrData.props.length, 'Events:', sdrData.events.length);\n\nreturn [{ json: { jobId, clientName, sdrData, callbackUrl, jobStartedAt: new Date().toISOString() } }];"
+        "jsCode": "const input = $input.first().json;\nconst body = input.body || input;\nconst jobId = body.jobId || ('tsd-' + Date.now() + '-' + Math.random().toString(36).substr(2, 8));\nconst clientName = body.clientName;\nconst sdrData = body.sdrData || body.sdr;\nconst callbackUrl = body.callbackUrl || null;\n\nif (!clientName || !sdrData) throw new Error('Missing required fields: clientName, sdrData');\nif (!sdrData.evars || !sdrData.props || !sdrData.events) {\n  throw new Error('sdrData must contain evars, props, and events');\n}\n\nconsole.log('=== TSD Job ===');\nconsole.log('Job ID:', jobId);\nconsole.log('Client:', clientName);\nconsole.log('eVars:', sdrData.evars.length, 'Props:', sdrData.props.length, 'Events:', sdrData.events.length);\n\nreturn [{ json: { jobId, clientName, sdrData, callbackUrl, jobStartedAt: new Date().toISOString() } }];",
+        "options": {
+          "continueOnFail": true
+        }
       },
       "id": "22222222-2222-2222-2222-222222222222",
       "name": "Validate TSD Input",
@@ -34,7 +37,7 @@
     {
       "parameters": {
         "respondWith": "json",
-        "responseBody": "={{ JSON.stringify({ success: true, jobId: $('Validate TSD Input').first().json.jobId, message: 'TSD 생성이 시작되었습니다.' }) }}",
+        "responseBody": "={{ JSON.stringify({ success: true, jobId: $('Validate TSD Input').first().json.jobId, executionId: $execution.id, message: 'TSD 생성이 시작되었습니다.' }) }}",
         "options": {}
       },
       "id": "22222222-2222-2222-2222-222222222223",
@@ -65,7 +68,7 @@
         "url": "={{ $('Validate TSD Input').first().json.callbackUrl || 'http://host.docker.internal:3000/webhook/sdr-result' }}",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ jobId: $('Validate TSD Input').first().json.jobId, status: 'failed', error: $json.error?.message || 'TSD generation failed', failedAt: new Date().toISOString() }) }}",
+        "jsonBody": "={{ JSON.stringify({ jobId: $('Validate TSD Input').first().json.jobId, executionId: $execution.id, status: 'failed', error: $json.error?.message || 'TSD generation failed', failedAt: new Date().toISOString() }) }}",
         "options": {
           "timeout": 10000
         }
@@ -200,7 +203,8 @@
       "position": [
         30080,
         2592
-      ]
+      ],
+      "onError": "continueErrorOutput"
     },
     {
       "parameters": {
@@ -232,7 +236,10 @@
     },
     {
       "parameters": {
-        "jsCode": "\n// ── Merge TSD JS (Part 1) + TSD Doc (Part 2) ─────────────────────────\n// Handles both output formats:\n//   A) json.output = string (standard Agent node output)\n//   B) json.output = object (Structured Output Parser result)\n//   C) json itself = the parsed object (Structured Output Parser direct)\n\nfunction getAgentOutput(nodeName) {\n  const nodeJson = $(nodeName).first().json;\n  const raw = nodeJson.output;\n\n  // Case A: output is a JSON string — most common\n  if (typeof raw === 'string') return raw;\n\n  // Case B: output is an already-parsed object (Structured Output Parser)\n  if (raw !== null && raw !== undefined && typeof raw === 'object') {\n    return JSON.stringify(raw);\n  }\n\n  // Case C: output missing — the parsed fields ARE the json (SOP direct result)\n  // Strip internal n8n fields and return remaining as JSON\n  const clone = Object.assign({}, nodeJson);\n  delete clone.sessionId;\n  delete clone.action;\n  if (Object.keys(clone).length > 0) return JSON.stringify(clone);\n\n  return '{}';\n}\n\nfunction safeParse(raw) {\n  // raw is always a string here (from getAgentOutput)\n  try {\n    const m = raw.match(/\\{[\\s\\S]*\\}/);\n    return m ? JSON.parse(m[0]) : JSON.parse(raw);\n  } catch(e) {\n    console.warn('⚠️ safeParse failed:', e.message, '| snippet:', raw.slice(0, 120));\n    return {};\n  }\n}\n\nconst rawJS  = getAgentOutput('TSD JS Agent');\nconst rawDoc = getAgentOutput('TSD Doc Agent');\n\nconsole.log('rawJS type:', typeof rawJS,  '| length:', rawJS.length);\nconsole.log('rawDoc type:', typeof rawDoc, '| length:', rawDoc.length);\n\nconst part1 = safeParse(rawJS);\nconst part2 = safeParse(rawDoc);\nconst clientName = $('Prepare TSD Input').first().json.body?.[0]?.clientName || 'Unknown';\n\nif (!part1.javascript) console.warn('⚠️ TSD JS missing — part1 keys:', Object.keys(part1).join(','));\nif (!part2.markdown)   console.warn('⚠️ TSD Doc missing — part2 keys:', Object.keys(part2).join(','));\n\nconst merged = {\n  output: JSON.stringify({\n    clientName,\n    javascript:    part1.javascript    || '// TSD JS generation failed',\n    markdown:      part2.markdown      || '# TSD Doc generation failed',\n    launchPayload: part2.launchPayload || { property_info:{}, extensions:[], rules:[] }\n  })\n};\n\nconsole.log('=== Merge TSD Parts ===');\nconsole.log('JS size:',       (part1.javascript    || '').length, 'chars');\nconsole.log('Markdown size:', (part2.markdown      || '').length, 'chars');\nconsole.log('Rules count:',   (part2.launchPayload?.rules || []).length);\n\nreturn [{ json: merged }];\n"
+        "jsCode": "\n// ── Merge TSD JS (Part 1) + TSD Doc (Part 2) ─────────────────────────\n// Handles both output formats:\n//   A) json.output = string (standard Agent node output)\n//   B) json.output = object (Structured Output Parser result)\n//   C) json itself = the parsed object (Structured Output Parser direct)\n\nfunction getAgentOutput(nodeName) {\n  const nodeJson = $(nodeName).first().json;\n  const raw = nodeJson.output;\n\n  // Case A: output is a JSON string — most common\n  if (typeof raw === 'string') return raw;\n\n  // Case B: output is an already-parsed object (Structured Output Parser)\n  if (raw !== null && raw !== undefined && typeof raw === 'object') {\n    return JSON.stringify(raw);\n  }\n\n  // Case C: output missing — the parsed fields ARE the json (SOP direct result)\n  // Strip internal n8n fields and return remaining as JSON\n  const clone = Object.assign({}, nodeJson);\n  delete clone.sessionId;\n  delete clone.action;\n  if (Object.keys(clone).length > 0) return JSON.stringify(clone);\n\n  return '{}';\n}\n\nfunction safeParse(raw) {\n  // raw is always a string here (from getAgentOutput)\n  try {\n    const m = raw.match(/\\{[\\s\\S]*\\}/);\n    return m ? JSON.parse(m[0]) : JSON.parse(raw);\n  } catch(e) {\n    console.warn('⚠️ safeParse failed:', e.message, '| snippet:', raw.slice(0, 120));\n    return {};\n  }\n}\n\nconst rawJS  = getAgentOutput('TSD JS Agent');\nconst rawDoc = getAgentOutput('TSD Doc Agent');\n\nconsole.log('rawJS type:', typeof rawJS,  '| length:', rawJS.length);\nconsole.log('rawDoc type:', typeof rawDoc, '| length:', rawDoc.length);\n\nconst part1 = safeParse(rawJS);\nconst part2 = safeParse(rawDoc);\nconst clientName = $('Prepare TSD Input').first().json.body?.[0]?.clientName || 'Unknown';\n\nif (!part1.javascript) console.warn('⚠️ TSD JS missing — part1 keys:', Object.keys(part1).join(','));\nif (!part2.markdown)   console.warn('⚠️ TSD Doc missing — part2 keys:', Object.keys(part2).join(','));\n\nconst merged = {\n  output: JSON.stringify({\n    clientName,\n    javascript:    part1.javascript    || '// TSD JS generation failed',\n    markdown:      part2.markdown      || '# TSD Doc generation failed',\n    launchPayload: part2.launchPayload || { property_info:{}, extensions:[], rules:[] }\n  })\n};\n\nconsole.log('=== Merge TSD Parts ===');\nconsole.log('JS size:',       (part1.javascript    || '').length, 'chars');\nconsole.log('Markdown size:', (part2.markdown      || '').length, 'chars');\nconsole.log('Rules count:',   (part2.launchPayload?.rules || []).length);\n\nreturn [{ json: merged }];\n",
+        "options": {
+          "continueOnFail": true
+        }
       },
       "id": "433ae7a1-8dc4-441d-b190-50ef99730b19",
       "name": "Merge TSD Parts",
@@ -245,7 +252,10 @@
     },
     {
       "parameters": {
-        "jsCode": "// Parse TSD Agent output (2-3 files: JavaScript, Markdown, optional Launch Payload)\n// input.output is a JSON STRING from Merge TSD Parts — must parse before accessing fields\nconst input = $input.first().json;\n\n// ── Robust output extraction ─────────────────────────────────────\nlet tsdOutput;\n\nif (typeof input.output === 'string') {\n  // Standard case: Merge TSD Parts returns output as JSON string\n  try {\n    const m = input.output.match(/\\{[\\s\\S]*\\}/);\n    tsdOutput = m ? JSON.parse(m[0]) : JSON.parse(input.output);\n  } catch(e) {\n    throw new Error('Failed to parse Merge TSD Parts output JSON: ' + e.message + ' | snippet: ' + input.output.slice(0, 200));\n  }\n} else if (input.output && typeof input.output === 'object') {\n  // Already an object (e.g. Structured Output Parser result)\n  tsdOutput = input.output;\n} else {\n  // Fallback: input itself may be the TSD data\n  tsdOutput = input;\n}\n\n// ── Validate required fields ─────────────────────────────────────\nconst clientName = tsdOutput.clientName || input.clientName;\nif (!clientName) {\n  throw new Error('TSD output missing clientName field. Keys found: ' + Object.keys(tsdOutput).join(', '));\n}\n\nif (!tsdOutput.javascript || !tsdOutput.markdown) {\n  const missing = [!tsdOutput.javascript && 'javascript', !tsdOutput.markdown && 'markdown'].filter(Boolean).join(', ');\n  throw new Error('TSD output missing required fields: ' + missing + '. Keys found: ' + Object.keys(tsdOutput).join(', '));\n}\n\nconst hasLaunchPayload = !!tsdOutput.launchPayload;\nif (!hasLaunchPayload) {\n  console.warn('WARNING: launchPayload not found in TSD output - operating in 2-file mode');\n}\n\nconst timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);\nconst jsFilename = clientName + '_adobeDataLayer_' + timestamp + '.js';\nconst mdFilename = clientName + '_TSD_' + timestamp + '.md';\nconst launchFilename = clientName + '_LaunchPayload_' + timestamp + '.json';\n\nconst launchPayloadStr = typeof tsdOutput.launchPayload === 'string'\n  ? tsdOutput.launchPayload\n  : JSON.stringify(tsdOutput.launchPayload, null, 2);\n\nconsole.log('=== Parse TSD Output (' + (hasLaunchPayload ? '3' : '2') + ' Files) ===');\nconsole.log('Client:', clientName);\nconsole.log('JavaScript size:', tsdOutput.javascript.length);\nconsole.log('Markdown size:', tsdOutput.markdown.length);\nif (hasLaunchPayload) console.log('Launch Payload size:', launchPayloadStr.length);\n\nreturn [{\n  json: {\n    clientName: clientName,\n    files: {\n      javascript: { filename: jsFilename, content: tsdOutput.javascript, size: tsdOutput.javascript.length, type: 'application/javascript' },\n      markdown:   { filename: mdFilename, content: tsdOutput.markdown,   size: tsdOutput.markdown.length,   type: 'text/markdown' },\n      ...(hasLaunchPayload && {\n        launchPayload: { filename: launchFilename, content: launchPayloadStr, size: launchPayloadStr.length, type: 'application/json' }\n      })\n    },\n    stats: {\n      jsLines: tsdOutput.javascript.split('\\n').length,\n      mdLines: tsdOutput.markdown.split('\\n').length,\n      ...(hasLaunchPayload && { launchRulesCount: (tsdOutput.launchPayload.rules || []).length }),\n      generatedAt: new Date().toISOString()\n    }\n  }\n}];\n"
+        "jsCode": "// Parse TSD Agent output (2-3 files: JavaScript, Markdown, optional Launch Payload)\n// input.output is a JSON STRING from Merge TSD Parts — must parse before accessing fields\nconst input = $input.first().json;\n\n// ── Robust output extraction ─────────────────────────────────────\nlet tsdOutput;\n\nif (typeof input.output === 'string') {\n  // Standard case: Merge TSD Parts returns output as JSON string\n  try {\n    const m = input.output.match(/\\{[\\s\\S]*\\}/);\n    tsdOutput = m ? JSON.parse(m[0]) : JSON.parse(input.output);\n  } catch(e) {\n    throw new Error('Failed to parse Merge TSD Parts output JSON: ' + e.message + ' | snippet: ' + input.output.slice(0, 200));\n  }\n} else if (input.output && typeof input.output === 'object') {\n  // Already an object (e.g. Structured Output Parser result)\n  tsdOutput = input.output;\n} else {\n  // Fallback: input itself may be the TSD data\n  tsdOutput = input;\n}\n\n// ── Validate required fields ─────────────────────────────────────\nconst clientName = tsdOutput.clientName || input.clientName;\nif (!clientName) {\n  throw new Error('TSD output missing clientName field. Keys found: ' + Object.keys(tsdOutput).join(', '));\n}\n\nif (!tsdOutput.javascript || !tsdOutput.markdown) {\n  const missing = [!tsdOutput.javascript && 'javascript', !tsdOutput.markdown && 'markdown'].filter(Boolean).join(', ');\n  throw new Error('TSD output missing required fields: ' + missing + '. Keys found: ' + Object.keys(tsdOutput).join(', '));\n}\n\nconst hasLaunchPayload = !!tsdOutput.launchPayload;\nif (!hasLaunchPayload) {\n  console.warn('WARNING: launchPayload not found in TSD output - operating in 2-file mode');\n}\n\nconst timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);\nconst jsFilename = clientName + '_adobeDataLayer_' + timestamp + '.js';\nconst mdFilename = clientName + '_TSD_' + timestamp + '.md';\nconst launchFilename = clientName + '_LaunchPayload_' + timestamp + '.json';\n\nconst launchPayloadStr = typeof tsdOutput.launchPayload === 'string'\n  ? tsdOutput.launchPayload\n  : JSON.stringify(tsdOutput.launchPayload, null, 2);\n\nconsole.log('=== Parse TSD Output (' + (hasLaunchPayload ? '3' : '2') + ' Files) ===');\nconsole.log('Client:', clientName);\nconsole.log('JavaScript size:', tsdOutput.javascript.length);\nconsole.log('Markdown size:', tsdOutput.markdown.length);\nif (hasLaunchPayload) console.log('Launch Payload size:', launchPayloadStr.length);\n\nreturn [{\n  json: {\n    clientName: clientName,\n    files: {\n      javascript: { filename: jsFilename, content: tsdOutput.javascript, size: tsdOutput.javascript.length, type: 'application/javascript' },\n      markdown:   { filename: mdFilename, content: tsdOutput.markdown,   size: tsdOutput.markdown.length,   type: 'text/markdown' },\n      ...(hasLaunchPayload && {\n        launchPayload: { filename: launchFilename, content: launchPayloadStr, size: launchPayloadStr.length, type: 'application/json' }\n      })\n    },\n    stats: {\n      jsLines: tsdOutput.javascript.split('\\n').length,\n      mdLines: tsdOutput.markdown.split('\\n').length,\n      ...(hasLaunchPayload && { launchRulesCount: (tsdOutput.launchPayload.rules || []).length }),\n      generatedAt: new Date().toISOString()\n    }\n  }\n}];\n",
+        "options": {
+          "continueOnFail": true
+        }
       },
       "id": "f56d11fa-008b-40d0-85ec-76b231aca6a9",
       "name": "Parse TSD Output",
@@ -259,7 +269,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "={{ $('Set Webhook Config').first().json.DOCX_WEBHOOK_URL }}",
+        "url": "http://host.docker.internal:3000/generate-tsd",
         "sendBody": true,
         "bodyParameters": {
           "parameters": [
@@ -419,7 +429,7 @@
         "url": "={{ $('Validate TSD Input').first().json.callbackUrl || 'http://host.docker.internal:3000/webhook/sdr-result' }}",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ jobId: $('Validate TSD Input').first().json.jobId, status: 'step_tsd_done', message: 'TSD 문서 생성 완료' }) }}",
+        "jsonBody": "={{ JSON.stringify({  jobId: $('Validate TSD Input').first().json.jobId,  executionId: $execution.id,  status: 'completed',  clientName: $('Validate TSD Input').first().json.clientName,  completedAt: new Date().toISOString(),  googleDrive: $('Collect Upload Results').first().json.googleDrive,  totalFiles: $('Collect Upload Results').first().json.totalFiles,  hasLaunchPayload: $('Collect Upload Results').first().json.hasLaunchPayload,  message: $('Collect Upload Results').first().json.message}) }}",
         "options": {
           "timeout": 5000
         }
@@ -437,10 +447,10 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "={{ $('Generate Job ID').first().json.callbackUrl || 'http://host.docker.internal:3000/webhook/sdr-result' }}",
+        "url": "={{ $('Validate TSD Input').first().json.callbackUrl || 'http://host.docker.internal:3000/webhook/sdr-result' }}",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ jobId: $('Generate Job ID').first().json.jobId, status: 'step_tsd_start', message: 'TSD 문서 생성 시작' }) }}",
+        "jsonBody": "={{ JSON.stringify({ jobId: $('Validate TSD Input').first().json.jobId, executionId: $execution.id, status: 'step_tsd_start', message: 'TSD 문서 생성 시작' }) }}",
         "options": {
           "timeout": 5000
         }
@@ -465,91 +475,84 @@
         34688,
         2904
       ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "tsd-cfg-asgn-0001",
+              "name": "DOCX_WEBHOOK_URL",
+              "value": "http://host.docker.internal:3000/generate-tsd",
+              "type": "string"
+            },
+            {
+              "id": "tsd-cfg-asgn-0002",
+              "name": "clientName",
+              "value": "={{ $json.body.clientName }}",
+              "type": "string"
+            },
+            {
+              "id": "tsd-cfg-asgn-0003",
+              "name": "sdrData",
+              "value": "={{ $json.body.sdrData }}",
+              "type": "object"
+            },
+            {
+              "id": "tsd-cfg-asgn-0004",
+              "name": "callbackUrl",
+              "value": "={{ $json.body.callbackUrl }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "tsd-cfg-0001-0001-0001-000000000001",
+      "name": "Set Webhook Config",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        400,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "share",
+        "fileId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ .id }}"
+        },
+        "permissionsUi": {
+          "permissionsValues": {
+            "role": "reader",
+            "type": "anyone",
+            "allowFileDiscovery": false
+          }
+        },
+        "options": {}
+      },
+      "id": "perm-tsd-file-0001-0001-000000000001",
+      "name": "Make TSD File Public",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        31664,
+        2688
+      ],
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "AYG1qOCT9TIoQ4ia",
+          "name": "Google Drive account"
+        }
+      },
+      "continueOnFail": true
     }
   ],
   "pinData": {},
   "connections": {
-    "Prepare TSD Input": {
-      "main": [
-        [
-          {
-            "node": "Wait 35s (pre-TSD TPM)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Parse TSD Output": {
-      "main": [
-        [
-          {
-            "node": "Generate TSD DOCX",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "Create TSD Folder",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Create TSD Folder": {
-      "main": [
-        [
-          {
-            "node": "Create Client Folder",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Create Client Folder": {
-      "main": [
-        [
-          {
-            "node": "Notify Step TSD Done",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Notify Step TSD Done": {
-      "main": [
-        []
-      ]
-    },
-    "Split Files for Upload": {
-      "main": [
-        [
-          {
-            "node": "Upload to Google Drive",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Upload to Google Drive": {
-      "main": [
-        [
-          {
-            "node": "Collect Upload Results",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Collect Upload Results": {
-      "main": [
-        []
-      ]
-    },
     "Azure OpenAI - TSD JS": {
       "ai_languageModel": [
         [
@@ -583,6 +586,95 @@
         ]
       ]
     },
+    "Azure OpenAI - TSD Doc": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "TSD Doc Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook Trigger TSD": {
+      "main": [
+        [
+          {
+            "node": "Set Webhook Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Webhook Config": {
+      "main": [
+        [
+          {
+            "node": "Validate TSD Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate TSD Input": {
+      "main": [
+        [
+          {
+            "node": "Respond TSD",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Notify TSD Start",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Notify TSD Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Notify TSD Start": {
+      "main": [
+        [
+          {
+            "node": "Prepare TSD Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare TSD Input": {
+      "main": [
+        [
+          {
+            "node": "Wait 35s (pre-TSD TPM)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait 35s (pre-TSD TPM)": {
+      "main": [
+        [
+          {
+            "node": "TSD JS Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
     "TSD JS Agent": {
       "main": [
         [
@@ -592,7 +684,13 @@
             "index": 0
           }
         ],
-        []
+        [
+          {
+            "node": "Notify TSD Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "Wait 30s (TSD TPM buffer)": {
@@ -614,6 +712,13 @@
             "type": "main",
             "index": 0
           }
+        ],
+        [
+          {
+            "node": "Notify TSD Error",
+            "type": "main",
+            "index": 0
+          }
         ]
       ]
     },
@@ -625,63 +730,121 @@
             "type": "main",
             "index": 0
           }
-        ]
-      ]
-    },
-    "Azure OpenAI - TSD Doc": {
-      "ai_languageModel": [
+        ],
         [
           {
-            "node": "TSD Doc Agent",
-            "type": "ai_languageModel",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Wait 35s (pre-TSD TPM)": {
-      "main": [
-        [
-          {
-            "node": "TSD JS Agent",
+            "node": "Notify TSD Error",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Notify TSD Start": {
+    "Parse TSD Output": {
       "main": [
         [
           {
-            "node": "Prepare TSD Input",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Webhook Trigger TSD": {
-      "main": [
-        [
-          {
-            "node": "Validate TSD Input",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Validate TSD Input": {
-      "main": [
-        [
-          {
-            "node": "Respond TSD",
+            "node": "Generate TSD DOCX",
             "type": "main",
             "index": 0
           },
           {
-            "node": "Prepare TSD Input",
+            "node": "Create TSD Folder",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Notify TSD Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate TSD DOCX": {
+      "main": [
+        [
+          {
+            "node": "Split Files for Upload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create TSD Folder": {
+      "main": [
+        [
+          {
+            "node": "Create Client Folder",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Client Folder": {
+      "main": [
+        [
+          {
+            "node": "Split Files for Upload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Files for Upload": {
+      "main": [
+        [
+          {
+            "node": "Upload to Google Drive",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload to Google Drive": {
+      "main": [
+        [
+          {
+            "node": "Make TSD File Public",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Collect Upload Results": {
+      "main": [
+        [
+          {
+            "node": "Notify Step TSD Done",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Notify TSD Error": {
+      "main": [
+        [
+          {
+            "node": "Log Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Make TSD File Public": {
+      "main": [
+        [
+          {
+            "node": "Collect Upload Results",
             "type": "main",
             "index": 0
           }
