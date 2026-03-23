@@ -405,6 +405,68 @@
     }
     .modal-btn-confirm:hover { background: rgba(239,68,68,0.2); }
 
+    /* ── SDR DATA LOAD ── */
+    .sdr-load-actions { display: flex; gap: 8px; margin-bottom: 10px; }
+    .btn-load {
+      display: flex; align-items: center; gap: 6px; padding: 7px 13px;
+      border: 1px solid var(--border-md); border-radius: var(--r-sm);
+      background: var(--bg-3); color: var(--text-2); font-size: 12px; font-weight: 700;
+      cursor: pointer; font-family: inherit; transition: all 0.18s;
+    }
+    .btn-load:hover { background: var(--bg-4); color: var(--text); border-color: var(--border-b); }
+    .btn-load:disabled { opacity: 0.4; cursor: not-allowed; }
+    .btn-load .ld-spin { display: none; animation: spin 0.8s linear infinite; }
+    .btn-load.loading .ld-spin  { display: inline; }
+    .btn-load.loading .ld-icon  { display: none; }
+
+    .sdr-drive-panel {
+      display: none; background: var(--bg-3); border: 1px solid var(--border-md);
+      border-radius: var(--r); padding: 12px 14px; margin-bottom: 10px;
+    }
+    .sdr-drive-panel.open { display: block; }
+    .sdr-drive-row { display: flex; gap: 8px; align-items: stretch; }
+    .sdr-drive-row input { flex: 1; }
+    .sdr-drive-hint { font-size: 11px; color: var(--text-3); margin-top: 6px; }
+    .sdr-drive-hint a { color: var(--blue-l); text-decoration: none; }
+
+    /* ── VALIDATION BANNER ── */
+    .validation-banner {
+      display: none; align-items: flex-start; gap: 10px; padding: 10px 13px;
+      border-radius: var(--r); font-size: 12px; line-height: 1.6; margin-top: 8px;
+      border: 1px solid;
+    }
+    .validation-banner.show { display: flex; }
+    .validation-banner.valid   { background: rgba(16,185,129,0.07); border-color: var(--border-g); color: var(--green-l); }
+    .validation-banner.invalid { background: rgba(239,68,68,0.07);  border-color: var(--border-r); color: var(--red-l); }
+    .validation-banner.warning { background: rgba(245,158,11,0.07); border-color: rgba(245,158,11,0.38); color: var(--amber-l); }
+    .vb-icon { font-size: 15px; flex-shrink: 0; margin-top: 1px; }
+    .vb-body { flex: 1; }
+    .vb-title { font-weight: 700; }
+    .vb-issues { margin-top: 5px; padding-left: 16px; }
+    .vb-issues li { margin-top: 2px; }
+
+    /* ── LOCAL FILE CARDS ── */
+    .local-file-card {
+      display: flex; align-items: center; gap: 12px; padding: 10px 13px;
+      border-radius: var(--r); border: 1px solid rgba(245,158,11,0.22);
+      background: rgba(245,158,11,0.05); margin-bottom: 8px;
+    }
+    .local-file-card .lf-icon { font-size: 19px; flex-shrink: 0; }
+    .local-file-card .lf-meta { flex: 1; }
+    .local-file-card .lf-name { font-size: 13px; font-weight: 600; color: var(--text); word-break: break-all; }
+    .local-file-card .lf-type { font-size: 10px; font-weight: 700; letter-spacing: 0.05em; color: var(--amber-l); margin-top: 2px; }
+    .local-file-card .lf-size { font-size: 11px; color: var(--text-3); margin-top: 1px; }
+    .btn-dl {
+      flex-shrink: 0; display: flex; align-items: center; gap: 5px;
+      padding: 6px 12px; border-radius: var(--r-sm);
+      border: 1px solid rgba(245,158,11,0.4); background: rgba(245,158,11,0.08);
+      color: var(--amber-l); font-size: 12px; font-weight: 700;
+      cursor: pointer; font-family: inherit; text-decoration: none; transition: background 0.15s;
+    }
+    .btn-dl:hover { background: rgba(245,158,11,0.16); }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
     @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
 
     @media (max-width: 620px) {
@@ -566,8 +628,27 @@
       </div>
       <div class="form-group">
         <label class="field-label" for="tsd-sdrInput">SDR Data JSON</label>
-        <textarea id="tsd-sdrInput" placeholder='{"evars":[...],"props":[...],"events":[]}'></textarea>
-        <div class="hint">Auto-filled after SDR tab completes. Or paste directly.</div>
+        <div class="sdr-load-actions">
+          <button class="btn-load" id="tsd-loadFileBtn" onclick="triggerJsonFileLoad('tsd')" title="Load from local JSON file">
+            <span class="ld-icon">&#128193;</span><span class="ld-spin">&#9696;</span> Load JSON File
+          </button>
+          <input type="file" id="tsd-jsonFileInput" accept=".json" style="display:none" onchange="onJsonFileSelected(event,'tsd')" />
+          <button class="btn-load" id="tsd-driveToggleBtn" onclick="toggleDrivePanel('tsd')" title="Load from Google Drive public link">
+            <span class="ld-icon">&#9729;</span><span class="ld-spin">&#9696;</span> Load from Drive
+          </button>
+        </div>
+        <div class="sdr-drive-panel" id="tsd-drivePanel">
+          <div class="sdr-drive-row">
+            <input type="text" id="tsd-driveUrl" placeholder="https://drive.google.com/file/d/..." />
+            <button class="btn-load" id="tsd-driveLoadBtn" onclick="loadFromDrive('tsd')">
+              <span class="ld-icon">&#8594;</span><span class="ld-spin">&#9696;</span> Load
+            </button>
+          </div>
+          <div class="sdr-drive-hint">&#9888; 파일을 Google Drive에서 <strong>"링크가 있는 모든 사용자"</strong>로 공유 설정 후 사용하세요. n8n SDR 결과(Excel)와는 별개로, JSON 파일을 직접 Drive에 올려 공유한 경우에만 동작합니다.</div>
+        </div>
+        <textarea id="tsd-sdrInput" placeholder='{"evars":[...],"props":[...],"events":[]}' oninput="onSdrInputChange('tsd')"></textarea>
+        <div class="validation-banner" id="tsd-sdrValidation"></div>
+        <div class="hint">Auto-filled after SDR tab completes. Or paste / load directly.</div>
       </div>
       <button class="btn-primary btn-tsd" id="tsd-btn" onclick="triggerStage('tsd')">
         <span>&#9889;</span> Generate TSD
@@ -613,7 +694,14 @@
         <div class="card-ico ico-done">&#9989;</div>
         <div><div class="card-head-title">TSD Generation Complete</div></div>
       </div>
-      <div id="tsd-driveLinks"></div>
+      <div id="tsd-driveSection">
+        <div class="section-sep">Google Drive</div>
+        <div id="tsd-driveLinks"></div>
+      </div>
+      <div id="tsd-localSection" style="margin-top:14px">
+        <div class="section-sep">Local Files <span style="font-weight:400;font-size:10px;color:var(--text-3)">(always available)</span></div>
+        <div id="tsd-localFiles"><div style="color:var(--text-3);font-size:13px">Loading...</div></div>
+      </div>
     </div>
   </div><!-- /tab-tsd -->
 
@@ -636,8 +724,27 @@
       </div>
       <div class="form-group">
         <label class="field-label" for="tags-sdrInput">SDR Data JSON</label>
-        <textarea id="tags-sdrInput" placeholder='{"evars":[...],"props":[...],"events":[]}'></textarea>
-        <div class="hint">Auto-filled after SDR tab completes. Or paste directly.</div>
+        <div class="sdr-load-actions">
+          <button class="btn-load" id="tags-loadFileBtn" onclick="triggerJsonFileLoad('tags')" title="Load from local JSON file">
+            <span class="ld-icon">&#128193;</span><span class="ld-spin">&#9696;</span> Load JSON File
+          </button>
+          <input type="file" id="tags-jsonFileInput" accept=".json" style="display:none" onchange="onJsonFileSelected(event,'tags')" />
+          <button class="btn-load" id="tags-driveToggleBtn" onclick="toggleDrivePanel('tags')" title="Load from Google Drive public link">
+            <span class="ld-icon">&#9729;</span><span class="ld-spin">&#9696;</span> Load from Drive
+          </button>
+        </div>
+        <div class="sdr-drive-panel" id="tags-drivePanel">
+          <div class="sdr-drive-row">
+            <input type="text" id="tags-driveUrl" placeholder="https://drive.google.com/file/d/..." />
+            <button class="btn-load" id="tags-driveLoadBtn" onclick="loadFromDrive('tags')">
+              <span class="ld-icon">&#8594;</span><span class="ld-spin">&#9696;</span> Load
+            </button>
+          </div>
+          <div class="sdr-drive-hint">&#9888; 파일을 Google Drive에서 <strong>"링크가 있는 모든 사용자"</strong>로 공유 설정 후 사용하세요.</div>
+        </div>
+        <textarea id="tags-sdrInput" placeholder='{"evars":[...],"props":[...],"events":[]}' oninput="onSdrInputChange('tags')"></textarea>
+        <div class="validation-banner" id="tags-sdrValidation"></div>
+        <div class="hint">Auto-filled after SDR tab completes. Or paste / load directly.</div>
       </div>
       <div class="alert info">
         <span>&#8505;</span>
@@ -879,7 +986,10 @@ function loadSdrDataToTabs() {
       const cn = document.getElementById(tab + '-clientName');
       const si = document.getElementById(tab + '-sdrInput');
       if (cn && !cn.value) cn.value = clientName;
-      if (si && !si.value) si.value = sdrRaw;
+      if (si && !si.value) {
+        si.value = sdrRaw;
+        renderValidation(tab, validateSdrJson(sdrRaw));
+      }
     } else {
       pill.innerHTML =
         '<div class="sdr-data-pill missing">&#9888; No SDR data — generate in the SDR tab first, or paste directly.</div>';
@@ -898,6 +1008,182 @@ function clearSdrCache() {
     if (cn) cn.value = '';
   });
   loadSdrDataToTabs();
+}
+
+// ── SDR JSON Load: local file ─────────────────────────────────────────────
+function triggerJsonFileLoad(stage) {
+  document.getElementById(stage + '-jsonFileInput').click();
+}
+
+function onJsonFileSelected(e, stage) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const btn = document.getElementById(stage + '-loadFileBtn');
+  btn.classList.add('loading'); btn.disabled = true;
+  const reader = new FileReader();
+  reader.onload = function(ev) {
+    const content = ev.target.result;
+    const ta = document.getElementById(stage + '-sdrInput');
+    ta.value = content;
+    renderValidation(stage, validateSdrJson(content));
+    btn.classList.remove('loading'); btn.disabled = false;
+    // reset file input so same file can be re-selected
+    e.target.value = '';
+  };
+  reader.onerror = function() {
+    btn.classList.remove('loading'); btn.disabled = false;
+    e.target.value = '';
+    showErr(stage, '파일을 읽을 수 없습니다.');
+  };
+  reader.readAsText(file);
+}
+
+// ── SDR JSON Load: Google Drive ────────────────────────────────────────────
+function toggleDrivePanel(stage) {
+  var panel = document.getElementById(stage + '-drivePanel');
+  if (!panel) return;
+  panel.classList.toggle('open');
+  if (panel.classList.contains('open')) {
+    var inp = document.getElementById(stage + '-driveUrl');
+    if (inp) inp.focus();
+  }
+}
+
+async function loadFromDrive(stage) {
+  var url = (document.getElementById(stage + '-driveUrl').value || '').trim();
+  if (!url) { showErr(stage, 'Google Drive URL을 입력하세요.'); return; }
+
+  var loadBtn = document.getElementById(stage + '-driveLoadBtn');
+  var toggleBtn = document.getElementById(stage + '-driveToggleBtn');
+  loadBtn.classList.add('loading'); loadBtn.disabled = true;
+  toggleBtn.classList.add('loading'); toggleBtn.disabled = true;
+  showErr(stage, null);
+
+  try {
+    var r = await fetch('/api/load-from-drive', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url: url })
+    });
+    var data = await r.json();
+    if (!data.success) throw new Error(data.error || 'Drive load failed');
+
+    var ta = document.getElementById(stage + '-sdrInput');
+    ta.value = data.content;
+    var vr = validateSdrJson(data.content);
+    renderValidation(stage, vr);
+
+    // Close drive panel on success
+    var panel = document.getElementById(stage + '-drivePanel');
+    if (panel && vr.valid) panel.classList.remove('open');
+  } catch(e) {
+    showErr(stage, e.message);
+  } finally {
+    loadBtn.classList.remove('loading'); loadBtn.disabled = false;
+    toggleBtn.classList.remove('loading'); toggleBtn.disabled = false;
+  }
+}
+
+// ── SDR textarea change handler ────────────────────────────────────────────
+function onSdrInputChange(stage) {
+  var val = (document.getElementById(stage + '-sdrInput').value || '').trim();
+  if (!val) {
+    var banner = document.getElementById(stage + '-sdrValidation');
+    if (banner) { banner.className = 'validation-banner'; banner.innerHTML = ''; }
+    // re-enable button if validating is cleared
+    var btn = document.getElementById(stage + '-btn');
+    if (btn) btn.disabled = false;
+    return;
+  }
+  // Debounce: only validate after 400ms idle
+  clearTimeout(onSdrInputChange._t);
+  onSdrInputChange._t = setTimeout(function() {
+    renderValidation(stage, validateSdrJson(val));
+  }, 400);
+}
+
+// ── JSON Validation ───────────────────────────────────────────────────────
+function validateSdrJson(jsonStr) {
+  var result = { valid: false, counts: { evars: 0, props: 0, events: 0 }, issues: [], warnings: [] };
+  if (!jsonStr || !jsonStr.trim()) {
+    result.issues.push('입력이 비어 있습니다.');
+    return result;
+  }
+  var parsed;
+  try { parsed = JSON.parse(jsonStr); }
+  catch(e) { result.issues.push('JSON 파싱 오류: ' + e.message); return result; }
+
+  // Support wrapped SDR JSON file format: { _meta, clientName, sdrData: { evars, props, events } }
+  var data = parsed.sdrData || parsed;
+
+  // Structure check
+  ['evars','props','events'].forEach(function(key) {
+    if (!Array.isArray(data[key])) {
+      result.issues.push('"' + key + '" 배열이 없습니다.');
+    } else {
+      result.counts[key] = data[key].length;
+      if (data[key].length === 0) result.warnings.push('"' + key + '" 배열이 비어 있습니다.');
+    }
+  });
+  if (result.issues.length) return result;
+
+  // Field-level check (first 5 items each)
+  var REQUIRED = { evars: ['variable','variable_name'], props: ['variable','variable_name'], events: ['event','event_name'] };
+  Object.keys(REQUIRED).forEach(function(key) {
+    var items = (data[key] || []).slice(0, 5);
+    var missing = new Set();
+    items.forEach(function(item, idx) {
+      REQUIRED[key].forEach(function(field) {
+        if (item[field] === undefined || item[field] === null || item[field] === '') {
+          missing.add(field);
+        }
+      });
+    });
+    if (missing.size) {
+      result.warnings.push('"' + key + '" 항목에 누락 필드: ' + Array.from(missing).join(', '));
+    }
+  });
+
+  result.valid = true;
+  return result;
+}
+
+function renderValidation(stage, result) {
+  var banner = document.getElementById(stage + '-sdrValidation');
+  var btn    = document.getElementById(stage + '-btn');
+  if (!banner) return;
+
+  if (!result || (!result.issues.length && !result.warnings.length && !result.valid)) {
+    banner.className = 'validation-banner';
+    banner.innerHTML = '';
+    return;
+  }
+
+  var cls, icon, title, body = '';
+  if (!result.valid && result.issues.length) {
+    cls = 'invalid'; icon = '&#10007;';
+    title = 'Invalid — SDR JSON 구조 오류';
+    if (result.issues.length) {
+      body += '<ul class="vb-issues">' + result.issues.map(function(i){ return '<li>' + i + '</li>'; }).join('') + '</ul>';
+    }
+    if (btn) btn.disabled = true;
+  } else if (result.valid) {
+    var countStr = result.counts.evars + ' eVars &middot; ' + result.counts.props + ' Props &middot; ' + result.counts.events + ' Events';
+    if (result.warnings.length) {
+      cls = 'warning'; icon = '&#9888;';
+      title = 'Valid (주의) &mdash; ' + countStr;
+      body = '<ul class="vb-issues">' + result.warnings.map(function(w){ return '<li>' + w + '</li>'; }).join('') + '</ul>';
+    } else {
+      cls = 'valid'; icon = '&#10003;';
+      title = 'Valid &mdash; ' + countStr + '. Generate 가능합니다.';
+    }
+    if (btn) btn.disabled = false;
+  }
+
+  banner.className = 'validation-banner show ' + cls;
+  banner.innerHTML =
+    '<span class="vb-icon">' + icon + '</span>' +
+    '<div class="vb-body"><div class="vb-title">' + title + '</div>' + body + '</div>';
 }
 
 // ── Drop zone ─────────────────────────────────────────────────────────────
@@ -999,6 +1285,15 @@ async function triggerStage(stage) {
     let sdrData;
     try { sdrData = JSON.parse(rawSdr); }
     catch { showErr(stage, 'Invalid SDR data JSON format.'); return; }
+    // Support wrapped SDR JSON file format: { _meta, clientName, sdrData: { evars, props, events } }
+    sdrData = sdrData.sdrData || sdrData;
+    // Field-level validation gate
+    const vr = validateSdrJson(rawSdr);
+    if (!vr.valid) {
+      renderValidation(stage, vr);
+      showErr(stage, 'SDR JSON 검증 실패. 오류를 확인하고 수정 후 다시 시도하세요.');
+      return;
+    }
     payload = { clientName, sdrData };
   }
 
@@ -1104,10 +1399,13 @@ function finishStage(stage, outcome, job) {
 
 // ── Save SDR result to localStorage ──────────────────────────────────────
 function onSdrComplete(job) {
-  const sdrJson = (job.result && job.result.sdrJson) ? job.result.sdrJson : job.sdrJson;
+  // SDR n8n sends 'sdrData' key; legacy fallback to 'sdrJson'
+  const sdrPayload = (job.result && (job.result.sdrData || job.result.sdrJson))
+    ? (job.result.sdrData || job.result.sdrJson)
+    : (job.sdrData || job.sdrJson);
   const clientName = (document.getElementById('sdr-clientName').value || '').trim();
-  if (sdrJson && clientName) {
-    saveSdrData(clientName, sdrJson.sdr || sdrJson);
+  if (sdrPayload && clientName) {
+    saveSdrData(clientName, sdrPayload.sdr || sdrPayload);
     document.getElementById('sdr-nextStep').style.display = 'flex';
   }
 }
@@ -1135,14 +1433,22 @@ function showResult(stage, data) {
     document.getElementById('sdr-driveLinks').innerHTML = html || '<p style="color:var(--text-3);font-size:13px">No Drive links available</p>';
 
   } else if (stage === 'tsd') {
-    const files = (data.result && data.result.googleDrive && data.result.googleDrive.files) ? data.result.googleDrive.files : [];
-    let html = '';
-    files.forEach(function(f){
+    // ── Drive links ──────────────────────────────────────────────────────
+    const driveFiles = (data.result && data.result.googleDrive && data.result.googleDrive.files) ? data.result.googleDrive.files : [];
+    let driveHtml = '';
+    driveFiles.forEach(function(f){
       const ext = (f.fileName||'').match(/\.[^.]+$/);
       const icons = {'.xlsx':'📊','.docx':'📄','.js':'📜','.md':'📝','.json':'🗃️'};
-      html += dlLink((ext && icons[ext[0]]) || '📁', f.fileName || 'File', (ext && ext[0]) || '', f.webViewLink);
+      driveHtml += dlLink((ext && icons[ext[0]]) || '📁', f.fileName || 'File', (ext && ext[0]) || '', f.webViewLink);
     });
-    document.getElementById('tsd-driveLinks').innerHTML = html || '<p style="color:var(--text-3);font-size:13px">No Drive links available</p>';
+    if (!driveHtml) {
+      driveHtml = '<div class="alert warning" style="margin-bottom:0"><span>&#9888;</span><div>Google Drive 연결 없음 — 아래 로컬 파일에서 다운로드하세요.</div></div>';
+    }
+    document.getElementById('tsd-driveLinks').innerHTML = driveHtml;
+
+    // ── Local files ──────────────────────────────────────────────────────
+    const clientName = (document.getElementById('tsd-clientName').value || '').trim();
+    showTsdLocalFiles(clientName);
 
   } else if (stage === 'tags') {
     const summary    = (data.result && data.result.summary) ? data.result.summary : {};
@@ -1159,6 +1465,43 @@ function dlLink(icon, name, type, url) {
     '<span class="dl-icon">' + icon + '</span>' +
     '<span class="dl-meta"><div class="dl-name">' + name + '</div><div class="dl-type">' + type + '</div></span>' +
     '<span class="dl-arr">&#8599;</span></a>';
+}
+
+// ── Local file card HTML ──────────────────────────────────────────────────
+function localFileCard(file) {
+  const icons = {'.xlsx':'📊','.docx':'📄','.js':'📜','.md':'📝','.json':'🗃️'};
+  const icon = icons[file.ext] || '📁';
+  const sizeStr = file.size >= 1024*1024
+    ? (file.size/1024/1024).toFixed(1) + ' MB'
+    : (file.size/1024).toFixed(0) + ' KB';
+  const dateStr = fmtTime(file.modified);
+  return '<div class="local-file-card">' +
+    '<span class="lf-icon">' + icon + '</span>' +
+    '<div class="lf-meta">' +
+      '<div class="lf-name">' + file.name + '</div>' +
+      '<div class="lf-type">' + file.type + '</div>' +
+      '<div class="lf-size">' + sizeStr + ' &middot; ' + dateStr + '</div>' +
+    '</div>' +
+    '<a class="btn-dl" href="' + file.downloadUrl + '" download="' + file.name + '">&#8595; Download</a>' +
+  '</div>';
+}
+
+async function showTsdLocalFiles(clientName) {
+  var el = document.getElementById('tsd-localFiles');
+  if (!el) return;
+  try {
+    var params = 'type=tsd&limit=5';
+    if (clientName) params += '&client=' + encodeURIComponent(clientName);
+    var r = await fetch('/api/output?' + params);
+    var data = await r.json();
+    if (!data.files || !data.files.length) {
+      el.innerHTML = '<p style="color:var(--text-3);font-size:13px">로컬 TSD 파일 없음</p>';
+      return;
+    }
+    el.innerHTML = data.files.map(localFileCard).join('');
+  } catch(e) {
+    el.innerHTML = '<p style="color:var(--text-3);font-size:13px">파일 목록을 불러올 수 없습니다.</p>';
+  }
 }
 
 // ── Job history ───────────────────────────────────────────────────────────

@@ -30,6 +30,9 @@ services:
       
       # Python support (no task-runner in 1.70.0, direct execution)
       - PYTHON_BINARY=/usr/bin/python3
+      
+      # Allow external npm packages in Code nodes
+      - NODE_FUNCTION_ALLOW_EXTERNAL=exceljs,docx
     
     volumes:
       # Data persistence

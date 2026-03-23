@@ -1,0 +1,1384 @@
+{
+  "_meta": {
+    "generator": "Tagging AI - SDR Workflow v2.0",
+    "clientName": "GSSHOP",
+    "generatedAt": "2026-03-21T13:31:44.394Z",
+    "fileName": "GSSHOP_SDR_20260321_133144.json",
+    "usage": "TSD 또는 Tags 워크플로우 수동 트리거 시 /trigger/tsd 또는 /trigger/tags 의 body로 사용",
+    "tsd_endpoint": "POST /trigger/tsd  →  { clientName, sdrData }",
+    "tags_endpoint": "POST /trigger/tags →  { clientName, sdrData }"
+  },
+  "clientName": "GSSHOP",
+  "sdrData": {
+    "metadata": {
+      "client": "GSSHOP",
+      "vertical": "Retail/E-Commerce",
+      "platform": "Adobe Analytics + AEP Web SDK",
+      "version": "1.0",
+      "date": "2026-03-21",
+      "brd_reference": "GSSHOP_BRD.xlsx"
+    },
+    "summary": {
+      "section_a_ootb_count": 5,
+      "section_b_evars_count": 23,
+      "section_b_props_count": 20,
+      "section_b_events_count": 30
+    },
+    "section_a_ootb": [
+      {
+        "req_id": "REQ-003",
+        "variable": "s.campaign [OOTB]",
+        "variable_name": "Marketing Campaign Code",
+        "variable_description": "캠페인 코드 (Campaign Code) — 유입된 마케팅 캠페인을 식별하는 고유 코드입니다. Paid Search, Social, Affiliate 등 다양한 채널의 성과 분석에 활용되며, 마케팅 최적화 및 채널별 ROI 측정에 필수적입니다.",
+        "value_format": "String | PROMO_20240315",
+        "allocation": "n/a",
+        "expiration": "n/a",
+        "merchandising": "n/a",
+        "capture_method": "DataLayer",
+        "group": "Marketing"
+      },
+      {
+        "req_id": "REQ-003",
+        "variable": "Marketing Channel [OOTB]",
+        "variable_name": "Marketing Channel",
+        "variable_description": "마케팅 채널 (Marketing Channel) — 유입 트래픽의 주요 채널(예: Email, Display, Paid Search 등)을 자동 분류합니다. 채널별 퍼포먼스 분석과 신규 고객 유입 전략 수립에 활용됩니다. (Adobe OOTB 분류)",
+        "value_format": "String | Email",
+        "allocation": "n/a",
+        "expiration": "n/a",
+        "merchandising": "n/a",
+        "capture_method": "Native",
+        "group": "Marketing"
+      },
+      {
+        "req_id": "REQ-032",
+        "variable": "s.purchaseID [OOTB]",
+        "variable_name": "Order ID",
+        "variable_description": "주문번호 (Order ID) — 각 주문을 고유하게 식별하는 값으로, 구매 트랜잭션 추적 및 CRM/OMS 연동에 필수적입니다. 구매 분석, 환불, 포인트 적립 등 다양한 비즈니스 프로세스와 연계됩니다.",
+        "value_format": "String | ABC12345",
+        "allocation": "n/a",
+        "expiration": "n/a",
+        "merchandising": "n/a",
+        "capture_method": "DataLayer",
+        "group": "Commerce"
+      },
+      {
+        "req_id": "REQ-044",
+        "variable": "s.products [OOTB]",
+        "variable_name": "Products",
+        "variable_description": "상품 정보 (Products) — 장바구니, 주문, 상품 상세 등에서 노출되는 상품의 카테고리, ID, 수량, 가격 정보를 배열 형태로 저장합니다. 매출 분석, 상품별 성과 측정, 추천 엔진 연동 등에 활용됩니다.",
+        "value_format": "String | category;productid;qty;price",
+        "allocation": "n/a",
+        "expiration": "n/a",
+        "merchandising": "n/a",
+        "capture_method": "DataLayer",
+        "group": "Commerce"
+      },
+      {
+        "req_id": "REQ-003",
+        "variable": "s.campaign: SAINT Classification [OOTB]",
+        "variable_name": "Campaign Classification",
+        "variable_description": "캠페인 분류 (Campaign Classification) — s.campaign에 대한 SAINT 분류값으로, 캠페인 유형, 소재, 타겟 등 세부 속성을 추가로 제공합니다. 마케팅 성과 분석 및 세부 캠페인 전략 수립에 활용됩니다.",
+        "value_format": "String | channel:search, creative:banner1",
+        "allocation": "n/a",
+        "expiration": "n/a",
+        "merchandising": "n/a",
+        "capture_method": "SAINT Classification",
+        "group": "Classification"
+      }
+    ],
+    "evars": [
+      {
+        "req_id": "REQ-002",
+        "variable": "eVar1",
+        "variable_name": "Audience Segment",
+        "variable_description": "오디언스 세그먼트 (Audience Segment) — 신규 유저, 고가치 고객, 상품 선호도 등 다양한 오디언스 그룹을 식별합니다. 타겟 마케팅 및 개인화 추천에 활용되며, CRM 및 Braze와 연동 가능합니다.",
+        "value_format": "String | new_user",
+        "allocation": "Most Recent (Last)",
+        "expiration": "Visit",
+        "merchandising": "n/a",
+        "capture_method": "DataLayer",
+        "group": "Audience"
+      },
+      {
+        "req_id": "REQ-009",
+        "variable": "eVar2",
+        "variable_name": "Email Personalization Type",
+        "variable_description": "이메일 개인화 유형 (Email Personalization Type) — 고객의 브라우징/구매 이력에 기반한 이메일 콘텐츠 개인화 유형을 저장합니다. 이메일 캠페인 성과 분석 및 Braze 연동에 활용됩니다.",
+        "value_format": "String | history_based",
+        "allocation": "Most Recent (Last)",
+        "expiration": "Visit",
+        "merchandising": "n/a",
+        "capture_method": "DataLayer",
+        "group": "Marketing"
+      },
+      {
+        "req_id": "REQ-010",
+        "variable": "eVar3",
+        "variable_name": "Registration Source",
+        "variable_description": "회원가입 유입 경로 (Registration Source) — 사용자가 회원가입을 시작한 채널 또는 페이지를 식별합니다. 신규 회원 확보 전략 및 채널별 전환율 분석에 활용됩니다.",
+        "value_format": "String | mobile_app",
+        "allocation": "Most Recent (Last)",
+        "expiration": "Visit",
+        "merchandising": "n/a",
+        "capture_method": "DataLayer",
+        "group": "Acquisition"
+      },
+      {
+        "req_id": "REQ-013",
+        "variable": "eVar4",
+        "variable_name": "Social Login Type",
+        "variable_description": "소셜 로그인 유형 (Social Login Type) — 카카오, 네이버, 구글 등 소셜 로그인 방식을 구분합니다. 회원가입 편의성 및 소셜 채널별 유입 분석에 활용됩니다.",
+        "value_format": "Enum | kakao | naver | google",
+        "allocation": "Most Recent (Last)",
+        "expiration": "Visit",
+        "merchandising": "n/a",
+        "capture_method": "DataLayer",
+        "group": "Acquisition"
+      },
+      {
+        "req_id": "REQ-017",
+        "variable": "eVar5",
+        "variable_name": "Search Keyword",
+        "variable_description": "검색어 (Search Keyword) — 사용자가 입력한 검색어를 저장하여 검색 성과 및 상품 탐색 경로 분석에 활용합니다. 검색 추천 및 개인화에도 연동 가능합니다.",
+        "value_format": "String | blender",
+        "allocation": "Most Recent (Last)",
+        "expiration": "Visit",
+        "merchandising": "n/a",
+        "capture_method": "DataLayer",
+        "group": "Search"
+      },
+      {
+        "req_id": "REQ-018",
+        "variable": "eVar6",
+        "variable_name": "Recommendation Engine Type",
+        "variable_description": "추천 엔진 유형 (Recommendation Engine Type) — 적용된 상품 추천 알고리즘 또는 엔진 종류를 구분합니다. 추천 성과 분석 및 A/B 테스트에 활용됩니다.",
+        "value_format": "String | collaborative_filtering",
+        "allocation": "Most Recent (Last)",
+        "expiration": "Visit",
+        "merchandising": "n/a",
+        "capture_method": "DataLayer",
+        "group": "Personalization"
+      },
+      {
+        "req_id": "REQ-021",
+        "variable": "eVar7",
+        "variable_name": "Product Recommendation Source",
+        "variable_description": "상품 추천 소스 (Product Recommendation Source) — PDP, 장바구니, 메인 등 추천이 노출된 위치를 구분합니다. 추천 위치별 전환율 분석에 활용됩니다.",
+        "value_format": "String | PDP",
+        "allocation": "Most Recent (Last)",
+        "expiration": "PageView",
+        "merchandising": "n/a",
+        "capture_method": "DataLayer",
+        "group": "Personalization"
+      },
+      {
+        "req_id": "REQ-022",
+        "variable": "eVar8",
+        "variable_name": "Review Rating",
+        "variable_description": "상품 평점 (Review Rating) — 고객이 남긴 상품 평점(별점)을 저장합니다. 상품 신뢰도 및 구매 전환 분석에 활용됩니다.",
+        "value_format": "Integer | 5",
+        "allocation": "Most Recent (Last)",
+        "expiration": "PageView",
+        "merchandising": "n/a",
+        "capture_method": "DataLayer",
+        "group": "Product"
+      },
+      {
+        "req_id": "REQ-023",
+        "variable": "eVar9",
+        "variable_name": "TV Homeshopping Schedule",
+        "variable_description": "TV 홈쇼핑 편성 정보 (TV Homeshopping Schedule) — 상품의 방송 시간 또는 편성 정보를 저장합니다. TV-디지털 연계 분석 및 실시간 캠페인 최적화에 활용됩니다.",
+        "value_format": "String | 2024-06-13 14:00",
+        "allocation": "Most Recent (Last)",
+        "expiration": "PageView",
+        "merchandising": "n/a",
+        "capture_method": "DataLayer",
+        "group": "TV"
+      },
+      {
+        "req_id": "REQ-025",
+        "variable": "eVar10",
+        "variable_name": "Cart Recovery Campaign ID",
+        "variable_description": "장바구니 복구 캠페인 ID (Cart Recovery Campaign ID) — 장바구니 이탈 고객을 대상으로 한 복구 캠페인 식별자입니다. 캠페인별 효과 측정 및 마케팅 자동화 연동에 활용됩니다.",
+        "value_format": "String | CRC20240613",
+        "allocation": "Most Recent (Last)",
+        "expiration": "Visit",
+        "merchandising": "n/a",
+        "capture_method": "DataLayer",
+        "group": "Marketing"
+      },
+      {
+        "req_id": "REQ-028",
+        "variable": "eVar11",
+        "variable_name": "Personalized Recommendation Type",
+        "variable_description": "개인화 추천 유형 (Personalized Recommendation Type) — 구매 이력 기반, 실시간 행동 기반 등 추천 방식 구분에 사용됩니다. 개인화 전략 및 추천 성과 분석에 활용됩니다.",
+        "value_format": "String | purchase_history",
+        "allocation": "Most Recent (Last)",
+        "expiration": "Visit",
+        "merchandising": "n/a",
+        "capture_method": "DataLayer",
+        "group": "Personalization"
+      },
+      {
+        "req_id": "REQ-031",
+        "variable": "eVar12",
+        "variable_name": "Loyalty Program Enrollment",
+        "variable_description": "멤버십 가입 여부 (Loyalty Program Enrollment) — GS All Membership 등 로열티 프로그램 가입 상태를 저장합니다. 멤버십 활성화 및 등급별 혜택 분석에 활용됩니다.",
+        "value_format": "Enum | enrolled | not_enrolled",
+        "allocation": "Most Recent (Last)",
+        "expiration": "Visitor",
+        "merchandising": "n/a",
+        "capture_method": "DataLayer",
+        "group": "Loyalty"
+      },
+      {
+        "req_id": "REQ-032",
+        "variable": "eVar13",
+        "variable_name": "Points Redemption Type",
+        "variable_description": "포인트 사용 유형 (Points Redemption Type) — 적립금, 쿠폰 등 포인트 사용 방식을 구분합니다. 로열티 프로그램 효과 분석 및 CRM 연동에 활용됩니다.",
+        "value_format": "String | coupon",
+        "allocation": "Most Recent (Last)",
+        "expiration": "Event",
+        "merchandising": "n/a",
+        "capture_method": "DataLayer",
+        "group": "Loyalty"
+      },
+      {
+        "req_id": "REQ-034",
+        "variable": "eVar14",
+        "variable_name": "Loyalty Grade",
+        "variable_description": "로열티 등급 (Loyalty Grade) — 고객의 멤버십 등급(예: Gold, Silver, Bronze 등)을 저장합니다. 등급별 혜택 제공 및 등급 상승/하락 분석에 활용됩니다.",
+        "value_format": "Enum | Gold | Silver | Bronze",
+        "allocation": "Most Recent (Last)",
+        "expiration": "Visitor",
+        "merchandising": "n/a",
+        "capture_method": "DataLayer",
+        "group": "Loyalty"
+      },
+      {
+        "req_id": "REQ-036",
+        "variable": "eVar15",
+        "variable_name": "Win-Back Campaign ID",
+        "variable_description": "이탈 고객 캠페인 ID (Win-Back Campaign ID) — 휴면 고객 대상 캠페인 식별자입니다. 캠페인별 효과 측정 및 마케팅 자동화 연동에 활용됩니다.",
+        "value_format": "String | WB20240613",
+        "allocation": "Most Recent (Last)",
+        "expiration": "Visit",
+        "merchandising": "n/a",
+        "capture_method": "DataLayer",
+        "group": "Marketing"
+      },
+      {
+        "req_id": "REQ-038",
+        "variable": "eVar16",
+        "variable_name": "Wishlist Notification Type",
+        "variable_description": "위시리스트 알림 유형 (Wishlist Notification Type) — 가격 인하, 재입고, 한정 특가 등 위시리스트 알림 종류를 구분합니다. 알림별 전환율 및 고객 반응 분석에 활용됩니다.",
+        "value_format": "String | price_drop",
+        "allocation": "Most Recent (Last)",
+        "expiration": "Event",
+        "merchandising": "n/a",
+        "capture_method": "DataLayer",
+        "group": "Wishlist"
+      },
+      {
+        "req_id": "REQ-041",
+        "variable": "eVar17",
+        "variable_name": "TV Attribution Source",
+        "variable_description": "TV 유입 소스 (TV Attribution Source) — TV 방송과 연계된 디지털 유입 경로를 식별합니다. TV-디지털 통합 분석 및 실시간 캠페인 최적화에 활용됩니다.",
+        "value_format": "String | tv_broadcast",
+        "allocation": "Most Recent (Last)",
+        "expiration": "Visit",
+        "merchandising": "n/a",
+        "capture_method": "DataLayer",
+        "group": "TV"
+      },
+      {
+        "req_id": "REQ-046",
+        "variable": "eVar18",
+        "variable_name": "SPA Page Name",
+        "variable_description": "SPA 페이지명 (SPA Page Name) — Next.js 기반 SPA에서의 논리적 페이지명을 저장합니다. 페이지 전환 및 사용자 행동 분석에 활용됩니다.",
+        "value_format": "String | /product/12345",
+        "allocation": "Most Recent (Last)",
+        "expiration": "PageView",
+        "merchandising": "n/a",
+        "capture_method": "DataLayer",
+        "group": "Site"
+      },
+      {
+        "req_id": "REQ-047",
+        "variable": "eVar19",
+        "variable_name": "Device Type (Custom)",
+        "variable_description": "디바이스 유형 (Device Type) — 데스크탑, 모바일 웹, 앱 등 사용자의 디바이스 유형을 커스텀으로 저장합니다. 크로스디바이스 분석 및 채널별 전환율 측정에 활용됩니다.",
+        "value_format": "Enum | desktop | mobile_web | app",
+        "allocation": "Most Recent (Last)",
+        "expiration": "Visit",
+        "merchandising": "n/a",
+        "capture_method": "DataLayer",
+        "group": "Device"
+      },
+      {
+        "req_id": "REQ-050",
+        "variable": "eVar20",
+        "variable_name": "User CRM ID",
+        "variable_description": "고객의 CRM ID (Customer ID) — CRM 시스템에서 제공되는 고객 고유 식별자. Visitor 수준에서 추적되며 CRM 동기화에 필수적입니다. (Korean e-commerce)",
+        "value_format": "UUID String | AXXXXXXXXXXXXXXXXXX",
+        "allocation": "Most Recent (Last)",
+        "expiration": "Visitor",
+        "merchandising": "n/a",
+        "capture_method": "DataLayer",
+        "group": "User"
+      },
+      {
+        "req_id": "REQ-052",
+        "variable": "eVar21",
+        "variable_name": "User Cohort",
+        "variable_description": "유저 코호트 (User Cohort) — 행동, 가치, 가입 시기 등 기준으로 생성된 유저 그룹을 저장합니다. 세그먼트 분석 및 리텐션 전략에 활용됩니다.",
+        "value_format": "String | 2024Q2_new",
+        "allocation": "Most Recent (Last)",
+        "expiration": "Visitor",
+        "merchandising": "n/a",
+        "capture_method": "DataLayer",
+        "group": "User"
+      },
+      {
+        "req_id": "REQ-056",
+        "variable": "eVar22",
+        "variable_name": "Amplitude Integration Flag",
+        "variable_description": "Amplitude 연동 여부 (Amplitude Integration Flag) — Adobe Analytics와 Amplitude 간 데이터 연동 상태를 표시합니다. 데이터 일관성 및 통합 분석에 활용됩니다.",
+        "value_format": "Enum | Y | N",
+        "allocation": "Most Recent (Last)",
+        "expiration": "Visit",
+        "merchandising": "n/a",
+        "capture_method": "DataLayer",
+        "group": "Integration"
+      },
+      {
+        "req_id": "REQ-057",
+        "variable": "eVar23",
+        "variable_name": "Braze Integration Flag",
+        "variable_description": "Braze 연동 여부 (Braze Integration Flag) — Braze 마케팅 자동화 플랫폼과의 연동 상태를 저장합니다. 캠페인 자동화 및 고객 세분화에 활용됩니다.",
+        "value_format": "Enum | Y | N",
+        "allocation": "Most Recent (Last)",
+        "expiration": "Visit",
+        "merchandising": "n/a",
+        "capture_method": "DataLayer",
+        "group": "Integration"
+      }
+    ],
+    "props": [
+      {
+        "req_id": "REQ-065",
+        "variable": "prop1",
+        "variable_name": "PageName",
+        "variable_description": "페이지 이름을 기록하는 트래픽 변수입니다. PathFinder 및 ClickMap 분석에 사용되며 eVar counterpart(eVar18: SPA Page Name)와 동일한 값을 미러링합니다.",
+        "value_format": "String",
+        "example_value": "홈페이지",
+        "capture_method": "Data Layer",
+        "group": "Content & Page"
+      },
+      {
+        "req_id": "REQ-065",
+        "variable": "prop2",
+        "variable_name": "SiteSection",
+        "variable_description": "사이트 섹션을 기록하는 트래픽 변수입니다. PathFinder 분석에 활용되며 eVar counterpart와 동일한 값을 미러링합니다.",
+        "value_format": "String",
+        "example_value": "TV쇼핑",
+        "capture_method": "Data Layer",
+        "group": "Content & Page"
+      },
+      {
+        "req_id": "REQ-065",
+        "variable": "prop3",
+        "variable_name": "PageType",
+        "variable_description": "페이지 유형(예: 홈, PDP, 카트 등)을 기록하는 트래픽 변수입니다. PathFinder 분석에 활용되며 eVar counterpart와 동일한 값을 미러링합니다.",
+        "value_format": "String",
+        "example_value": "PDP",
+        "capture_method": "Data Layer",
+        "group": "Content & Page"
+      },
+      {
+        "req_id": "REQ-065",
+        "variable": "prop4",
+        "variable_name": "ErrorType",
+        "variable_description": "에러 유형을 기록하는 트래픽 변수입니다. 실시간 모니터링 및 PathFinder 분석에 활용되며 eVar counterpart와 동일한 값을 미러링합니다.",
+        "value_format": "String",
+        "example_value": "404 Not Found",
+        "capture_method": "Data Layer",
+        "group": "Content & Page"
+      },
+      {
+        "req_id": "REQ-014",
+        "variable": "prop5",
+        "variable_name": "Platform",
+        "variable_description": "플랫폼(웹, 모바일, 앱 등)을 기록하는 트래픽 변수입니다. PathFinder 분석에 활용되며 eVar counterpart와 동일한 값을 미러링합니다.",
+        "value_format": "String",
+        "example_value": "Mobile Web",
+        "capture_method": "Data Layer",
+        "group": "Identity & Global"
+      },
+      {
+        "req_id": "REQ-010",
+        "variable": "prop6",
+        "variable_name": "LoginStatus",
+        "variable_description": "로그인 상태(로그인/비로그인)를 기록하는 트래픽 변수입니다. PathFinder 분석에 활용되며 eVar counterpart와 동일한 값을 미러링합니다.",
+        "value_format": "String",
+        "example_value": "Logged In",
+        "capture_method": "Data Layer",
+        "group": "User & CRM"
+      },
+      {
+        "req_id": "REQ-034",
+        "variable": "prop7",
+        "variable_name": "MemberGrade",
+        "variable_description": "회원 등급을 기록하는 트래픽 변수입니다. PathFinder 분석에 활용되며 eVar counterpart와 동일한 값을 미러링합니다.",
+        "value_format": "String",
+        "example_value": "Gold",
+        "capture_method": "Data Layer",
+        "group": "Loyalty"
+      },
+      {
+        "req_id": "REQ-017",
+        "variable": "prop8",
+        "variable_name": "SearchKeyword",
+        "variable_description": "내부 검색 키워드를 기록하는 트래픽 변수입니다. PathFinder 분석에 활용되며 eVar counterpart(eVar5)와 동일한 값을 미러링합니다.",
+        "value_format": "String",
+        "example_value": "에어프라이어",
+        "capture_method": "Data Layer",
+        "group": "Search"
+      },
+      {
+        "req_id": "REQ-021",
+        "variable": "prop9",
+        "variable_name": "ProductCategoryL2",
+        "variable_description": "상품 카테고리(L2)를 기록하는 트래픽 변수입니다. PathFinder 분석에 활용되며 eVar counterpart와 동일한 값을 미러링합니다.",
+        "value_format": "String",
+        "example_value": "주방가전",
+        "capture_method": "Data Layer",
+        "group": "Commerce & Product"
+      },
+      {
+        "req_id": "REQ-001",
+        "variable": "prop10",
+        "variable_name": "MarketingChannel",
+        "variable_description": "마케팅 채널(트래픽 분석 전용)을 기록하는 트래픽 변수입니다. PathFinder 분석에 활용되며 eVar counterpart와 동일한 값을 미러링합니다.",
+        "value_format": "String",
+        "example_value": "Paid Search",
+        "capture_method": "Data Layer",
+        "group": "Marketing & Campaign"
+      },
+      {
+        "req_id": "REQ-041",
+        "variable": "prop11",
+        "variable_name": "TVBroadcastID",
+        "variable_description": "TV 방송 ID를 기록하는 트래픽 변수입니다. PathFinder 분석에 활용되며 eVar counterpart(eVar9)와 동일한 값을 미러링합니다.",
+        "value_format": "String",
+        "example_value": "TV20240601",
+        "capture_method": "Data Layer",
+        "group": "TV"
+      },
+      {
+        "req_id": "REQ-035",
+        "variable": "prop12",
+        "variable_name": "BannerName",
+        "variable_description": "배너 이름을 기록하는 트래픽 변수입니다. PathFinder 분석에 활용되며 eVar counterpart와 동일한 값을 미러링합니다.",
+        "value_format": "String",
+        "example_value": "여름특가배너",
+        "capture_method": "Data Layer",
+        "group": "Marketing & Campaign"
+      },
+      {
+        "req_id": "REQ-013",
+        "variable": "prop13",
+        "variable_name": "CTAText",
+        "variable_description": "CTA(클릭 유도 텍스트)를 기록하는 트래픽 변수입니다. PathFinder 분석에 활용되며 eVar counterpart와 동일한 값을 미러링합니다.",
+        "value_format": "String",
+        "example_value": "구매하기",
+        "capture_method": "Data Layer",
+        "group": "Interaction & Engagement"
+      },
+      {
+        "req_id": "REQ-022",
+        "variable": "prop14",
+        "variable_name": "VideoName",
+        "variable_description": "비디오 이름을 기록하는 트래픽 변수입니다. PathFinder 분석에 활용되며 eVar counterpart와 동일한 값을 미러링합니다.",
+        "value_format": "String",
+        "example_value": "GS홈쇼핑_상품소개",
+        "capture_method": "Data Layer",
+        "group": "Media & Content"
+      },
+      {
+        "req_id": "REQ-018",
+        "variable": "prop15",
+        "variable_name": "FormName",
+        "variable_description": "폼 이름을 기록하는 트래픽 변수입니다. PathFinder 분석에 활용되며 eVar counterpart와 동일한 값을 미러링합니다.",
+        "value_format": "String",
+        "example_value": "회원가입폼",
+        "capture_method": "Data Layer",
+        "group": "Interaction & Engagement"
+      },
+      {
+        "req_id": "REQ-066",
+        "variable": "prop16",
+        "variable_name": "ErrorTypeRealtime",
+        "variable_description": "실시간 에러 유형을 기록하는 트래픽 변수입니다. PathFinder 분석 및 실시간 모니터링에 활용되며 eVar counterpart와 동일한 값을 미러링합니다.",
+        "value_format": "String",
+        "example_value": "Timeout",
+        "capture_method": "Data Layer",
+        "group": "Content & Page"
+      },
+      {
+        "req_id": "REQ-046",
+        "variable": "prop17",
+        "variable_name": "SPATransitionType",
+        "variable_description": "SPA 페이지 전환 유형을 기록하는 트래픽 변수입니다. PathFinder 분석에 활용되며 eVar counterpart(eVar18)와 동일한 값을 미러링합니다.",
+        "value_format": "String",
+        "example_value": "Next.js Route Change",
+        "capture_method": "Data Layer",
+        "group": "Site"
+      },
+      {
+        "req_id": "REQ-028",
+        "variable": "prop18",
+        "variable_name": "RecommendationType",
+        "variable_description": "추천 유형을 기록하는 트래픽 변수입니다. PathFinder 분석에 활용되며 eVar counterpart(eVar6, eVar11)와 동일한 값을 미러링합니다.",
+        "value_format": "String",
+        "example_value": "Personalized",
+        "capture_method": "Data Layer",
+        "group": "Personalization"
+      },
+      {
+        "req_id": "REQ-024",
+        "variable": "prop19",
+        "variable_name": "CheckoutStep",
+        "variable_description": "체크아웃 단계(1,2,3 등)를 기록하는 트래픽 변수입니다. PathFinder 분석에 활용되며 eVar counterpart와 동일한 값을 미러링합니다.",
+        "value_format": "String",
+        "example_value": "Step 2",
+        "capture_method": "Data Layer",
+        "group": "Commerce & Product"
+      },
+      {
+        "req_id": "REQ-037",
+        "variable": "prop20",
+        "variable_name": "CustomerLifecycleStage",
+        "variable_description": "고객 라이프사이클 단계(신규, 활성, 휴면 등)를 기록하는 트래픽 변수입니다. PathFinder 분석에 활용되며 eVar counterpart와 동일한 값을 미러링합니다.",
+        "value_format": "String",
+        "example_value": "Active",
+        "capture_method": "Data Layer",
+        "group": "User & CRM"
+      }
+    ],
+    "events": [
+      {
+        "req_id": "REQ-044",
+        "event": "prodView [OOTB]",
+        "event_name": "Product View",
+        "event_description": "상품 상세 페이지가 열릴 때마다 자동으로 기록되는 OOTB 커머스 이벤트입니다. 이 이벤트는 상품 조회수를 측정하며, s.products 변수와 연계되어 상품별 분석이 가능합니다. (한국어: 상품 조회 이벤트는 상품 상세 페이지 방문 시 자동으로 집계되어 상품별 관심도를 파악할 수 있습니다.)",
+        "event_type": "OOTB Commerce",
+        "related_vars": "s.products",
+        "implementation_note": "AEP WebSDK alloy sendEvent에서 s.products와 함께 prodView 이벤트를 포함하여 전송합니다.",
+        "capture_method": "OOTB",
+        "group": "Commerce"
+      },
+      {
+        "req_id": "REQ-044",
+        "event": "scAdd [OOTB]",
+        "event_name": "Add to Cart",
+        "event_description": "장바구니에 상품을 추가할 때마다 자동으로 기록되는 OOTB 커머스 이벤트입니다. 이 이벤트는 장바구니 추가 행동을 측정하며, s.products 변수와 연계되어 상품별 분석이 가능합니다. (한국어: 장바구니 추가 이벤트는 구매 전환 경로 분석에 필수적입니다.)",
+        "event_type": "OOTB Commerce",
+        "related_vars": "s.products",
+        "implementation_note": "AEP WebSDK alloy sendEvent에서 s.products와 함께 scAdd 이벤트를 포함하여 전송합니다.",
+        "capture_method": "OOTB",
+        "group": "Commerce"
+      },
+      {
+        "req_id": "REQ-044",
+        "event": "scRemove [OOTB]",
+        "event_name": "Remove from Cart",
+        "event_description": "장바구니에서 상품을 제거할 때마다 자동으로 기록되는 OOTB 커머스 이벤트입니다. 이 이벤트는 장바구니 이탈 행동을 측정하며, s.products 변수와 연계되어 상품별 분석이 가능합니다. (한국어: 장바구니 제거 이벤트는 이탈 원인 분석에 활용됩니다.)",
+        "event_type": "OOTB Commerce",
+        "related_vars": "s.products",
+        "implementation_note": "AEP WebSDK alloy sendEvent에서 s.products와 함께 scRemove 이벤트를 포함하여 전송합니다.",
+        "capture_method": "OOTB",
+        "group": "Commerce"
+      },
+      {
+        "req_id": "REQ-044",
+        "event": "scView [OOTB]",
+        "event_name": "Cart View",
+        "event_description": "장바구니 페이지가 열릴 때마다 자동으로 기록되는 OOTB 커머스 이벤트입니다. 이 이벤트는 장바구니 조회수를 측정하며, s.products 변수와 연계되어 상품별 분석이 가능합니다. (한국어: 장바구니 조회 이벤트는 구매 전환 경로 분석에 필수적입니다.)",
+        "event_type": "OOTB Commerce",
+        "related_vars": "s.products",
+        "implementation_note": "AEP WebSDK alloy sendEvent에서 s.products와 함께 scView 이벤트를 포함하여 전송합니다.",
+        "capture_method": "OOTB",
+        "group": "Commerce"
+      },
+      {
+        "req_id": "REQ-044",
+        "event": "scCheckout [OOTB]",
+        "event_name": "Checkout Start",
+        "event_description": "체크아웃 단계가 시작될 때마다 자동으로 기록되는 OOTB 커머스 이벤트입니다. 이 이벤트는 결제 프로세스 시작을 측정하며, s.products 변수와 연계되어 상품별 분석이 가능합니다. (한국어: 체크아웃 시작 이벤트는 결제 전환율 분석에 활용됩니다.)",
+        "event_type": "OOTB Commerce",
+        "related_vars": "s.products",
+        "implementation_note": "AEP WebSDK alloy sendEvent에서 s.products와 함께 scCheckout 이벤트를 포함하여 전송합니다.",
+        "capture_method": "OOTB",
+        "group": "Commerce"
+      },
+      {
+        "req_id": "REQ-044",
+        "event": "purchase [OOTB]",
+        "event_name": "Purchase Complete",
+        "event_description": "구매가 완료될 때마다 자동으로 기록되는 OOTB 커머스 이벤트입니다. 이 이벤트는 주문 완료를 측정하며, s.products 변수와 연계되어 상품별 분석이 가능합니다. (한국어: 구매 완료 이벤트는 매출 및 주문 분석에 필수적입니다.)",
+        "event_type": "OOTB Commerce",
+        "related_vars": "s.products, s.purchaseID",
+        "implementation_note": "AEP WebSDK alloy sendEvent에서 s.products와 함께 purchase 이벤트를 포함하여 전송합니다.",
+        "capture_method": "OOTB",
+        "group": "Commerce"
+      },
+      {
+        "req_id": "REQ-044",
+        "event": "revenue [OOTB]",
+        "event_name": "Revenue",
+        "event_description": "구매 완료 시 자동으로 집계되는 OOTB 매출 이벤트입니다. 이 이벤트는 주문별 매출액을 측정하며, s.products 변수와 연계되어 상품별 매출 분석이 가능합니다. (한국어: 매출 이벤트는 전체 및 상품별 매출 집계에 활용됩니다.)",
+        "event_type": "OOTB Metric",
+        "related_vars": "s.products, purchase",
+        "implementation_note": "AEP WebSDK alloy sendEvent에서 s.products와 함께 purchase 이벤트 발생 시 revenue가 자동 집계됩니다.",
+        "capture_method": "OOTB",
+        "group": "Commerce"
+      },
+      {
+        "req_id": "REQ-065",
+        "event": "event1",
+        "event_name": "CustomPageView",
+        "event_description": "모든 페이지(특히 SPA 가상 페이지 포함)에서 발생하는 사용자 정의 페이지뷰 카운터 이벤트입니다. PathFinder 및 페이지별 트래픽 분석에 활용됩니다. (한국어: 페이지뷰 이벤트는 SPA 환경에서도 정확한 페이지 방문 수를 집계합니다.)",
+        "event_type": "Counter",
+        "related_vars": "prop1, eVar18",
+        "implementation_note": "AEP WebSDK alloy sendEvent에서 페이지 로드 또는 SPA 전환 시마다 event1을 전송합니다.",
+        "capture_method": "Data Layer",
+        "group": "Content & Page"
+      },
+      {
+        "req_id": "REQ-007",
+        "event": "event2",
+        "event_name": "PageLoadTime",
+        "event_description": "페이지 로드 완료 시 기록되는 페이지 로드 시간(ms) 이벤트입니다. 사이트 속도 개선 및 UX 최적화 분석에 활용됩니다. (한국어: 페이지 로드 시간 이벤트는 모바일/웹 속도 개선 KPI 측정에 사용됩니다.)",
+        "event_type": "Numeric",
+        "related_vars": "prop1",
+        "implementation_note": "window.performance.timing 또는 Web Vitals API에서 ms 값을 추출하여 event2로 전송합니다.",
+        "capture_method": "Browser API",
+        "group": "Content & Page"
+      },
+      {
+        "req_id": "REQ-017",
+        "event": "event3",
+        "event_name": "InternalSearch",
+        "event_description": "내부 검색 실행 시마다 기록되는 검색 카운터 이벤트입니다. 검색 기능 개선 및 검색 전환율 분석에 활용됩니다. (한국어: 내부 검색 이벤트는 검색 사용량 및 전환율 분석에 필수적입니다.)",
+        "event_type": "Counter",
+        "related_vars": "prop8, eVar5",
+        "implementation_note": "검색 실행 시마다 event3을 전송합니다.",
+        "capture_method": "Data Layer",
+        "group": "Search"
+      },
+      {
+        "req_id": "REQ-017",
+        "event": "event4",
+        "event_name": "NoSearchResults",
+        "event_description": "검색 결과가 없을 때마다 기록되는 카운터 이벤트입니다. 검색 품질 개선 및 검색 실패 원인 분석에 활용됩니다. (한국어: 검색 결과 없음 이벤트는 검색 품질 개선에 활용됩니다.)",
+        "event_type": "Counter",
+        "related_vars": "prop8, eVar5",
+        "implementation_note": "검색 결과가 0건일 때 event4를 전송합니다.",
+        "capture_method": "Data Layer",
+        "group": "Search"
+      },
+      {
+        "req_id": "REQ-020",
+        "event": "event5",
+        "event_name": "PDPView-CJA",
+        "event_description": "상품 상세 페이지(PDP) 조회 시마다 기록되는 카운터 이벤트입니다. CJA 연동 및 상품별 상세 분석에 활용됩니다. (한국어: PDP 조회 이벤트는 상품별 상세 분석 및 CJA 연동에 필수적입니다.)",
+        "event_type": "Counter",
+        "related_vars": "prop1, prop9",
+        "implementation_note": "PDP 페이지 로드 시 event5를 전송합니다.",
+        "capture_method": "Data Layer",
+        "group": "Commerce & Product"
+      },
+      {
+        "req_id": "REQ-021",
+        "event": "event6",
+        "event_name": "ProductCompareClick",
+        "event_description": "상품 비교 클릭 시마다 기록되는 카운터 이벤트입니다. 상품 비교 기능 사용량 및 UX 개선에 활용됩니다. (한국어: 상품 비교 클릭 이벤트는 비교 기능 개선에 활용됩니다.)",
+        "event_type": "Counter",
+        "related_vars": "prop9",
+        "implementation_note": "상품 비교 버튼 클릭 시 event6을 전송합니다.",
+        "capture_method": "DOM Attribute",
+        "group": "Commerce & Product"
+      },
+      {
+        "req_id": "REQ-022",
+        "event": "event7",
+        "event_name": "ReviewSubmit",
+        "event_description": "상품 리뷰 제출 시마다 기록되는 카운터 이벤트입니다. 리뷰 활성화 및 상품 신뢰도 분석에 활용됩니다. (한국어: 리뷰 제출 이벤트는 리뷰 활성화 및 신뢰도 분석에 사용됩니다.)",
+        "event_type": "Counter",
+        "related_vars": "prop14, eVar8",
+        "implementation_note": "리뷰 제출 시 event7을 전송합니다.",
+        "capture_method": "Data Layer",
+        "group": "Commerce & Product"
+      },
+      {
+        "req_id": "REQ-038",
+        "event": "event8",
+        "event_name": "WishlistAdd",
+        "event_description": "위시리스트에 상품을 추가할 때마다 기록되는 카운터 이벤트입니다. 위시리스트 기능 활성화 및 구매 전환 분석에 활용됩니다. (한국어: 위시리스트 추가 이벤트는 구매 전환율 분석에 필수적입니다.)",
+        "event_type": "Counter",
+        "related_vars": "prop9",
+        "implementation_note": "위시리스트 추가 버튼 클릭 시 event8을 전송합니다.",
+        "capture_method": "DOM Attribute",
+        "group": "Wishlist"
+      },
+      {
+        "req_id": "REQ-039",
+        "event": "event9",
+        "event_name": "WishlistRemove",
+        "event_description": "위시리스트에서 상품을 제거할 때마다 기록되는 카운터 이벤트입니다. 위시리스트 이탈 원인 분석 및 기능 개선에 활용됩니다. (한국어: 위시리스트 제거 이벤트는 이탈 원인 분석에 활용됩니다.)",
+        "event_type": "Counter",
+        "related_vars": "prop9",
+        "implementation_note": "위시리스트 제거 버튼 클릭 시 event9을 전송합니다.",
+        "capture_method": "DOM Attribute",
+        "group": "Wishlist"
+      },
+      {
+        "req_id": "REQ-040",
+        "event": "event10",
+        "event_name": "WishlistToCart",
+        "event_description": "위시리스트에서 장바구니로 상품 이동 시마다 기록되는 카운터 이벤트입니다. 위시리스트 전환율 분석에 활용됩니다. (한국어: 위시리스트→장바구니 이벤트는 구매 전환율 분석에 필수적입니다.)",
+        "event_type": "Counter",
+        "related_vars": "prop9",
+        "implementation_note": "위시리스트→장바구니 이동 시 event10을 전송합니다.",
+        "capture_method": "DOM Attribute",
+        "group": "Wishlist"
+      },
+      {
+        "req_id": "REQ-025",
+        "event": "event11",
+        "event_name": "CartRecoveryClick",
+        "event_description": "카트 리커버리 캠페인 클릭 시마다 기록되는 카운터 이벤트입니다. 장바구니 이탈 방지 및 캠페인 효과 분석에 활용됩니다. (한국어: 카트 리커버리 클릭 이벤트는 이탈 방지 캠페인 효과 측정에 사용됩니다.)",
+        "event_type": "Counter",
+        "related_vars": "prop10, eVar10",
+        "implementation_note": "카트 리커버리 캠페인 클릭 시 event11을 전송합니다.",
+        "capture_method": "Data Layer",
+        "group": "Marketing & Campaign"
+      },
+      {
+        "req_id": "REQ-024",
+        "event": "event12",
+        "event_name": "CheckoutStepComplete",
+        "event_description": "체크아웃 단계 완료 시마다 기록되는 카운터 이벤트입니다. 결제 프로세스 분석 및 전환율 개선에 활용됩니다. (한국어: 체크아웃 단계 완료 이벤트는 결제 전환율 분석에 필수적입니다.)",
+        "event_type": "Counter",
+        "related_vars": "prop19",
+        "implementation_note": "체크아웃 단계 완료 시 event12를 전송합니다.",
+        "capture_method": "Data Layer",
+        "group": "Commerce & Product"
+      },
+      {
+        "req_id": "REQ-012",
+        "event": "event13",
+        "event_name": "BannerClick",
+        "event_description": "배너 클릭 시마다 기록되는 카운터 이벤트입니다. 배너 효과 분석 및 캠페인 최적화에 활용됩니다. (한국어: 배너 클릭 이벤트는 캠페인 효과 분석에 필수적입니다.)",
+        "event_type": "Counter",
+        "related_vars": "prop12",
+        "implementation_note": "배너 클릭 시 event13을 전송합니다.",
+        "capture_method": "DOM Attribute",
+        "group": "Marketing & Campaign"
+      },
+      {
+        "req_id": "REQ-013",
+        "event": "event14",
+        "event_name": "CTAClick",
+        "event_description": "CTA(클릭 유도 텍스트) 클릭 시마다 기록되는 카운터 이벤트입니다. CTA 효과 분석 및 UX 개선에 활용됩니다. (한국어: CTA 클릭 이벤트는 UX 개선 및 전환율 분석에 필수적입니다.)",
+        "event_type": "Counter",
+        "related_vars": "prop13",
+        "implementation_note": "CTA 클릭 시 event14를 전송합니다.",
+        "capture_method": "DOM Attribute",
+        "group": "Interaction & Engagement"
+      },
+      {
+        "req_id": "REQ-006",
+        "event": "event15",
+        "event_name": "NavClick",
+        "event_description": "네비게이션 메뉴 클릭 시마다 기록되는 카운터 이벤트입니다. 사이트 구조 및 UX 개선에 활용됩니다. (한국어: 네비게이션 클릭 이벤트는 사이트 구조 개선에 필수적입니다.)",
+        "event_type": "Counter",
+        "related_vars": "prop2",
+        "implementation_note": "네비게이션 클릭 시 event15를 전송합니다.",
+        "capture_method": "DOM Attribute",
+        "group": "Content & Page"
+      },
+      {
+        "req_id": "REQ-018",
+        "event": "event16",
+        "event_name": "RecommendationClick",
+        "event_description": "추천 상품 클릭 시마다 기록되는 카운터 이벤트입니다. 추천 엔진 효과 분석 및 개인화 개선에 활용됩니다. (한국어: 추천 클릭 이벤트는 추천 엔진 효과 분석에 필수적입니다.)",
+        "event_type": "Counter",
+        "related_vars": "prop18, eVar6, eVar11",
+        "implementation_note": "추천 상품 클릭 시 event16을 전송합니다.",
+        "capture_method": "DOM Attribute",
+        "group": "Personalization"
+      },
+      {
+        "req_id": "REQ-019",
+        "event": "event17",
+        "event_name": "SearchResultClick",
+        "event_description": "검색 결과 클릭 시마다 기록되는 카운터 이벤트입니다. 검색→구매 전환율 분석에 활용됩니다. (한국어: 검색 결과 클릭 이벤트는 검색→구매 전환율 분석에 필수적입니다.)",
+        "event_type": "Counter",
+        "related_vars": "prop8",
+        "implementation_note": "검색 결과 클릭 시 event17을 전송합니다.",
+        "capture_method": "DOM Attribute",
+        "group": "Search"
+      },
+      {
+        "req_id": "REQ-010",
+        "event": "event18",
+        "event_name": "FormStart",
+        "event_description": "폼(회원가입, 결제 등) 시작 시마다 기록되는 카운터 이벤트입니다. 폼 이탈 및 UX 개선 분석에 활용됩니다. (한국어: 폼 시작 이벤트는 이탈 분석 및 UX 개선에 필수적입니다.)",
+        "event_type": "Counter",
+        "related_vars": "prop15",
+        "implementation_note": "폼 시작 시 event18을 전송합니다.",
+        "capture_method": "Data Layer",
+        "group": "Interaction & Engagement"
+      },
+      {
+        "req_id": "REQ-010",
+        "event": "event19",
+        "event_name": "FormSubmit",
+        "event_description": "폼 제출(회원가입, 결제 등) 시마다 기록되는 카운터 이벤트입니다. 폼 완료율 및 전환율 분석에 활용됩니다. (한국어: 폼 제출 이벤트는 전환율 분석에 필수적입니다.)",
+        "event_type": "Counter",
+        "related_vars": "prop15",
+        "implementation_note": "폼 제출 시 event19를 전송합니다.",
+        "capture_method": "Data Layer",
+        "group": "Interaction & Engagement"
+      },
+      {
+        "req_id": "REQ-010",
+        "event": "event20",
+        "event_name": "FormError",
+        "event_description": "폼 제출 오류 발생 시마다 기록되는 카운터 이벤트입니다. 폼 오류 원인 분석 및 UX 개선에 활용됩니다. (한국어: 폼 오류 이벤트는 오류 원인 분석 및 UX 개선에 필수적입니다.)",
+        "event_type": "Counter",
+        "related_vars": "prop16",
+        "implementation_note": "폼 오류 발생 시 event20을 전송합니다.",
+        "capture_method": "Data Layer",
+        "group": "Interaction & Engagement"
+      },
+      {
+        "req_id": "REQ-022",
+        "event": "event21",
+        "event_name": "VideoStart",
+        "event_description": "비디오 재생 시작 시마다 기록되는 카운터 이벤트입니다. 비디오 콘텐츠 소비 분석 및 미디어 효과 측정에 활용됩니다. (한국어: 비디오 시작 이벤트는 미디어 효과 분석에 필수적입니다.)",
+        "event_type": "Counter",
+        "related_vars": "prop14",
+        "implementation_note": "비디오 재생 시작 시 event21을 전송합니다.",
+        "capture_method": "DOM Attribute",
+        "group": "Media & Content"
+      },
+      {
+        "req_id": "REQ-022",
+        "event": "event22",
+        "event_name": "VideoComplete",
+        "event_description": "비디오 재생 완료 시마다 기록되는 카운터 이벤트입니다. 비디오 콘텐츠 소비 분석 및 미디어 효과 측정에 활용됩니다. (한국어: 비디오 완료 이벤트는 미디어 효과 분석에 필수적입니다.)",
+        "event_type": "Counter",
+        "related_vars": "prop14",
+        "implementation_note": "비디오 재생 완료 시 event22를 전송합니다.",
+        "capture_method": "DOM Attribute",
+        "group": "Media & Content"
+      },
+      {
+        "req_id": "REQ-022",
+        "event": "event23",
+        "event_name": "VideoPause",
+        "event_description": "비디오 일시정지 시마다 기록되는 카운터 이벤트입니다. 비디오 소비 패턴 및 UX 개선 분석에 활용됩니다. (한국어: 비디오 일시정지 이벤트는 UX 개선에 활용됩니다.)",
+        "event_type": "Counter",
+        "related_vars": "prop14",
+        "implementation_note": "비디오 일시정지 시 event23을 전송합니다.",
+        "capture_method": "DOM Attribute",
+        "group": "Media & Content"
+      },
+      {
+        "req_id": "REQ-022",
+        "event": "event24",
+        "event_name": "VideoMilestone",
+        "event_description": "비디오 시청 중 특정 구간(25%, 50%, 75%) 도달 시마다 기록되는 카운터 이벤트입니다. 비디오 시청률 및 콘텐츠 효과 분석에 활용됩니다. (한국어: 비디오 마일스톤 이벤트는 시청률 분석에 필수적입니다.)",
+        "event_type": "Counter",
+        "related_vars": "prop14",
+        "implementation_note": "비디오 시청 구간 도달 시 event24를 전송합니다.",
+        "capture_method": "DOM Attribute",
+        "group": "Media & Content"
+      },
+      {
+        "req_id": "REQ-010",
+        "event": "event25",
+        "event_name": "LoginSuccess",
+        "event_description": "로그인 성공 시마다 기록되는 카운터 이벤트입니다. 로그인 전환율 및 사용자 인증 분석에 활용됩니다. (한국어: 로그인 성공 이벤트는 전환율 분석에 필수적입니다.)",
+        "event_type": "Counter",
+        "related_vars": "prop6",
+        "implementation_note": "로그인 성공 시 event25를 전송합니다.",
+        "capture_method": "Data Layer",
+        "group": "User & CRM"
+      },
+      {
+        "req_id": "REQ-010",
+        "event": "event26",
+        "event_name": "RegistrationComplete",
+        "event_description": "회원가입 완료 시마다 기록되는 카운터 이벤트입니다. 신규 회원 전환율 및 가입 프로세스 분석에 활용됩니다. (한국어: 회원가입 완료 이벤트는 신규 회원 전환율 분석에 필수적입니다.)",
+        "event_type": "Counter",
+        "related_vars": "prop15",
+        "implementation_note": "회원가입 완료 시 event26을 전송합니다.",
+        "capture_method": "Data Layer",
+        "group": "User & CRM"
+      },
+      {
+        "req_id": "REQ-032",
+        "event": "event27",
+        "event_name": "CouponApply",
+        "event_description": "쿠폰 적용 시마다 기록되는 카운터 이벤트입니다. 쿠폰 사용량 및 프로모션 효과 분석에 활용됩니다. (한국어: 쿠폰 적용 이벤트는 프로모션 효과 분석에 필수적입니다.)",
+        "event_type": "Counter",
+        "related_vars": "prop19",
+        "implementation_note": "쿠폰 적용 시 event27을 전송합니다.",
+        "capture_method": "Data Layer",
+        "group": "Loyalty"
+      },
+      {
+        "req_id": "REQ-033",
+        "event": "event28",
+        "event_name": "PointsRedeemed",
+        "event_description": "포인트 사용 시마다 기록되는 숫자형 이벤트입니다. 포인트 사용량 및 로열티 프로그램 효과 분석에 활용됩니다. (한국어: 포인트 사용 이벤트는 로열티 프로그램 효과 분석에 필수적입니다.)",
+        "event_type": "Numeric",
+        "related_vars": "prop7, eVar13",
+        "implementation_note": "포인트 사용 시 event28에 사용량을 Numeric 값으로 전송합니다.",
+        "capture_method": "Data Layer",
+        "group": "Loyalty"
+      },
+      {
+        "req_id": "REQ-041",
+        "event": "event29",
+        "event_name": "TVAttribution",
+        "event_description": "TV 방송 연동 구매 발생 시마다 기록되는 카운터 이벤트입니다. TV→디지털 전환율 및 방송 효과 분석에 활용됩니다. (한국어: TV 연동 구매 이벤트는 TV→웹/앱 전환율 분석에 필수적입니다.)",
+        "event_type": "Counter",
+        "related_vars": "prop11, eVar17",
+        "implementation_note": "TV 방송 연동 구매 발생 시 event29를 전송합니다.",
+        "capture_method": "Data Layer",
+        "group": "TV"
+      },
+      {
+        "req_id": "REQ-046",
+        "event": "event30",
+        "event_name": "SPAPageTransition",
+        "event_description": "SPA(Next.js 등) 페이지 전환 시마다 기록되는 카운터 이벤트입니다. SPA 환경에서 페이지 이동 및 사용자 행동 분석에 활용됩니다. (한국어: SPA 페이지 전환 이벤트는 SPA 환경 분석에 필수적입니다.)",
+        "event_type": "Counter",
+        "related_vars": "prop17, eVar18",
+        "implementation_note": "SPA 페이지 전환 시 event30을 전송합니다.",
+        "capture_method": "Data Layer",
+        "group": "Site"
+      }
+    ],
+    "data_layer_map": [
+      {
+        "data_layer_path": "web.webPageDetails.name",
+        "maps_to": "PageName",
+        "variable_name": "prop1, eVar18",
+        "notes": "SPA 페이지 이름, PathFinder 및 CJA 연동"
+      },
+      {
+        "data_layer_path": "web.webPageDetails.siteSection",
+        "maps_to": "SiteSection",
+        "variable_name": "prop2",
+        "notes": "사이트 섹션"
+      },
+      {
+        "data_layer_path": "web.webPageDetails.pageType",
+        "maps_to": "PageType",
+        "variable_name": "prop3",
+        "notes": "페이지 유형"
+      },
+      {
+        "data_layer_path": "web.webPageDetails.errorType",
+        "maps_to": "ErrorType",
+        "variable_name": "prop4",
+        "notes": "에러 유형"
+      },
+      {
+        "data_layer_path": "web.platform",
+        "maps_to": "Platform",
+        "variable_name": "prop5",
+        "notes": "웹/모바일/앱 구분"
+      },
+      {
+        "data_layer_path": "user.loginStatus",
+        "maps_to": "LoginStatus",
+        "variable_name": "prop6",
+        "notes": "로그인 상태"
+      },
+      {
+        "data_layer_path": "user.memberGrade",
+        "maps_to": "MemberGrade",
+        "variable_name": "prop7",
+        "notes": "회원 등급"
+      },
+      {
+        "data_layer_path": "search.keyword",
+        "maps_to": "SearchKeyword",
+        "variable_name": "prop8, eVar5",
+        "notes": "내부 검색 키워드"
+      },
+      {
+        "data_layer_path": "commerce.product.categoryL2",
+        "maps_to": "ProductCategoryL2",
+        "variable_name": "prop9",
+        "notes": "상품 카테고리 L2"
+      },
+      {
+        "data_layer_path": "marketing.channel",
+        "maps_to": "MarketingChannel",
+        "variable_name": "prop10",
+        "notes": "마케팅 채널"
+      },
+      {
+        "data_layer_path": "tv.broadcastID",
+        "maps_to": "TVBroadcastID",
+        "variable_name": "prop11, eVar9",
+        "notes": "TV 방송 ID"
+      },
+      {
+        "data_layer_path": "marketing.banner.name",
+        "maps_to": "BannerName",
+        "variable_name": "prop12",
+        "notes": "배너 이름"
+      },
+      {
+        "data_layer_path": "interaction.cta.text",
+        "maps_to": "CTAText",
+        "variable_name": "prop13",
+        "notes": "CTA 텍스트"
+      },
+      {
+        "data_layer_path": "media.video.name",
+        "maps_to": "VideoName",
+        "variable_name": "prop14",
+        "notes": "비디오 이름"
+      },
+      {
+        "data_layer_path": "interaction.form.name",
+        "maps_to": "FormName",
+        "variable_name": "prop15",
+        "notes": "폼 이름"
+      },
+      {
+        "data_layer_path": "web.webPageDetails.errorTypeRealtime",
+        "maps_to": "ErrorTypeRealtime",
+        "variable_name": "prop16",
+        "notes": "실시간 에러 유형"
+      },
+      {
+        "data_layer_path": "site.spa.transitionType",
+        "maps_to": "SPATransitionType",
+        "variable_name": "prop17, eVar18",
+        "notes": "SPA 페이지 전환 유형"
+      },
+      {
+        "data_layer_path": "personalization.recommendation.type",
+        "maps_to": "RecommendationType",
+        "variable_name": "prop18, eVar6, eVar11",
+        "notes": "추천 유형"
+      },
+      {
+        "data_layer_path": "commerce.checkout.step",
+        "maps_to": "CheckoutStep",
+        "variable_name": "prop19",
+        "notes": "체크아웃 단계"
+      },
+      {
+        "data_layer_path": "user.lifecycle.stage",
+        "maps_to": "CustomerLifecycleStage",
+        "variable_name": "prop20",
+        "notes": "고객 라이프사이클 단계"
+      },
+      {
+        "data_layer_path": "commerce.product.id",
+        "maps_to": "ProductID",
+        "variable_name": "s.products",
+        "notes": "상품 ID"
+      },
+      {
+        "data_layer_path": "commerce.product.categoryL1",
+        "maps_to": "ProductCategoryL1",
+        "variable_name": "s.products",
+        "notes": "상품 카테고리 L1"
+      },
+      {
+        "data_layer_path": "commerce.product.price",
+        "maps_to": "ProductPrice",
+        "variable_name": "s.products",
+        "notes": "상품 가격"
+      },
+      {
+        "data_layer_path": "commerce.product.qty",
+        "maps_to": "ProductQty",
+        "variable_name": "s.products",
+        "notes": "상품 수량"
+      },
+      {
+        "data_layer_path": "commerce.order.purchaseID",
+        "maps_to": "PurchaseID",
+        "variable_name": "s.purchaseID",
+        "notes": "주문 ID"
+      },
+      {
+        "data_layer_path": "commerce.order.revenue",
+        "maps_to": "Revenue",
+        "variable_name": "revenue [OOTB]",
+        "notes": "주문 매출"
+      },
+      {
+        "data_layer_path": "commerce.order.units",
+        "maps_to": "Units",
+        "variable_name": "s.products",
+        "notes": "주문 수량"
+      },
+      {
+        "data_layer_path": "search.result.count",
+        "maps_to": "SearchResultCount",
+        "variable_name": "event4",
+        "notes": "검색 결과 수"
+      },
+      {
+        "data_layer_path": "wishlist.notification.type",
+        "maps_to": "WishlistNotificationType",
+        "variable_name": "eVar16",
+        "notes": "위시리스트 알림 유형"
+      },
+      {
+        "data_layer_path": "loyalty.program.enrollment",
+        "maps_to": "LoyaltyProgramEnrollment",
+        "variable_name": "eVar12",
+        "notes": "로열티 프로그램 가입"
+      },
+      {
+        "data_layer_path": "loyalty.grade",
+        "maps_to": "LoyaltyGrade",
+        "variable_name": "eVar14, prop7",
+        "notes": "로열티 등급"
+      },
+      {
+        "data_layer_path": "loyalty.points.redemption.type",
+        "maps_to": "PointsRedemptionType",
+        "variable_name": "eVar13",
+        "notes": "포인트 사용 유형"
+      },
+      {
+        "data_layer_path": "user.crm.id",
+        "maps_to": "UserCRMID",
+        "variable_name": "eVar20",
+        "notes": "CRM 사용자 ID"
+      },
+      {
+        "data_layer_path": "user.cohort",
+        "maps_to": "UserCohort",
+        "variable_name": "eVar21",
+        "notes": "사용자 코호트"
+      },
+      {
+        "data_layer_path": "integration.amplitude.flag",
+        "maps_to": "AmplitudeIntegrationFlag",
+        "variable_name": "eVar22",
+        "notes": "Amplitude 연동 여부"
+      },
+      {
+        "data_layer_path": "integration.braze.flag",
+        "maps_to": "BrazeIntegrationFlag",
+        "variable_name": "eVar23",
+        "notes": "Braze 연동 여부"
+      }
+    ],
+    "brd_traceability": [
+      {
+        "business_goal": "Grow Revenue",
+        "tactic": "Increase paid media traffic",
+        "measurement_need": "유입 채널별 트래픽 및 전환율을 분석하여 광고 ROI를 극대화합니다.",
+        "mapped_variables": "prop10, eVar10, s.campaign, Marketing Channel [OOTB]",
+        "kpi": "Traffic by paid media channels"
+      },
+      {
+        "business_goal": "Grow Revenue",
+        "tactic": "Improve SEO traffic",
+        "measurement_need": "SEO 유입 트래픽과 검색 키워드별 전환율을 분석하여 검색 최적화 효과를 측정합니다.",
+        "mapped_variables": "prop8, eVar5, event3, event4",
+        "kpi": "SEO traffic"
+      },
+      {
+        "business_goal": "Grow Revenue",
+        "tactic": "Increase email marketing traffic",
+        "measurement_need": "이메일 캠페인별 트래픽과 전환율을 분석하여 이메일 마케팅 효과를 측정합니다.",
+        "mapped_variables": "prop2, prop10, eVar2",
+        "kpi": "Email campaign traffic and conversion"
+      },
+      {
+        "business_goal": "Grow Revenue",
+        "tactic": "Increase registration conversion rate",
+        "measurement_need": "회원가입 전환율과 폼 이탈/완료 이벤트를 분석하여 신규 회원 확보 효과를 측정합니다.",
+        "mapped_variables": "prop15, event18, event19, event26",
+        "kpi": "New user registration rate"
+      },
+      {
+        "business_goal": "Grow Revenue",
+        "tactic": "Optimize mobile experience",
+        "measurement_need": "모바일 UX 및 페이지 로드 시간 이벤트를 분석하여 모바일 전환율을 개선합니다.",
+        "mapped_variables": "prop5, event2",
+        "kpi": "Mobile conversion rate"
+      },
+      {
+        "business_goal": "Grow Revenue",
+        "tactic": "Optimize search functionality",
+        "measurement_need": "내부 검색 키워드, 검색 결과 클릭 및 검색→구매 전환율을 분석합니다.",
+        "mapped_variables": "prop8, event3, event17",
+        "kpi": "Search conversion rate, Product findability"
+      },
+      {
+        "business_goal": "Grow Revenue",
+        "tactic": "Improve product detail page experience",
+        "measurement_need": "상품 상세 페이지(PDP) 조회 및 리뷰 제출 이벤트를 분석하여 PDP 전환율을 측정합니다.",
+        "mapped_variables": "prop1, prop9, event5, event7",
+        "kpi": "Product detail page conversion rate"
+      },
+      {
+        "business_goal": "Grow Revenue",
+        "tactic": "Reduce cart abandonment",
+        "measurement_need": "장바구니 추가/제거, 카트 리커버리 클릭, 체크아웃 단계 완료 이벤트를 분석하여 이탈률을 개선합니다.",
+        "mapped_variables": "scAdd [OOTB], scRemove [OOTB], event11, event12",
+        "kpi": "Cart abandonment rate, Order completion rate"
+      },
+      {
+        "business_goal": "Increase Customer Lifetime Value",
+        "tactic": "Implement personalized recommendations",
+        "measurement_need": "추천 클릭 및 추천 유형별 전환율을 분석하여 개인화 효과를 측정합니다.",
+        "mapped_variables": "prop18, event16",
+        "kpi": "Repeat purchase rate, Purchase frequency"
+      },
+      {
+        "business_goal": "Increase Customer Lifetime Value",
+        "tactic": "Optimize loyalty program engagement",
+        "measurement_need": "로열티 등급, 포인트 사용, 쿠폰 적용 이벤트를 분석하여 로열티 프로그램 효과를 측정합니다.",
+        "mapped_variables": "prop7, event27, event28",
+        "kpi": "GS All Membership enrollment rate, Loyalty program usage"
+      },
+      {
+        "business_goal": "Increase Customer Lifetime Value",
+        "tactic": "Drive engagement through retention campaigns",
+        "measurement_need": "배너 클릭, CTA 클릭, 고객 라이프사이클 단계별 이벤트를 분석하여 리텐션 캠페인 효과를 측정합니다.",
+        "mapped_variables": "prop12, prop13, prop20, event13, event14",
+        "kpi": "Customer retention rate, Email engagement rate"
+      },
+      {
+        "business_goal": "Increase Customer Lifetime Value",
+        "tactic": "Optimize wishlist functionality",
+        "measurement_need": "위시리스트 추가/제거/장바구니 이동 이벤트를 분석하여 위시리스트→구매 전환율을 측정합니다.",
+        "mapped_variables": "event8, event9, event10",
+        "kpi": "Wishlist to purchase conversion rate"
+      },
+      {
+        "business_goal": "Optimize Multi-Channel Performance",
+        "tactic": "Track TV to digital conversion",
+        "measurement_need": "TV 방송 연동 구매 및 TV Attribution 이벤트를 분석하여 TV→웹/앱 전환율을 측정합니다.",
+        "mapped_variables": "prop11, event29",
+        "kpi": "TV channel net purchase, TV to web/app conversion"
+      },
+      {
+        "business_goal": "Optimize Multi-Channel Performance",
+        "tactic": "Track ecommerce funnel performance",
+        "measurement_need": "상품 조회, 장바구니, 체크아웃, 구매 이벤트를 분석하여 이커머스 퍼널 전환율을 측정합니다.",
+        "mapped_variables": "prodView [OOTB], scAdd [OOTB], scCheckout [OOTB], purchase [OOTB], event12",
+        "kpi": "Ecommerce channel net purchase, Funnel conversion rates"
+      },
+      {
+        "business_goal": "Optimize Multi-Channel Performance",
+        "tactic": "Understand cross-device behavior",
+        "measurement_need": "플랫폼별 트래픽 및 사용자 행동 이벤트를 분석하여 크로스 디바이스 전환율을 측정합니다.",
+        "mapped_variables": "prop5, event25",
+        "kpi": "Cross-device conversion rate"
+      },
+      {
+        "business_goal": "Improve Data-Driven Decision Making",
+        "tactic": "Enable detailed user behavior tracking",
+        "measurement_need": "CRM ID, 사용자 코호트, 로그인 성공 이벤트를 분석하여 사용자별 행동 패턴을 파악합니다.",
+        "mapped_variables": "eVar20, eVar21, event25",
+        "kpi": "User-level engagement metrics"
+      },
+      {
+        "business_goal": "Improve Data-Driven Decision Making",
+        "tactic": "Reduce time to insights",
+        "measurement_need": "페이지뷰, SPA 페이지 전환, 실시간 대시보드 이벤트를 분석하여 분석 및 보고 속도를 개선합니다.",
+        "mapped_variables": "event1, event30, prop1",
+        "kpi": "Analysis turnaround time, Report generation speed"
+      },
+      {
+        "business_goal": "Improve Data-Driven Decision Making",
+        "tactic": "Integrate with existing tools",
+        "measurement_need": "Amplitude, Braze 연동 플래그 및 데이터 일관성 이벤트를 분석하여 데이터 통합 상태를 확인합니다.",
+        "mapped_variables": "eVar22, eVar23",
+        "kpi": "Data integration completeness"
+      },
+      {
+        "business_goal": "Ensure Compliance and Governance",
+        "tactic": "Manage PII data collection",
+        "measurement_need": "PII 데이터 수집 및 동의 관리 이벤트를 분석하여 개인정보 보호법 준수 여부를 확인합니다.",
+        "mapped_variables": "eVar20, event19",
+        "kpi": "Privacy compliance rate, Data governance adherence"
+      },
+      {
+        "business_goal": "Ensure Compliance and Governance",
+        "tactic": "Ensure implementation quality",
+        "measurement_need": "데이터 레이어 스키마, QA 검증, 실시간 에러 이벤트를 분석하여 데이터 품질 및 태깅 표준을 유지합니다.",
+        "mapped_variables": "prop16, event20",
+        "kpi": "Data validation pass rate, Tag health score"
+      }
+    ]
+  },
+  "stats": {
+    "ootb": 5,
+    "evars": 23,
+    "props": 20,
+    "events": 37,
+    "custom_events": 30,
+    "data_layer_entries": 36,
+    "brd_tactics": 20
+  },
+  "validation": {
+    "numbering_ok": true,
+    "coverage_pct": 60,
+    "uncovered_req_ids": [
+      "REQ-004",
+      "REQ-005",
+      "REQ-008",
+      "REQ-011",
+      "REQ-015",
+      "REQ-016",
+      "REQ-026",
+      "REQ-027",
+      "REQ-029",
+      "REQ-030",
+      "REQ-042",
+      "REQ-043",
+      "REQ-045",
+      "REQ-048",
+      "REQ-049",
+      "REQ-051",
+      "REQ-053",
+      "REQ-054",
+      "REQ-055",
+      "REQ-058",
+      "REQ-059",
+      "REQ-060",
+      "REQ-061",
+      "REQ-062",
+      "REQ-063",
+      "REQ-064",
+      "REQ-067"
+    ],
+    "warnings": [
+      "Uncovered requirements: REQ-004, REQ-005, REQ-008, REQ-011, REQ-015, REQ-016, REQ-026, REQ-027, REQ-029, REQ-030, REQ-042, REQ-043, REQ-045, REQ-048, REQ-049, REQ-051, REQ-053, REQ-054, REQ-055, REQ-058, REQ-059, REQ-060, REQ-061, REQ-062, REQ-063, REQ-064, REQ-067"
+    ]
+  }
+}

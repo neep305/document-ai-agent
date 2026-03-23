@@ -1087,6 +1087,7 @@ function clearDataRows(worksheet, startRow) {
 app.post('/generate-tsd', async (req, res) => {
     try {
         const { clientName, markdown, javascript } = req.body;
+        const format = req.query.format; // 'json' → returns base64 JSON; default → binary DOCX
 
         if (!clientName || !markdown) {
             return res.status(400).json({ error: 'Missing required fields: clientName, markdown' });
@@ -1110,6 +1111,17 @@ app.post('/generate-tsd', async (req, res) => {
         fs.writeFileSync(path.join(outputDir, filename), outputBuffer);
         console.log(`   âœ… TSD .docx generated: ${filename} (${(outputBuffer.length / 1024).toFixed(1)} KB, ${result.sectionCount} sections)`);
 
+        // JSON response for n8n HTTP Request node (avoids require('docx') restriction in Code nodes)
+        if (format === 'json') {
+            return res.json({
+                success: true,
+                base64: result.base64,
+                filename,
+                mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                sectionCount: result.sectionCount || 0,
+            });
+        }
+
         res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
         res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
         res.send(outputBuffer);
@@ -1117,6 +1129,191 @@ app.post('/generate-tsd', async (req, res) => {
         console.error('âŒ Error generating TSD:', error);
         res.status(500).json({ error: error.message });
     }
+});
+
+// ── /api/load-from-drive: Google Drive 공개 파일 다운로드 ──────────────────────
+// SSRF 보호: drive.google.com / docs.google.com 만 허용
+const DRIVE_ALLOWED_HOSTS = new Set(['drive.google.com', 'docs.google.com']);
+const DRIVE_CONTENT_TYPES_OK = ['application/json', 'text/plain', 'text/html'];
+
+function extractDriveFileId(input) {
+    if (!input) return null;
+    // Pattern 1: /file/d/{id}/
+    const m1 = input.match(/\/file\/d\/([a-zA-Z0-9_-]{10,})/);
+    if (m1) return m1[1];
+    // Pattern 2: id={id}
+    const m2 = input.match(/[?&]id=([a-zA-Z0-9_-]{10,})/);
+    if (m2) return m2[1];
+    // Pattern 3: bare file ID (no slashes, 28+ chars)
+    if (/^[a-zA-Z0-9_-]{28,}$/.test(input.trim())) return input.trim();
+    return null;
+}
+
+app.post('/api/load-from-drive', async (req, res) => {
+    try {
+        const { url } = req.body;
+        if (!url || typeof url !== 'string') {
+            return res.status(400).json({ success: false, error: 'url required' });
+        }
+
+        // SSRF 방어: URL이 Drive 도메인인지 먼저 확인
+        let parsedUrl;
+        try {
+            parsedUrl = new URL(url.trim().startsWith('http') ? url.trim() : 'https://' + url.trim());
+        } catch (_) {
+            parsedUrl = null;
+        }
+        if (parsedUrl && !DRIVE_ALLOWED_HOSTS.has(parsedUrl.hostname)) {
+            return res.status(400).json({ success: false, error: `허용되지 않는 도메인입니다. Google Drive URL을 입력하세요.` });
+        }
+
+        const fileId = extractDriveFileId(url.trim());
+        if (!fileId) {
+            return res.status(400).json({ success: false, error: 'Google Drive 파일 ID를 추출할 수 없습니다. 공유 링크를 확인하세요.' });
+        }
+
+        const downloadUrl = `https://drive.google.com/uc?export=download&id=${fileId}`;
+        console.log(`📥 Drive load: fileId=${fileId}`);
+
+        const content = await new Promise((resolve, reject) => {
+            const req2 = https.get(downloadUrl, { timeout: 15000, headers: { 'User-Agent': 'DocumentAI/1.0' } }, (resp) => {
+                // Google Drive may redirect for large files
+                if (resp.statusCode === 302 || resp.statusCode === 301) {
+                    const loc = resp.headers.location;
+                    if (!loc) return reject(new Error('Drive redirect without Location header'));
+                    try {
+                        const locHost = new URL(loc).hostname;
+                        if (!DRIVE_ALLOWED_HOSTS.has(locHost) && !locHost.endsWith('.google.com')) {
+                            return reject(new Error('Drive redirect to unexpected host'));
+                        }
+                    } catch (_) {}
+                    https.get(loc, { timeout: 15000 }, (resp2) => {
+                        if (resp2.statusCode === 403) return reject(new Error('access_denied'));
+                        if (resp2.statusCode !== 200) return reject(new Error(`HTTP ${resp2.statusCode}`));
+                        let data = '';
+                        resp2.on('data', d => { data += d; });
+                        resp2.on('end', () => resolve(data));
+                    }).on('error', reject);
+                    return;
+                }
+                if (resp.statusCode === 403) return reject(new Error('access_denied'));
+                if (resp.statusCode !== 200) return reject(new Error(`HTTP ${resp.statusCode}`));
+                let data = '';
+                resp.on('data', d => { data += d; if (data.length > 5 * 1024 * 1024) { resp.destroy(); reject(new Error('File too large (max 5MB)')); } });
+                resp.on('end', () => resolve(data));
+            });
+            req2.on('error', reject);
+            req2.on('timeout', () => { req2.destroy(); reject(new Error('Request timeout')); });
+        });
+
+        // Google의 "바이러스 경고" HTML 페이지 감지 (비공개 대용량 파일 시)
+        if (content.trim().startsWith('<!DOCTYPE') || content.trim().startsWith('<html')) {
+            return res.status(403).json({ success: false, error: '파일에 접근할 수 없습니다. Google Drive에서 "링크가 있는 모든 사용자"로 공유 설정을 확인하세요.' });
+        }
+
+        res.json({ success: true, content, fileId });
+    } catch (err) {
+        const msg = err.message === 'access_denied'
+            ? '파일이 비공개입니다. Google Drive에서 "링크가 있는 모든 사용자"로 공유 설정 후 시도하세요.'
+            : (err.message || String(err));
+        console.error('❌ /api/load-from-drive error:', msg);
+        res.status(400).json({ success: false, error: msg });
+    }
+});
+
+// ── /api/output: output/ 디렉토리 파일 목록 ─────────────────────────────────
+app.get('/api/output', (req, res) => {
+    const outputDir = path.join(__dirname, 'output');
+    if (!fs.existsSync(outputDir)) return res.json({ files: [] });
+
+    const client = (req.query.client || '').toLowerCase();
+    const type   = (req.query.type   || 'all').toLowerCase(); // 'sdr' | 'tsd' | 'all'
+    const limit  = Math.min(parseInt(req.query.limit) || 20, 50);
+
+    const CONTENT_TYPES = {
+        '.xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        '.docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        '.json': 'application/json',
+        '.js':   'text/javascript',
+        '.md':   'text/markdown',
+    };
+
+    try {
+        const files = fs.readdirSync(outputDir)
+            .filter(f => {
+                // 내부 result JSON 파일 제외
+                if (['nodes_export.json','sdr_nodes.json','tags_nodes.json','tsd_nodes.json'].includes(f)) return false;
+                const ext = path.extname(f).toLowerCase();
+                if (!CONTENT_TYPES[ext]) return false;
+                // type 필터
+                if (type === 'sdr' && !f.toUpperCase().startsWith('SDR_')) return false;
+                if (type === 'tsd' && !f.toUpperCase().startsWith('TSD_')) return false;
+                // client 필터 (대소문자 무관)
+                if (client && !f.toLowerCase().includes(client)) return false;
+                return true;
+            })
+            .map(f => {
+                const ext = path.extname(f).toLowerCase();
+                const stat = fs.statSync(path.join(outputDir, f));
+                const fileType = f.toUpperCase().startsWith('SDR_') ? 'SDR'
+                    : f.toUpperCase().startsWith('TSD_') ? 'TSD' : 'OTHER';
+                return {
+                    name: f,
+                    size: stat.size,
+                    modified: stat.mtime.toISOString(),
+                    type: fileType,
+                    ext: ext,
+                    downloadUrl: `/api/output/download/${encodeURIComponent(f)}`,
+                };
+            })
+            .sort((a, b) => b.modified.localeCompare(a.modified))
+            .slice(0, limit);
+
+        res.json({ files });
+    } catch (err) {
+        console.error('❌ /api/output error:', err.message);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// ── /api/output/download/:filename: 로컬 생성 파일 다운로드 ──────────────────
+app.get('/api/output/download/:filename', (req, res) => {
+    const filename = req.params.filename;
+
+    // Path traversal 방어
+    if (/[/\\]|\.\./.test(filename)) {
+        return res.status(400).json({ error: 'Invalid filename' });
+    }
+
+    const CONTENT_TYPES = {
+        '.xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        '.docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        '.json': 'application/json',
+        '.js':   'text/javascript',
+        '.md':   'text/markdown',
+    };
+
+    const ext = path.extname(filename).toLowerCase();
+    if (!CONTENT_TYPES[ext]) {
+        return res.status(400).json({ error: 'Unsupported file type' });
+    }
+
+    const filePath = path.join(__dirname, 'output', filename);
+
+    // output 디렉토리 경계 확인 (resolved path가 output/ 안에 있는지)
+    const outputDir = path.resolve(__dirname, 'output');
+    const resolvedPath = path.resolve(filePath);
+    if (!resolvedPath.startsWith(outputDir + path.sep) && resolvedPath !== outputDir) {
+        return res.status(400).json({ error: 'Access denied' });
+    }
+
+    if (!fs.existsSync(filePath)) {
+        return res.status(404).json({ error: 'File not found' });
+    }
+
+    res.setHeader('Content-Type', CONTENT_TYPES[ext]);
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.sendFile(resolvedPath);
 });
 
 // ── /api/n8n-mode: n8n 웹훅 모드 조회/변경 ─────────────────────────────────

@@ -34,7 +34,7 @@
     {
       "parameters": {
         "respondWith": "json",
-        "responseBody": "={{ JSON.stringify({ success: true, jobId: $('Validate Tags Input').first().json.jobId, message: 'Tags 생성이 시작되었습니다.' }) }}",
+        "responseBody": "={{ JSON.stringify({ success: true, jobId: $('Validate Tags Input').first().json.jobId, executionId: $execution.id, message: 'Tags 생성이 시작되었습니다.' }) }}",
         "options": {}
       },
       "id": "33333333-3333-3333-3333-333333333333",
@@ -65,7 +65,7 @@
         "url": "={{ $('Validate Tags Input').first().json.callbackUrl || 'http://host.docker.internal:3000/webhook/sdr-result' }}",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ jobId: $('Validate Tags Input').first().json.jobId, status: 'completed', message: 'Adobe Launch Tags 생성 완료', completedAt: new Date().toISOString() }) }}",
+        "jsonBody": "={{ JSON.stringify({ jobId: $('Validate Tags Input').first().json.jobId, executionId: $execution.id, status: 'completed', message: 'Adobe Launch Tags 생성 완료', completedAt: new Date().toISOString() }) }}",
         "options": {
           "timeout": 10000
         }
@@ -86,7 +86,7 @@
         "url": "={{ $('Validate Tags Input').first().json.callbackUrl || 'http://host.docker.internal:3000/webhook/sdr-result' }}",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ jobId: $('Validate Tags Input').first().json.jobId, status: 'failed', error: $json.error?.message || 'Tags creation failed', failedAt: new Date().toISOString() }) }}",
+        "jsonBody": "={{ JSON.stringify({ jobId: $('Validate Tags Input').first().json.jobId, executionId: $execution.id, status: 'failed', error: $json.error?.message || 'Tags creation failed', failedAt: new Date().toISOString() }) }}",
         "options": {
           "timeout": 10000
         }
@@ -498,7 +498,7 @@
         "url": "={{ $('Validate Tags Input').first().json.callbackUrl || 'http://host.docker.internal:3000/webhook/sdr-result' }}",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ jobId: $('Validate Tags Input').first().json.jobId, status: 'step_tags_start', message: 'Adobe Launch Tags 생성 시작' }) }}",
+        "jsonBody": "={{ JSON.stringify({ jobId: $('Validate Tags Input').first().json.jobId, executionId: $execution.id, status: 'step_tags_start', message: 'Adobe Launch Tags 생성 시작' }) }}",
         "options": {
           "timeout": 5000
         }
