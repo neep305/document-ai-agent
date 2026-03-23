@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Document AI v2.0</title>
+  <title>Tagging AI v2.0</title>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -429,6 +429,70 @@
     .sdr-drive-hint { font-size: 11px; color: var(--text-3); margin-top: 6px; }
     .sdr-drive-hint a { color: var(--blue-l); text-decoration: none; }
 
+    /* ── GOOGLE AUTH BAR ── */
+    .google-auth-bar {
+      display: flex; align-items: center; gap: 8px; padding: 7px 10px;
+      background: var(--bg-3); border: 1px solid var(--border-md);
+      border-radius: var(--r); margin-bottom: 8px; font-size: 12px;
+    }
+    .google-auth-bar .g-status { flex: 1; color: var(--text-2); }
+    .google-auth-bar .g-status .g-email { font-weight: 600; color: var(--text-1); }
+    .btn-g-login  { font-size: 11px; padding: 4px 10px; background: #4285f4; color: #fff; border: none; border-radius: 4px; cursor: pointer; white-space: nowrap; }
+    .btn-g-login:hover { background: #3367d6; }
+    .btn-g-logout { font-size: 11px; padding: 4px 10px; background: var(--bg-2); color: var(--text-2); border: 1px solid var(--border-md); border-radius: 4px; cursor: pointer; }
+    .btn-g-browse { font-size: 11px; padding: 4px 10px; background: var(--bg-2); color: var(--text-1); border: 1px solid var(--border-md); border-radius: 4px; cursor: pointer; white-space: nowrap; }
+    .btn-g-browse:hover { border-color: var(--blue-l); color: var(--blue-l); }
+
+    /* ── DRIVE FILE EXPLORER MODAL ── */
+    .drive-modal-overlay {
+      display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.55);
+      z-index: 1000; align-items: center; justify-content: center;
+    }
+    .drive-modal-overlay.open { display: flex; }
+    .drive-modal {
+      background: var(--bg-2); border: 1px solid var(--border-md); border-radius: 10px;
+      width: 560px; max-width: 95vw; max-height: 80vh; display: flex; flex-direction: column;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.35);
+    }
+    .drive-modal-header {
+      padding: 14px 18px; border-bottom: 1px solid var(--border-md);
+      display: flex; align-items: center; gap: 10px;
+    }
+    .drive-modal-header .dm-title { font-weight: 600; font-size: 14px; flex: 1; }
+    .drive-modal-header .dm-close { background: none; border: none; cursor: pointer; color: var(--text-3); font-size: 18px; padding: 0 4px; }
+    .drive-modal-toolbar {
+      padding: 10px 18px; border-bottom: 1px solid var(--border-light);
+      display: flex; gap: 8px; align-items: center;
+    }
+    .btn-drive-back { background: none; border: none; cursor: pointer; color: var(--text-2); font-size: 15px; padding: 2px 6px; border-radius: 4px; line-height: 1; }
+    .btn-drive-back:hover { background: var(--bg-3); }
+    .btn-drive-back:disabled { opacity: 0.3; cursor: default; }
+    .drive-breadcrumb { font-size: 11px; color: var(--text-3); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .drive-breadcrumb span { cursor: pointer; color: var(--blue-l); }
+    .drive-breadcrumb span:last-child { color: var(--text-2); cursor: default; }
+    .drive-search { padding: 5px 9px; font-size: 12px; border: 1px solid var(--border-md); border-radius: 5px; background: var(--bg-2); color: var(--text-1); width: 160px; }
+    .drive-file-list { flex: 1; overflow-y: auto; padding: 6px 0; min-height: 200px; }
+    .drive-file-item {
+      display: flex; align-items: center; gap: 10px; padding: 7px 18px;
+      cursor: pointer; font-size: 13px; color: var(--text-1);
+      border-left: 3px solid transparent;
+    }
+    .drive-file-item:hover { background: var(--bg-3); }
+    .drive-file-item.selected { background: rgba(66,133,244,0.12); border-left-color: #4285f4; }
+    .drive-file-item .df-icon { font-size: 16px; flex-shrink: 0; }
+    .drive-file-item .df-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .drive-file-item .df-meta { font-size: 10px; color: var(--text-3); white-space: nowrap; }
+    .drive-empty { padding: 30px 18px; text-align: center; color: var(--text-3); font-size: 13px; }
+    .drive-loading { padding: 30px 18px; text-align: center; color: var(--text-3); font-size: 13px; }
+    .drive-modal-footer {
+      padding: 10px 18px; border-top: 1px solid var(--border-md);
+      display: flex; justify-content: flex-end; gap: 8px; align-items: center;
+    }
+    .drive-selected-name { font-size: 11px; color: var(--text-3); flex: 1; overflow: hidden; text-overflow: ellipsis; }
+    .btn-drive-cancel { padding: 6px 14px; font-size: 13px; background: var(--bg-2); border: 1px solid var(--border-md); border-radius: 5px; cursor: pointer; color: var(--text-1); }
+    .btn-drive-select { padding: 6px 14px; font-size: 13px; background: #4285f4; color: #fff; border: none; border-radius: 5px; cursor: pointer; }
+    .btn-drive-select:disabled { opacity: 0.4; cursor: not-allowed; }
+
     /* ── VALIDATION BANNER ── */
     .validation-banner {
       display: none; align-items: flex-start; gap: 10px; padding: 10px 13px;
@@ -638,13 +702,19 @@
           </button>
         </div>
         <div class="sdr-drive-panel" id="tsd-drivePanel">
+          <div class="google-auth-bar" id="tsd-googleAuthBar">
+            <span class="g-status" id="tsd-googleStatus">Google 로그인 확인 중...</span>
+            <button class="btn-g-browse" id="tsd-browseBtn" onclick="openDriveExplorer('tsd')" style="display:none">&#128193; Browse Drive</button>
+            <button class="btn-g-login" id="tsd-loginBtn" onclick="googleLogin()" style="display:none">Google 로그인</button>
+            <button class="btn-g-logout" id="tsd-logoutBtn" onclick="googleLogout()" style="display:none">로그아웃</button>
+          </div>
           <div class="sdr-drive-row">
-            <input type="text" id="tsd-driveUrl" placeholder="https://drive.google.com/file/d/..." />
+            <input type="text" id="tsd-driveUrl" placeholder="https://drive.google.com/file/d/... (공개 링크)" />
             <button class="btn-load" id="tsd-driveLoadBtn" onclick="loadFromDrive('tsd')">
-              <span class="ld-icon">&#8594;</span><span class="ld-spin">&#9696;</span> Load
+              <span class="ld-icon">&#8594;</span><span class="ld-spin">&#9696;</span> Load URL
             </button>
           </div>
-          <div class="sdr-drive-hint">&#9888; 파일을 Google Drive에서 <strong>"링크가 있는 모든 사용자"</strong>로 공유 설정 후 사용하세요. n8n SDR 결과(Excel)와는 별개로, JSON 파일을 직접 Drive에 올려 공유한 경우에만 동작합니다.</div>
+          <div class="sdr-drive-hint">&#9888; Google 로그인 후 Browse Drive로 파일을 직접 선택하거나, 공개 링크를 붙여넣어 사용하세요.</div>
         </div>
         <textarea id="tsd-sdrInput" placeholder='{"evars":[...],"props":[...],"events":[]}' oninput="onSdrInputChange('tsd')"></textarea>
         <div class="validation-banner" id="tsd-sdrValidation"></div>
@@ -734,13 +804,19 @@
           </button>
         </div>
         <div class="sdr-drive-panel" id="tags-drivePanel">
+          <div class="google-auth-bar" id="tags-googleAuthBar">
+            <span class="g-status" id="tags-googleStatus">Google 로그인 확인 중...</span>
+            <button class="btn-g-browse" id="tags-browseBtn" onclick="openDriveExplorer('tags')" style="display:none">&#128193; Browse Drive</button>
+            <button class="btn-g-login" id="tags-loginBtn" onclick="googleLogin()" style="display:none">Google 로그인</button>
+            <button class="btn-g-logout" id="tags-logoutBtn" onclick="googleLogout()" style="display:none">로그아웃</button>
+          </div>
           <div class="sdr-drive-row">
-            <input type="text" id="tags-driveUrl" placeholder="https://drive.google.com/file/d/..." />
+            <input type="text" id="tags-driveUrl" placeholder="https://drive.google.com/file/d/... (공개 링크)" />
             <button class="btn-load" id="tags-driveLoadBtn" onclick="loadFromDrive('tags')">
-              <span class="ld-icon">&#8594;</span><span class="ld-spin">&#9696;</span> Load
+              <span class="ld-icon">&#8594;</span><span class="ld-spin">&#9696;</span> Load URL
             </button>
           </div>
-          <div class="sdr-drive-hint">&#9888; 파일을 Google Drive에서 <strong>"링크가 있는 모든 사용자"</strong>로 공유 설정 후 사용하세요.</div>
+          <div class="sdr-drive-hint">&#9888; Google 로그인 후 Browse Drive로 파일을 직접 선택하거나, 공개 링크를 붙여넣어 사용하세요.</div>
         </div>
         <textarea id="tags-sdrInput" placeholder='{"evars":[...],"props":[...],"events":[]}' oninput="onSdrInputChange('tags')"></textarea>
         <div class="validation-banner" id="tags-sdrValidation"></div>
@@ -1083,6 +1159,251 @@ async function loadFromDrive(stage) {
     toggleBtn.classList.remove('loading'); toggleBtn.disabled = false;
   }
 }
+
+// ── Google Auth ──────────────────────────────────────────────────────────────
+
+var _driveStage = null;          // 현재 어느 stage에서 explorer를 열었는지
+var _driveSelected = null;       // { id, name }
+var _driveFolderStack = [];      // breadcrumb 스택 [{ id, name }]
+var _driveAllFiles = [];         // 현재 폴더의 파일 목록 (검색 필터용)
+
+// Google 로그인 상태 확인 후 auth bar 업데이트
+async function refreshGoogleAuthStatus() {
+  try {
+    var r = await fetch('/auth/google/status');
+    var data = await r.json();
+    ['tsd', 'tags'].forEach(function(stage) {
+      var statusEl  = document.getElementById(stage + '-googleStatus');
+      var loginBtn  = document.getElementById(stage + '-loginBtn');
+      var logoutBtn = document.getElementById(stage + '-logoutBtn');
+      var browseBtn = document.getElementById(stage + '-browseBtn');
+      if (!statusEl) return;
+
+      if (!data.configured) {
+        statusEl.innerHTML = '<span style="color:var(--text-3)">Google OAuth 미설정 (.env에 GOOGLE_CLIENT_ID 필요)</span>';
+        loginBtn.style.display = 'none';
+        logoutBtn.style.display = 'none';
+        browseBtn.style.display = 'none';
+      } else if (data.loggedIn) {
+        statusEl.innerHTML = '&#10003; <span class="g-email">' + (data.email || '') + '</span> 로그인됨';
+        loginBtn.style.display = 'none';
+        logoutBtn.style.display = '';
+        browseBtn.style.display = '';
+      } else {
+        statusEl.innerHTML = '<span style="color:var(--text-3)">로그인 필요</span>';
+        loginBtn.style.display = '';
+        logoutBtn.style.display = 'none';
+        browseBtn.style.display = 'none';
+      }
+    });
+  } catch(e) {
+    console.warn('Google auth status check failed:', e.message);
+  }
+}
+
+function googleLogin() {
+  var popup = window.open('/auth/google', 'google-auth', 'width=500,height=620,left=200,top=100');
+  var timer = setInterval(function() {
+    if (popup && popup.closed) {
+      clearInterval(timer);
+      refreshGoogleAuthStatus();
+    }
+  }, 500);
+  window.addEventListener('message', function onMsg(e) {
+    if (!e.data || e.data.type !== 'google-auth') return;
+    window.removeEventListener('message', onMsg);
+    clearInterval(timer);
+    if (e.data.success) {
+      refreshGoogleAuthStatus();
+    } else {
+      alert('Google 로그인 실패: ' + (e.data.error || '알 수 없는 오류'));
+    }
+  });
+}
+
+async function googleLogout() {
+  await fetch('/auth/google/logout', { method: 'POST' });
+  refreshGoogleAuthStatus();
+}
+
+// Drive Explorer 열기
+function openDriveExplorer(stage) {
+  _driveStage = stage;
+  _driveSelected = null;
+  _driveFolderStack = [{ id: 'root', name: 'My Drive' }];
+  document.getElementById('driveSelectedName').textContent = '선택된 파일 없음';
+  document.getElementById('driveSelectBtn').disabled = true;
+  document.getElementById('driveSearch').value = '';
+  document.getElementById('driveModalOverlay').classList.add('open');
+  driveLoadFolder('root');
+}
+
+function closeDriveExplorer() {
+  document.getElementById('driveModalOverlay').classList.remove('open');
+}
+
+// 폴더 로드
+async function driveLoadFolder(folderId) {
+  var listEl = document.getElementById('driveFileList');
+  listEl.innerHTML = '<div class="drive-loading">&#9696; 로딩 중...</div>';
+  updateBreadcrumb();
+  try {
+    var r = await fetch('/api/drive/list?folderId=' + encodeURIComponent(folderId));
+    var data = await r.json();
+    if (!data.success) throw new Error(data.error || 'Drive list failed');
+    _driveAllFiles = data.files || [];
+    renderDriveFiles(_driveAllFiles);
+  } catch(e) {
+    listEl.innerHTML = '<div class="drive-empty">오류: ' + e.message + '</div>';
+  }
+}
+
+// 파일 목록 렌더링
+function renderDriveFiles(files) {
+  var listEl = document.getElementById('driveFileList');
+  var searchVal = (document.getElementById('driveSearch').value || '').toLowerCase();
+  var filtered = searchVal
+    ? files.filter(function(f) { return f.name.toLowerCase().includes(searchVal); })
+    : files;
+
+  if (!filtered.length) {
+    listEl.innerHTML = '<div class="drive-empty">JSON 파일 또는 폴더가 없습니다.</div>';
+    return;
+  }
+
+  var html = '';
+  filtered.forEach(function(f) {
+    var isFolder = f.mimeType === 'application/vnd.google-apps.folder';
+    var icon = isFolder ? '&#128193;' : '&#128196;';
+    var size = (!isFolder && f.size) ? formatBytes(parseInt(f.size)) : '';
+    var date = f.modifiedTime ? f.modifiedTime.slice(0,10) : '';
+    var selClass = (_driveSelected && _driveSelected.id === f.id) ? ' selected' : '';
+    html += '<div class="drive-file-item' + selClass + '" data-id="' + f.id + '" data-name="' + escHtml(f.name) + '" data-folder="' + isFolder + '" onclick="driveItemClick(this)">';
+    html += '<span class="df-icon">' + icon + '</span>';
+    html += '<span class="df-name">' + escHtml(f.name) + '</span>';
+    html += '<span class="df-meta">' + (size ? size + ' &nbsp; ' : '') + date + '</span>';
+    html += '</div>';
+  });
+  listEl.innerHTML = html;
+}
+
+function driveItemClick(el) {
+  var id = el.dataset.id;
+  var name = el.dataset.name;
+  var isFolder = el.dataset.folder === 'true';
+
+  if (isFolder) {
+    _driveFolderStack.push({ id: id, name: name });
+    _driveSelected = null;
+    document.getElementById('driveSelectedName').textContent = '선택된 파일 없음';
+    document.getElementById('driveSelectBtn').disabled = true;
+    document.getElementById('driveSearch').value = '';
+    driveLoadFolder(id);
+  } else {
+    // 파일 선택
+    _driveSelected = { id: id, name: name };
+    document.getElementById('driveSelectedName').textContent = name;
+    document.getElementById('driveSelectBtn').disabled = false;
+    // 선택 스타일 업데이트
+    document.querySelectorAll('.drive-file-item').forEach(function(item) {
+      item.classList.toggle('selected', item.dataset.id === id);
+    });
+  }
+}
+
+// 뒤로가기 — 스택에서 한 단계 위로
+function driveGoBack() {
+  if (_driveFolderStack.length <= 1) return;
+  _driveFolderStack = _driveFolderStack.slice(0, _driveFolderStack.length - 1);
+  var parent = _driveFolderStack[_driveFolderStack.length - 1];
+  _driveSelected = null;
+  document.getElementById('driveSelectedName').textContent = '선택된 파일 없음';
+  document.getElementById('driveSelectBtn').disabled = true;
+  document.getElementById('driveSearch').value = '';
+  updateBreadcrumb();
+  driveLoadFolder(parent.id);
+}
+
+// breadcrumb 클릭으로 상위 폴더 이동
+function driveNavigate(folderId, folderName) {
+  var idx = _driveFolderStack.findIndex(function(f) { return f.id === folderId; });
+  if (idx >= 0) _driveFolderStack = _driveFolderStack.slice(0, idx + 1);
+  else _driveFolderStack = [{ id: folderId, name: folderName }];
+  _driveSelected = null;
+  document.getElementById('driveSelectedName').textContent = '선택된 파일 없음';
+  document.getElementById('driveSelectBtn').disabled = true;
+  document.getElementById('driveSearch').value = '';
+  driveLoadFolder(folderId);
+}
+
+function updateBreadcrumb() {
+  document.getElementById('driveBackBtn').disabled = _driveFolderStack.length <= 1;
+  var el = document.getElementById('driveBreadcrumb');
+  el.innerHTML = _driveFolderStack.map(function(f, i) {
+    if (i === _driveFolderStack.length - 1) {
+      return '<span style="color:var(--text-2);cursor:default">' + escHtml(f.name) + '</span>';
+    }
+    return '<span onclick="driveNavigate(\'' + f.id + '\',\'' + escHtml(f.name) + '\')">' + escHtml(f.name) + '</span> &rsaquo; ';
+  }).join('');
+}
+
+function driveSearchFilter() {
+  renderDriveFiles(_driveAllFiles);
+}
+
+// 선택 확정 → 파일 내용 로드
+async function confirmDriveSelection() {
+  if (!_driveSelected) return;
+  var btn = document.getElementById('driveSelectBtn');
+  btn.disabled = true;
+  btn.textContent = '로딩 중...';
+  try {
+    var r = await fetch('/api/drive/file/' + encodeURIComponent(_driveSelected.id));
+    var data = await r.json();
+    if (!data.success) throw new Error(data.error || 'File load failed');
+
+    var ta = document.getElementById(_driveStage + '-sdrInput');
+    ta.value = data.content;
+    var vr = validateSdrJson(data.content);
+    renderValidation(_driveStage, vr);
+    closeDriveExplorer();
+
+    // drive panel 닫기
+    var panel = document.getElementById(_driveStage + '-drivePanel');
+    if (panel && vr.valid) panel.classList.remove('open');
+  } catch(e) {
+    showErr(_driveStage, e.message);
+    closeDriveExplorer();
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '선택';
+  }
+}
+
+function escHtml(str) {
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function formatBytes(b) {
+  if (b < 1024) return b + ' B';
+  if (b < 1024*1024) return (b/1024).toFixed(1) + ' KB';
+  return (b/1024/1024).toFixed(1) + ' MB';
+}
+
+// 페이지 로드 시 Google 인증 상태 확인
+document.addEventListener('DOMContentLoaded', function() {
+  refreshGoogleAuthStatus();
+});
+
+// drive panel 열릴 때마다 상태 갱신
+var _origToggleDrivePanel = toggleDrivePanel;
+toggleDrivePanel = function(stage) {
+  _origToggleDrivePanel(stage);
+  var panel = document.getElementById(stage + '-drivePanel');
+  if (panel && panel.classList.contains('open')) {
+    refreshGoogleAuthStatus();
+  }
+};
 
 // ── SDR textarea change handler ────────────────────────────────────────────
 function onSdrInputChange(stage) {
@@ -1656,5 +1977,29 @@ setInterval(loadJobs, 10000);
     </div>
   </div>
 </div>
+
+  <!-- Google Drive File Explorer Modal -->
+  <div class="drive-modal-overlay" id="driveModalOverlay">
+    <div class="drive-modal">
+      <div class="drive-modal-header">
+        <span style="font-size:20px">&#9729;</span>
+        <span class="dm-title">Google Drive — JSON 파일 선택</span>
+        <button class="dm-close" onclick="closeDriveExplorer()">&#10005;</button>
+      </div>
+      <div class="drive-modal-toolbar">
+        <button class="btn-drive-back" id="driveBackBtn" onclick="driveGoBack()" disabled title="상위 폴더로">&#8592;</button>
+        <div class="drive-breadcrumb" id="driveBreadcrumb"><span onclick="driveNavigate('root','My Drive')">My Drive</span></div>
+        <input class="drive-search" id="driveSearch" type="text" placeholder="&#128269; 검색..." oninput="driveSearchFilter()" />
+      </div>
+      <div class="drive-file-list" id="driveFileList">
+        <div class="drive-loading">&#9696; 로딩 중...</div>
+      </div>
+      <div class="drive-modal-footer">
+        <span class="drive-selected-name" id="driveSelectedName">선택된 파일 없음</span>
+        <button class="btn-drive-cancel" onclick="closeDriveExplorer()">취소</button>
+        <button class="btn-drive-select" id="driveSelectBtn" disabled onclick="confirmDriveSelection()">선택</button>
+      </div>
+    </div>
+  </div>
 </body>
 </html>

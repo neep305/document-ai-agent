@@ -5,6 +5,8 @@ const fs = require('fs');
 const { spawn } = require('child_process');
 const https = require('https');
 const http = require('http');
+const session = require('express-session');
+const { google } = require('googleapis');
 require('dotenv').config();
 
 // â”€â”€ In-memory job store â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -109,7 +111,26 @@ async function getN8nSessionCookie(apiBase) {
     });
 }
 
-// Runtime mode: 'production' uses /webhook/, 'test' uses /webhook-test/
+// ── Google OAuth2 ─────────────────────────────────────────────────────────────
+const GOOGLE_CLIENT_ID     = process.env.GOOGLE_CLIENT_ID || '';
+const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET || '';
+const GOOGLE_REDIRECT_URI  = process.env.GOOGLE_REDIRECT_URI || 'http://localhost:3000/auth/google/callback';
+
+// 단일 사용자 환경 — 인증 토큰을 메모리에 보관
+let googleAuth = { tokens: null, email: null };
+
+function createOAuth2Client() {
+    return new google.auth.OAuth2(GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_REDIRECT_URI);
+}
+
+function getAuthenticatedClient() {
+    if (!googleAuth.tokens) return null;
+    const oAuth2 = createOAuth2Client();
+    oAuth2.setCredentials(googleAuth.tokens);
+    return oAuth2;
+}
+
+// ── Runtime mode: 'production' uses /webhook/, 'test' uses /webhook-test/ ────
 let n8nMode = 'production';
 
 function getN8nUrl(stage) {
@@ -191,6 +212,14 @@ function getFieldValue(record, keys) {
 }
 
 // ì •ì  íŒŒì¼ ì„œë¹™
+// 세션 미들웨어 (Google OAuth token 서버 보관용)
+app.use(session({
+    secret: process.env.SESSION_SECRET || 'doc-ai-session-secret',
+    resave: false,
+    saveUninitialized: false,
+    cookie: { secure: false, maxAge: 24 * 60 * 60 * 1000 }
+}));
+
 app.use(express.static('public'));
 
 // JSON íŒŒì‹± (ëŒ€ìš©ëŸ‰ íŒŒì¼ ì§€ì›)
@@ -1332,6 +1361,113 @@ app.post('/api/n8n-mode', (req, res) => {
     n8nMode = mode;
     console.log(`🔀 n8n mode switched to: ${mode}`);
     res.json({ mode, urls: { sdr: getN8nUrl('sdr'), tsd: getN8nUrl('tsd'), tags: getN8nUrl('tags') } });
+});
+
+// ── Google OAuth2 Endpoints ──────────────────────────────────────────────────
+
+// 1. Google 로그인 시작 — consent screen으로 redirect
+app.get('/auth/google', (req, res) => {
+    if (!GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET) {
+        return res.status(503).send('<h3>Google OAuth not configured. Set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET in .env</h3>');
+    }
+    const oAuth2 = createOAuth2Client();
+    const authUrl = oAuth2.generateAuthUrl({
+        access_type: 'offline',
+        prompt: 'consent',
+        scope: [
+            'https://www.googleapis.com/auth/drive.readonly',
+            'https://www.googleapis.com/auth/userinfo.email',
+        ],
+    });
+    res.redirect(authUrl);
+});
+
+// 2. OAuth callback — code → tokens 교환 후 메모리에 저장
+app.get('/auth/google/callback', async (req, res) => {
+    const { code, error } = req.query;
+    const closeScript = (success, errMsg) => {
+        const payload = success
+            ? JSON.stringify({ type: 'google-auth', success: true })
+            : JSON.stringify({ type: 'google-auth', success: false, error: errMsg });
+        return `<script>window.opener && window.opener.postMessage(${payload}, '*'); window.close();</script>`;
+    };
+    if (error) return res.send(closeScript(false, error));
+    if (!code) return res.status(400).send('Missing code');
+    try {
+        const oAuth2 = createOAuth2Client();
+        const { tokens } = await oAuth2.getToken(code);
+        oAuth2.setCredentials(tokens);
+        const oauth2Api = google.oauth2({ version: 'v2', auth: oAuth2 });
+        const { data: userInfo } = await oauth2Api.userinfo.get();
+        googleAuth = { tokens, email: userInfo.email };
+        console.log(`✅ Google 로그인 완료: ${userInfo.email}`);
+        res.send(closeScript(true));
+    } catch (err) {
+        console.error('❌ Google OAuth callback 오류:', err.message);
+        res.send(closeScript(false, err.message));
+    }
+});
+
+// 3. 로그인 상태 확인
+app.get('/auth/google/status', (req, res) => {
+    if (!GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET) {
+        return res.json({ configured: false, loggedIn: false });
+    }
+    res.json({ configured: true, loggedIn: !!googleAuth.tokens, email: googleAuth.email || null });
+});
+
+// 4. 로그아웃
+app.post('/auth/google/logout', (req, res) => {
+    googleAuth = { tokens: null, email: null };
+    console.log('🔓 Google 로그아웃');
+    res.json({ success: true });
+});
+
+// 5. Drive 파일/폴더 목록 (JSON 파일 + 폴더만)
+app.get('/api/drive/list', async (req, res) => {
+    const authClient = getAuthenticatedClient();
+    if (!authClient) return res.status(401).json({ error: '로그인이 필요합니다.' });
+
+    const { folderId = 'root', search = '' } = req.query;
+    try {
+        const drive = google.drive({ version: 'v3', auth: authClient });
+        const qParts = [
+            `'${folderId}' in parents`,
+            'trashed = false',
+            "(mimeType = 'application/vnd.google-apps.folder' or mimeType = 'application/json')",
+        ];
+        if (search) qParts.push(`name contains '${search.replace(/'/g, '')}'`);
+
+        const response = await drive.files.list({
+            q: qParts.join(' and '),
+            fields: 'files(id, name, mimeType, modifiedTime, size)',
+            orderBy: 'folder,name',
+            pageSize: 100,
+        });
+        res.json({ success: true, files: response.data.files });
+    } catch (err) {
+        console.error('❌ Drive list 오류:', err.message);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// 6. Drive 파일 내용 다운로드
+app.get('/api/drive/file/:fileId', async (req, res) => {
+    const authClient = getAuthenticatedClient();
+    if (!authClient) return res.status(401).json({ error: '로그인이 필요합니다.' });
+
+    try {
+        const drive = google.drive({ version: 'v3', auth: authClient });
+        const { data } = await drive.files.get(
+            { fileId: req.params.fileId, alt: 'media' },
+            { responseType: 'text' }
+        );
+        const content = typeof data === 'string' ? data : JSON.stringify(data);
+        res.json({ success: true, content });
+    } catch (err) {
+        console.error('❌ Drive file 다운로드 오류:', err.message);
+        res.status(500).json({ error: err.message });
+    }
 });
 
 // Health check

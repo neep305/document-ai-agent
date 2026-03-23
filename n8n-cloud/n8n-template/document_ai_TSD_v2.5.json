@@ -540,43 +540,6 @@
       "continueOnFail": true
     },
     {
-      "parameters": {
-        "resource": "file",
-        "operation": "createFromText",
-        "content": "={{ $('Parse TSD Output').first().json.files.markdown.content }}",
-        "name": "={{ $('Parse TSD Output').first().json.clientName + '_TSD_' + new Date().toISOString().slice(0,10) }}",
-        "driveId": {
-          "__rl": true,
-          "mode": "list",
-          "value": "My Drive"
-        },
-        "folderId": {
-          "__rl": true,
-          "mode": "id",
-          "value": "={{ $input.first().json.id }}"
-        },
-        "options": {
-          "convertToGoogleDocument": true
-        },
-        "optionsUi": {}
-      },
-      "id": "gdoc-tsd-create-0001-0001-000000000001",
-      "name": "Create TSD Google Doc",
-      "type": "n8n-nodes-base.googleDrive",
-      "typeVersion": 3,
-      "position": [
-        32300,
-        2780
-      ],
-      "credentials": {
-        "googleDriveOAuth2Api": {
-          "id": "AYG1qOCT9TIoQ4ia",
-          "name": "Google Drive account"
-        }
-      },
-      "continueOnFail": true
-    },
-    {
       "id": "121adb18-09e6-4c2b-a090-5b7238421224",
       "name": "Merge DOCX + Folder",
       "type": "n8n-nodes-base.merge",
@@ -1067,11 +1030,6 @@
             "node": "Merge DOCX + Folder",
             "type": "main",
             "index": 1
-          },
-          {
-            "node": "Create TSD Google Doc",
-            "type": "main",
-            "index": 0
           }
         ]
       ]
