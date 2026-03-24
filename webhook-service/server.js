@@ -541,9 +541,11 @@ app.post('/trigger/sdr', async (req, res) => {
 // ── /trigger/tsd: sdrData JSON → TSD 워크플로우 트리거 ──────────────────────────────────────────────
 app.post('/trigger/tsd', async (req, res) => {
     try {
-        const { clientName, sdrData, jobId: existingJobId } = req.body;
+        const { clientName, jobId: existingJobId } = req.body;
         if (!clientName) return res.status(400).json({ error: 'clientName required' });
-        if (!sdrData)    return res.status(400).json({ error: 'sdrData required' });
+        if (!req.body.sdrData) return res.status(400).json({ error: 'sdrData required' });
+        // Unwrap if client sent { sdrData: { evars, ... } } or { sdrData: { sdrData: { evars, ... } } }
+        let sdrData = req.body.sdrData.sdrData || req.body.sdrData;
         if (!sdrData.evars || !sdrData.props || !sdrData.events) {
             return res.status(400).json({ error: 'sdrData must contain evars, props, and events' });
         }
@@ -578,9 +580,11 @@ app.post('/trigger/tsd', async (req, res) => {
 // ── /trigger/tags: sdrData JSON → Tags(Adobe Launch) 워크플로우 트리거 ────────────────────────────────
 app.post('/trigger/tags', async (req, res) => {
     try {
-        const { clientName, sdrData, jobId: existingJobId } = req.body;
+        const { clientName, adobeCredentials, jobId: existingJobId } = req.body;
         if (!clientName) return res.status(400).json({ error: 'clientName required' });
-        if (!sdrData)    return res.status(400).json({ error: 'sdrData required' });
+        if (!req.body.sdrData) return res.status(400).json({ error: 'sdrData required' });
+        // Unwrap if client sent { sdrData: { evars, ... } } or { sdrData: { sdrData: { evars, ... } } }
+        let sdrData = req.body.sdrData.sdrData || req.body.sdrData;
         if (!sdrData.evars || !sdrData.events) {
             return res.status(400).json({ error: 'sdrData must contain evars and events for Tags creation' });
         }
@@ -595,7 +599,7 @@ app.post('/trigger/tags', async (req, res) => {
         console.log('🚀 Tags trigger: client="' + clientName + '", eVars=' + sdrData.evars.length + ', Events=' + sdrData.events.length);
 
         const { jobId } = await callN8nAndRegisterJob(webhookUrl,
-            { clientName, sdrData, callbackUrl, jobId: existingJobId },
+            { clientName, sdrData, adobeCredentials, callbackUrl, jobId: existingJobId },
             { clientName, stage: 'tags',
               steps: [
                 { step: 1, name: 'trigger',     status: 'completed', updatedAt: now },

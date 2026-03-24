@@ -87,6 +87,7 @@
     [data-theme="light"] .btn-sm:hover { background: #E4EBF7; color: #1E293B; }
     [data-theme="light"] .n8n-mode-btn.mode-production { color: #059669; border-color: rgba(5,150,105,0.4); }
     [data-theme="light"] .n8n-mode-btn.mode-test { color: #d97706; border-color: rgba(217,119,6,0.4); background: rgba(217,119,6,0.05); }
+    [data-theme="light"] .cred-field-input { background: #fff; color: #1E293B; }
 
     html { scroll-behavior: smooth; }
 
@@ -132,6 +133,8 @@
     }
     .brand h1 { font-size: 19px; font-weight: 800; color: #fff; letter-spacing: -0.4px; }
     .brand h1 em { font-style: normal; color: var(--blue-l); }
+    .build-date { font-size: 11px; color: rgba(255,255,255,0.35); font-weight: 400; margin-left: 10px; vertical-align: middle; letter-spacing: 0; }
+    [data-theme="light"] .build-date { color: rgba(30,40,80,0.4); }
     .brand p { font-size: 12px; color: rgba(255,255,255,0.4); margin-top: 3px; font-weight: 500; }
     .live-badge {
       display: flex; align-items: center; gap: 6px; padding: 5px 12px;
@@ -140,6 +143,34 @@
       color: var(--green-l); letter-spacing: 0.08em;
     }
     .pulse { width: 6px; height: 6px; border-radius: 50%; background: var(--green-l); animation: pulse 2s infinite; }
+
+    /* ── CLIENT BAR ── */
+    .client-bar {
+      background: var(--bg-2); border: 1px solid var(--border);
+      border-radius: var(--r-lg); padding: 8px 14px;
+      display: flex; align-items: center; margin-bottom: 8px;
+    }
+    .client-bar-inner { display: flex; align-items: center; gap: 10px; width: 100%; }
+    .client-bar-label { font-size: 11px; font-weight: 700; letter-spacing: 0.07em; color: var(--text-3); text-transform: uppercase; }
+    .client-bar-name { font-size: 14px; font-weight: 700; color: var(--text-1); flex: 1; }
+    .client-bar-name.empty { color: var(--text-3); font-weight: 400; font-style: italic; }
+    .client-bar-btn {
+      font-size: 12px; font-weight: 600; padding: 4px 12px; border-radius: 6px; border: none; cursor: pointer;
+      background: rgba(99,102,241,0.12); color: var(--purple-l); transition: background 0.15s;
+    }
+    .client-bar-btn:hover { background: rgba(99,102,241,0.22); }
+    [data-theme="light"] .client-bar { background: #F8FAFC; border-color: #E2E8F0; }
+    [data-theme="light"] .client-bar-btn { background: rgba(37,99,235,0.08); color: #1D4ED8; }
+    [data-theme="light"] .client-bar-btn:hover { background: rgba(37,99,235,0.16); }
+
+    /* Client modal */
+    .client-modal-input {
+      width: 100%; padding: 10px 14px; border-radius: 8px; border: 1px solid var(--border);
+      background: var(--bg-3); color: var(--text-1); font-size: 14px; font-family: inherit;
+      box-sizing: border-box; margin: 4px 0 16px;
+    }
+    .client-modal-input:focus { outline: none; border-color: var(--purple-l); }
+    [data-theme="light"] .client-modal-input { background: #fff; color: #1E293B; border-color: #CBD5E1; }
 
     /* ── TAB NAV ── */
     .tab-nav {
@@ -405,6 +436,51 @@
     }
     .modal-btn-confirm:hover { background: rgba(239,68,68,0.2); }
 
+    /* ── CREDENTIALS MODAL ── */
+    .cred-modal-box { max-width: 520px; }
+    .cred-modal-icon {
+      width: 44px; height: 44px; border-radius: 50%;
+      background: rgba(139,92,246,0.12); border: 1px solid rgba(139,92,246,0.28);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px; margin-bottom: 16px;
+    }
+    .cred-field-row {
+      display: grid; grid-template-columns: 130px 1fr; gap: 6px;
+      align-items: center; margin-bottom: 10px;
+    }
+    .cred-field-label {
+      font-size: 11px; font-weight: 700; letter-spacing: 0.06em;
+      text-transform: uppercase; color: var(--text-2);
+    }
+    .cred-field-input {
+      width: 100%; padding: 8px 12px; background: var(--bg-3);
+      border: 1px solid var(--border-md); border-radius: var(--r-sm);
+      color: var(--text); font-size: 12px; font-family: 'JetBrains Mono', monospace;
+      transition: border 0.2s; box-sizing: border-box;
+    }
+    .cred-field-input:focus { outline: none; border-color: var(--purple); box-shadow: 0 0 0 3px rgba(139,92,246,0.12); }
+    .cred-modal-btn-save {
+      padding: 8px 18px; border-radius: var(--r-sm);
+      border: 1px solid rgba(139,92,246,0.5);
+      background: rgba(139,92,246,0.12); color: var(--purple-l);
+      font-size: 13px; font-weight: 700; cursor: pointer; font-family: inherit;
+      transition: background 0.15s;
+    }
+    .cred-modal-btn-save:hover { background: rgba(139,92,246,0.22); }
+    .cred-modal-btn-clear {
+      padding: 8px 14px; border-radius: var(--r-sm);
+      border: 1px solid var(--border-md); background: transparent;
+      color: var(--text-3); font-size: 12px; font-weight: 600;
+      cursor: pointer; font-family: inherit;
+    }
+    .btn-sm {
+      padding: 4px 10px; border-radius: var(--r-sm);
+      border: 1px solid var(--border-md); background: var(--bg-3);
+      color: var(--text-2); font-size: 11px; font-weight: 700;
+      cursor: pointer; font-family: inherit; transition: all 0.15s;
+    }
+    .btn-sm:hover { background: var(--bg-4); color: var(--text); }
+
     /* ── SDR DATA LOAD ── */
     .sdr-load-actions { display: flex; gap: 8px; margin-bottom: 10px; }
     .btn-load {
@@ -548,7 +624,7 @@
   <header class="site-header">
     <div class="header-row">
       <div class="brand">
-        <h1>Document AI <em>v2.0</em></h1>
+        <h1>Tagging AI <em>v2.0</em><span class="build-date">Built 2026-03-24</span></h1>
         <p>Adobe Analytics Automated Documentation Pipeline</p>
       </div>
       <div class="header-controls">
@@ -556,16 +632,25 @@
           <span class="mode-dot" id="n8nModeIcon">&#9679;</span>
           <span id="n8nModeLabel">PRODUCTION</span>
         </button>
-        <button id="themeToggle" class="theme-toggle" title="Toggle theme">
-          <span class="tt-label light">LIGHT</span><span class="tt-sep">|</span><span class="tt-label dark active">DARK</span>
-        </button>
         <div class="live-badge">
           <span class="pulse"></span>
           LIVE
         </div>
+        <button id="themeToggle" class="theme-toggle" title="Toggle theme">
+          <span class="tt-label light">LIGHT</span><span class="tt-sep">|</span><span class="tt-label dark active">DARK</span>
+        </button>
       </div>
     </div>
   </header>
+
+  <!-- Global Client Bar -->
+  <div class="client-bar" id="clientBar">
+    <div class="client-bar-inner">
+      <span class="client-bar-label">Client</span>
+      <span class="client-bar-name empty" id="clientBarName">Not set</span>
+      <button class="client-bar-btn" id="clientBarBtn" onclick="openClientModal()">Set Client</button>
+    </div>
+  </div>
 
   <!-- Tab navigation -->
   <div class="tab-nav">
@@ -614,10 +699,6 @@
         <label class="field-label" for="sdr-sheetSelect">Select BRD Sheet</label>
         <select id="sdr-sheetSelect"><option value="">&#8212; Loading sheets &#8212;</option></select>
         <div class="hint">Select the sheet containing your requirements.</div>
-      </div>
-      <div class="form-group">
-        <label class="field-label" for="sdr-clientName">Client Name</label>
-        <input type="text" id="sdr-clientName" placeholder="e.g., GSSHOP" />
       </div>
       <button class="btn-primary btn-sdr" id="sdr-btn" onclick="triggerStage('sdr')">
         <span>&#9889;</span> Generate SDR
@@ -686,10 +767,6 @@
       <div id="tsd-error" class="alert error" style="display:none"><span>&#9888;</span><span id="tsd-errorMsg"></span></div>
       <div id="tsd-warning" class="alert warning" style="display:none"><span>&#9888;</span><span id="tsd-warningMsg"></span></div>
       <div id="tsd-sdrPill"></div>
-      <div class="form-group">
-        <label class="field-label" for="tsd-clientName">Client Name</label>
-        <input type="text" id="tsd-clientName" placeholder="e.g., GSSHOP" />
-      </div>
       <div class="form-group">
         <label class="field-label" for="tsd-sdrInput">SDR Data JSON</label>
         <div class="sdr-load-actions">
@@ -789,10 +866,6 @@
       <div id="tags-warning" class="alert warning" style="display:none"><span>&#9888;</span><span id="tags-warningMsg"></span></div>
       <div id="tags-sdrPill"></div>
       <div class="form-group">
-        <label class="field-label" for="tags-clientName">Client Name</label>
-        <input type="text" id="tags-clientName" placeholder="e.g., GSSHOP" />
-      </div>
-      <div class="form-group">
         <label class="field-label" for="tags-sdrInput">SDR Data JSON</label>
         <div class="sdr-load-actions">
           <button class="btn-load" id="tags-loadFileBtn" onclick="triggerJsonFileLoad('tags')" title="Load from local JSON file">
@@ -822,9 +895,8 @@
         <div class="validation-banner" id="tags-sdrValidation"></div>
         <div class="hint">Auto-filled after SDR tab completes. Or paste / load directly.</div>
       </div>
-      <div class="alert info">
-        <span>&#8505;</span>
-        <div><code>N8N_TAGS_WEBHOOK_URL</code> and Adobe Launch credentials must be configured in the Set Credentials node of your n8n workflow.</div>
+      <div class="form-group" style="margin-bottom:0">
+        <div id="tags-credStatusRow"></div>
       </div>
       <button class="btn-primary btn-tags" id="tags-btn" onclick="triggerStage('tags')">
         <span>&#9889;</span> Generate Tags
@@ -1020,15 +1092,29 @@ document.addEventListener('DOMContentLoaded', () => {
   if (modalNo)  modalNo.addEventListener('click', closeCancelModal);
   if (modalYes) modalYes.addEventListener('click', confirmCancel);
   document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape') closeCancelModal();
+    if (e.key === 'Escape') { closeCancelModal(); closeCredModal(); closeClientModal(); }
   });
   var cancelOverlay = document.getElementById('cancelModal');
   if (cancelOverlay) cancelOverlay.addEventListener('click', function(e) {
     if (e.target === cancelOverlay) closeCancelModal();
   });
+  var credOverlay = document.getElementById('credModal');
+  if (credOverlay) credOverlay.addEventListener('click', function(e) {
+    if (e.target === credOverlay) closeCredModal();
+  });
+  var clientOverlay = document.getElementById('clientModal');
+  if (clientOverlay) clientOverlay.addEventListener('click', function(e) {
+    if (e.target === clientOverlay) closeClientModal();
+  });
+  var clientModalInput = document.getElementById('clientModalInput');
+  if (clientModalInput) clientModalInput.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') saveClientName();
+  });
   loadJobs();
   setupDropZone('sdr');
   loadSdrDataToTabs();
+  renderCredStatus();
+  renderClientBar();
 });
 
 // ── Tab switching ─────────────────────────────────────────────────────────
@@ -1045,6 +1131,11 @@ function saveSdrData(clientName, sdrObj) {
   try {
     localStorage.setItem('doc_ai_sdr_client', clientName);
     localStorage.setItem('doc_ai_sdr_data', JSON.stringify(sdrObj));
+    // Also sync global client name bar if not already set
+    if (clientName && !getClientName()) {
+      localStorage.setItem(CLIENT_NAME_KEY, clientName);
+      renderClientBar();
+    }
     loadSdrDataToTabs();
   } catch(e) { console.warn('localStorage write failed', e); }
 }
@@ -1059,16 +1150,15 @@ function loadSdrDataToTabs() {
       pill.innerHTML =
         '<div class="sdr-data-pill">&#10003; SDR data loaded — ' + clientName +
         ' <button onclick="clearSdrCache()" style="background:none;border:none;cursor:pointer;color:#16a34a;font-size:11px;margin-left:6px;">&#10005; Clear</button></div>';
-      const cn = document.getElementById(tab + '-clientName');
       const si = document.getElementById(tab + '-sdrInput');
-      if (cn && !cn.value) cn.value = clientName;
       if (si && !si.value) {
         si.value = sdrRaw;
         renderValidation(tab, validateSdrJson(sdrRaw));
       }
     } else {
-      pill.innerHTML =
-        '<div class="sdr-data-pill missing">&#9888; No SDR data — generate in the SDR tab first, or paste directly.</div>';
+      pill.innerHTML = tab === 'tsd'
+        ? '<div class="sdr-data-pill missing">&#9888; No SDR data — generate in the SDR tab first, or paste directly.</div>'
+        : '';
     }
   });
 }
@@ -1080,10 +1170,186 @@ function clearSdrCache() {
   ['tsd', 'tags'].forEach(tab => {
     const si = document.getElementById(tab + '-sdrInput');
     if (si) si.value = '';
-    const cn = document.getElementById(tab + '-clientName');
-    if (cn) cn.value = '';
   });
   loadSdrDataToTabs();
+}
+
+// ── Global Client Name ────────────────────────────────────────────────────
+const CLIENT_NAME_KEY = 'doc_ai_client_name';
+
+function getClientName() {
+  return localStorage.getItem(CLIENT_NAME_KEY) || '';
+}
+
+function renderClientBar() {
+  var name = getClientName();
+  var nameEl = document.getElementById('clientBarName');
+  var btn = document.getElementById('clientBarBtn');
+  if (!nameEl) return;
+  if (name) {
+    nameEl.textContent = name;
+    nameEl.className = 'client-bar-name';
+    if (btn) btn.textContent = '✎ Edit';
+  } else {
+    nameEl.textContent = 'Not set';
+    nameEl.className = 'client-bar-name empty';
+    if (btn) btn.textContent = 'Set Client';
+  }
+}
+
+function openClientModal() {
+  var input = document.getElementById('clientModalInput');
+  if (input) input.value = getClientName();
+  var delBtn = document.getElementById('clientModalDeleteBtn');
+  if (delBtn) delBtn.style.display = getClientName() ? '' : 'none';
+  var overlay = document.getElementById('clientModal');
+  if (overlay) overlay.classList.add('open');
+  if (input) setTimeout(function() { input.focus(); input.select(); }, 50);
+}
+
+function closeClientModal() {
+  var overlay = document.getElementById('clientModal');
+  if (overlay) overlay.classList.remove('open');
+}
+
+function saveClientName() {
+  var input = document.getElementById('clientModalInput');
+  var name = input ? input.value.trim() : '';
+  if (!name) { if (input) input.focus(); return; }
+  localStorage.setItem(CLIENT_NAME_KEY, name);
+  closeClientModal();
+  renderClientBar();
+}
+
+function deleteClientName() {
+  if (!confirm('Remove client name?')) return;
+  localStorage.removeItem(CLIENT_NAME_KEY);
+  closeClientModal();
+  renderClientBar();
+}
+
+// ── Adobe Credentials (Tags tab) ─────────────────────────────────────────
+const CRED_STORAGE_KEY = 'doc_ai_tags_credentials';
+
+function loadCredentials() {
+  try {
+    var raw = localStorage.getItem(CRED_STORAGE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch(e) { return null; }
+}
+
+function renderCredStatus() {
+  var row = document.getElementById('tags-credStatusRow');
+  if (!row) return;
+  var creds = loadCredentials();
+  var filled = creds &&
+    creds.CLIENT_SECRET && creds.API_KEY &&
+    creds.IMS_ORG && creds.PROPERTY_ID && creds.DATASTREAM_ID;
+
+  if (filled) {
+    var propSuffix = creds.PROPERTY_ID.slice(-6);
+    row.innerHTML =
+      '<div class="alert success" style="cursor:pointer;margin-bottom:0" onclick="openCredModal()">' +
+      '<span>&#9989;</span>' +
+      '<div style="flex:1">Adobe Launch credentials configured &mdash; PROPERTY: &hellip;' + propSuffix + '</div>' +
+      '<button class="btn-sm" style="flex-shrink:0;white-space:nowrap" onclick="event.stopPropagation();openCredModal()">&#9998; Edit</button>' +
+      '</div>';
+  } else {
+    row.innerHTML =
+      '<div class="alert warning" style="margin-bottom:0">' +
+      '<span>&#9888;</span>' +
+      '<div style="flex:1">Adobe Launch credentials not configured. ' +
+      '<code>N8N_TAGS_WEBHOOK_URL</code> must also be set in .env.</div>' +
+      '<button class="btn-sm" onclick="openCredModal()" style="flex-shrink:0;white-space:nowrap;margin-left:8px">&#128273; Set Credentials</button>' +
+      '</div>';
+  }
+}
+
+function openCredModal() {
+  var creds = loadCredentials() || {};
+  document.getElementById('cred-clientSecret').value  = creds.CLIENT_SECRET  || '';
+  document.getElementById('cred-apiKey').value        = creds.API_KEY        || '';
+  document.getElementById('cred-imsOrg').value        = creds.IMS_ORG        || '';
+  document.getElementById('cred-propertyId').value    = creds.PROPERTY_ID    || '';
+  document.getElementById('cred-datastreamId').value  = creds.DATASTREAM_ID  || '';
+  document.getElementById('cred-paste-area').value    = '';
+  document.getElementById('cred-paste-status').textContent = '';
+  document.getElementById('credModal').classList.add('open');
+}
+
+function parsePastedCreds() {
+  var text = document.getElementById('cred-paste-area').value;
+  var map = {
+    'ADOBE_CLIENT_ID':     'cred-apiKey',
+    'ADOBE_CLIENT_SECRET': 'cred-clientSecret',
+    'ADOBE_ORG_ID':        'cred-imsOrg',
+    'ADOBE_PROPERTY_ID':   'cred-propertyId',
+    'ADOBE_DATASTREAM_ID': 'cred-datastreamId',
+    // direct key names also supported
+    'API_KEY':        'cred-apiKey',
+    'CLIENT_SECRET':  'cred-clientSecret',
+    'IMS_ORG':        'cred-imsOrg',
+    'PROPERTY_ID':    'cred-propertyId',
+    'DATASTREAM_ID':  'cred-datastreamId',
+  };
+  var required = ['cred-apiKey','cred-clientSecret','cred-imsOrg','cred-propertyId','cred-datastreamId'];
+  var filled = 0;
+  text.split('\n').forEach(function(line) {
+    line = line.trim();
+    if (!line || line.charAt(0) === '#') return;
+    var eqIdx = line.indexOf('=');
+    if (eqIdx < 0) return;
+    var key = line.substring(0, eqIdx).trim();
+    var val = line.substring(eqIdx + 1).trim();
+    if (key === 'ADOBE_PROPERTY_ID' || key === 'PROPERTY_ID') {
+      val = val.replace(/\/overview.*$/, '').trim();
+    }
+    var inputId = map[key];
+    if (inputId) {
+      document.getElementById(inputId).value = val;
+      filled++;
+    }
+  });
+  var statusEl = document.getElementById('cred-paste-status');
+  if (!text.trim()) { statusEl.textContent = ''; return; }
+  var total = required.length;
+  var detected = required.filter(function(id) { return document.getElementById(id).value.trim(); }).length;
+  if (detected === total) {
+    statusEl.style.color = '#16a34a';
+    statusEl.textContent = '✓ ' + detected + '/' + total + ' fields detected — review and click Save';
+  } else if (detected > 0) {
+    statusEl.style.color = '#d97706';
+    statusEl.textContent = '⚠ ' + detected + '/' + total + ' fields detected — some fields missing';
+  } else {
+    statusEl.style.color = '#dc2626';
+    statusEl.textContent = '✗ No matching keys found. Expected ADOBE_CLIENT_ID, ADOBE_CLIENT_SECRET, ADOBE_ORG_ID, ADOBE_PROPERTY_ID, ADOBE_DATASTREAM_ID';
+  }
+}
+
+function closeCredModal() {
+  document.getElementById('credModal').classList.remove('open');
+}
+
+function saveCredentials() {
+  var creds = {
+    CLIENT_SECRET:  document.getElementById('cred-clientSecret').value.trim(),
+    API_KEY:        document.getElementById('cred-apiKey').value.trim(),
+    IMS_ORG:        document.getElementById('cred-imsOrg').value.trim(),
+    PROPERTY_ID:    document.getElementById('cred-propertyId').value.trim(),
+    DATASTREAM_ID:  document.getElementById('cred-datastreamId').value.trim(),
+  };
+  try {
+    localStorage.setItem(CRED_STORAGE_KEY, JSON.stringify(creds));
+  } catch(e) { console.warn('localStorage write failed', e); }
+  closeCredModal();
+  renderCredStatus();
+}
+
+function clearCredentials() {
+  if (!confirm('Clear saved Adobe credentials?')) return;
+  localStorage.removeItem(CRED_STORAGE_KEY);
+  closeCredModal();
+  renderCredStatus();
 }
 
 // ── SDR JSON Load: local file ─────────────────────────────────────────────
@@ -1435,7 +1701,9 @@ function validateSdrJson(jsonStr) {
   catch(e) { result.issues.push('JSON 파싱 오류: ' + e.message); return result; }
 
   // Support wrapped SDR JSON file format: { _meta, clientName, sdrData: { evars, props, events } }
+  // Also support double-wrapped: { sdrData: { sdrData: { evars, ... } } }
   var data = parsed.sdrData || parsed;
+  if (data.sdrData && !Array.isArray(data.evars)) data = data.sdrData;
 
   // Structure check
   ['evars','props','events'].forEach(function(key) {
@@ -1465,11 +1733,22 @@ function validateSdrJson(jsonStr) {
     }
   });
 
+  // Check launchPayload presence (Tags tab hint)
+  result.hasLaunchPayload = !!(data.launchPayload);
+
   result.valid = true;
   return result;
 }
 
 function renderValidation(stage, result) {
+  // Tags tab: add advisory warning if launchPayload is absent
+  if (stage === 'tags' && result && result.valid && !result.hasLaunchPayload) {
+    result = Object.assign({}, result, {
+      warnings: (result.warnings || []).concat(
+        'launchPayload 키가 없습니다 — evars/events에서 Adobe Launch 룰을 자동 생성합니다.'
+      )
+    });
+  }
   var banner = document.getElementById(stage + '-sdrValidation');
   var btn    = document.getElementById(stage + '-btn');
   if (!banner) return;
@@ -1588,8 +1867,8 @@ async function loadSheets(base64, tab) {
 async function triggerStage(stage) {
   showErr(stage, null);
   hideWarning(stage);
-  const clientName = (document.getElementById(stage + '-clientName').value || '').trim();
-  if (!clientName) { showErr(stage, 'Please enter a client name.'); return; }
+  const clientName = getClientName();
+  if (!clientName) { showErr(stage, 'Please set a client name using the Client bar above.'); return; }
 
   let payload = { clientName };
 
@@ -1607,7 +1886,9 @@ async function triggerStage(stage) {
     try { sdrData = JSON.parse(rawSdr); }
     catch { showErr(stage, 'Invalid SDR data JSON format.'); return; }
     // Support wrapped SDR JSON file format: { _meta, clientName, sdrData: { evars, props, events } }
+    // Also handle double-wrapped: { sdrData: { sdrData: { evars, ... } } }
     sdrData = sdrData.sdrData || sdrData;
+    if (sdrData.sdrData && !Array.isArray(sdrData.evars)) sdrData = sdrData.sdrData;
     // Field-level validation gate
     const vr = validateSdrJson(rawSdr);
     if (!vr.valid) {
@@ -1615,7 +1896,18 @@ async function triggerStage(stage) {
       showErr(stage, 'SDR JSON 검증 실패. 오류를 확인하고 수정 후 다시 시도하세요.');
       return;
     }
-    payload = { clientName, sdrData };
+    if (stage === 'tags') {
+      const adobeCredentials = loadCredentials();
+      if (!adobeCredentials ||
+          !adobeCredentials.CLIENT_SECRET || !adobeCredentials.API_KEY ||
+          !adobeCredentials.IMS_ORG || !adobeCredentials.PROPERTY_ID || !adobeCredentials.DATASTREAM_ID) {
+        showErr('tags', 'Adobe Launch credentials are not configured. Click "Set Credentials" above to add them.');
+        return;
+      }
+      payload = { clientName, sdrData, adobeCredentials };
+    } else {
+      payload = { clientName, sdrData };
+    }
   }
 
   // Reset UI
@@ -1974,6 +2266,71 @@ setInterval(loadJobs, 10000);
     <div class="modal-btns">
       <button class="modal-btn-cancel" id="cancelModalNo">계속 진행</button>
       <button class="modal-btn-confirm" id="cancelModalYes">&#9632; 작업 중단</button>
+    </div>
+  </div>
+</div>
+
+<!-- Adobe Credentials Modal -->
+<div class="modal-overlay" id="credModal" role="dialog" aria-modal="true" aria-labelledby="credModalTitle">
+  <div class="modal-box cred-modal-box">
+    <div class="cred-modal-icon">&#128273;</div>
+    <div class="modal-title" id="credModalTitle">Adobe Launch Credentials</div>
+    <div class="modal-desc">Enter your Adobe Launch API credentials. These are saved in your browser and sent with each Tags generation request.</div>
+
+    <!-- Paste from .env -->
+    <div style="margin-bottom:12px">
+      <label class="cred-field-label" for="cred-paste-area" style="margin-bottom:4px;display:block">Paste from .env <span style="font-weight:400;opacity:.7">(auto-fill)</span></label>
+      <textarea id="cred-paste-area" rows="4" oninput="parsePastedCreds()" placeholder="Paste .env content or KEY=VALUE lines here...&#10;e.g. ADOBE_CLIENT_ID=...&#10;     ADOBE_CLIENT_SECRET=...&#10;     ADOBE_ORG_ID=...&#10;     ADOBE_PROPERTY_ID=...&#10;     ADOBE_DATASTREAM_ID=..." class="cred-field-input" style="font-family:monospace;font-size:12px;resize:vertical;height:80px" autocomplete="off" spellcheck="false"></textarea>
+      <div id="cred-paste-status" style="font-size:12px;margin-top:4px;min-height:16px;color:#6b7280"></div>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+      <div style="flex:1;height:1px;background:var(--border,#e5e7eb)"></div>
+      <span style="font-size:11px;color:#9ca3af;white-space:nowrap">OR fill in manually</span>
+      <div style="flex:1;height:1px;background:var(--border,#e5e7eb)"></div>
+    </div>
+
+    <div class="cred-field-row">
+      <label class="cred-field-label" for="cred-clientSecret">CLIENT_SECRET</label>
+      <input class="cred-field-input" id="cred-clientSecret" type="password" placeholder="Your client secret" autocomplete="off" />
+    </div>
+    <div class="cred-field-row">
+      <label class="cred-field-label" for="cred-apiKey">API_KEY</label>
+      <input class="cred-field-input" id="cred-apiKey" type="text" placeholder="Your API key / client ID" autocomplete="off" />
+    </div>
+    <div class="cred-field-row">
+      <label class="cred-field-label" for="cred-imsOrg">IMS_ORG</label>
+      <input class="cred-field-input" id="cred-imsOrg" type="text" placeholder="XXXXXXXXXX@AdobeOrg" autocomplete="off" />
+    </div>
+    <div class="cred-field-row">
+      <label class="cred-field-label" for="cred-propertyId">PROPERTY_ID</label>
+      <input class="cred-field-input" id="cred-propertyId" type="text" placeholder="PRxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" autocomplete="off" />
+    </div>
+    <div class="cred-field-row">
+      <label class="cred-field-label" for="cred-datastreamId">DATASTREAM_ID</label>
+      <input class="cred-field-input" id="cred-datastreamId" type="text" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" autocomplete="off" />
+    </div>
+    <div style="margin-top:6px;margin-bottom:18px">
+      <div class="hint">&#128274; Stored in browser localStorage only. Never sent to any server other than your own webhook-service.</div>
+    </div>
+    <div class="modal-btns">
+      <button class="cred-modal-btn-clear" onclick="clearCredentials()">Clear</button>
+      <button class="modal-btn-cancel" onclick="closeCredModal()">Cancel</button>
+      <button class="cred-modal-btn-save" onclick="saveCredentials()">&#10003; Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Client Name Modal -->
+<div class="modal-overlay" id="clientModal" role="dialog" aria-modal="true" aria-labelledby="clientModalTitle">
+  <div class="modal-box" style="max-width:400px">
+    <div class="modal-icon">&#128100;</div>
+    <div class="modal-title" id="clientModalTitle">Set Client Name</div>
+    <div class="modal-desc">Enter the client name used across all workflow stages.</div>
+    <input class="client-modal-input" id="clientModalInput" type="text" placeholder="e.g., GSSHOP" autocomplete="off" />
+    <div class="modal-btns">
+      <button class="cred-modal-btn-clear" id="clientModalDeleteBtn" onclick="deleteClientName()">Delete</button>
+      <button class="modal-btn-cancel" onclick="closeClientModal()">Cancel</button>
+      <button class="cred-modal-btn-save" onclick="saveClientName()">&#10003; Save</button>
     </div>
   </div>
 </div>

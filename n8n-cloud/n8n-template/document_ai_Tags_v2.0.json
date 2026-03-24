@@ -20,7 +20,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const input = $input.first().json;\nconst body = input.body || input;\nconst jobId = body.jobId || ('tags-' + Date.now() + '-' + Math.random().toString(36).substr(2, 8));\nconst clientName = body.clientName;\nconst sdrData = body.sdrData || body.sdr;\nconst callbackUrl = body.callbackUrl || null;\n\nif (!clientName || !sdrData) throw new Error('Missing required fields: clientName, sdrData');\nif (!sdrData.evars || !sdrData.events) {\n  throw new Error('sdrData must contain evars and events for Tags creation');\n}\n\nconsole.log('=== Tags Job ===');\nconsole.log('Job ID:', jobId);\nconsole.log('Client:', clientName);\nconsole.log('eVars:', sdrData.evars.length, 'Events:', sdrData.events.length);\n\nreturn [{ json: { jobId, clientName, sdrData, callbackUrl, jobStartedAt: new Date().toISOString() } }];"
+        "jsCode": "const input = $input.first().json;\nconst body = input.body || input;\nconst jobId = body.jobId || ('tags-' + Date.now() + '-' + Math.random().toString(36).substr(2, 8));\nconst clientName = body.clientName;\nconst sdrData = body.sdrData || body.sdr;\nconst callbackUrl = body.callbackUrl || null;\nconst adobeCredentials = body.adobeCredentials || null;\n\nif (!clientName || !sdrData) throw new Error('Missing required fields: clientName, sdrData');\nif (!sdrData.evars || !sdrData.events) {\n  throw new Error('sdrData must contain evars and events for Tags creation');\n}\n\nconsole.log('=== Tags Job ===');\nconsole.log('Job ID:', jobId);\nconsole.log('Client:', clientName);\nconsole.log('eVars:', sdrData.evars.length, 'Events:', sdrData.events.length);\n\nreturn [{ json: { jobId, clientName, sdrData, callbackUrl, adobeCredentials, jobStartedAt: new Date().toISOString() } }];"
       },
       "id": "33333333-3333-3333-3333-333333333332",
       "name": "Validate Tags Input",
@@ -48,7 +48,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const input = $('Validate Tags Input').first().json;\n// Emulate the shape that Prepare Rules (Dynamic) expects from Parse SDR Output\nreturn [{ json: {\n  success: true,\n  clientName: input.clientName,\n  sdr: input.sdrData,\n  stats: {\n    evars: input.sdrData.evars?.length || 0,\n    props: input.sdrData.props?.length || 0,\n    events: input.sdrData.events?.length || 0,\n  },\n  validation: { coverage_pct: 100, warnings: [] },\n} }];"
+        "jsCode": "const input = $('Validate Tags Input').first().json;\nconst adobeCredentials = input.adobeCredentials || null;\n// Emulate the shape that Prepare Rules (Dynamic) expects from Parse SDR Output\nreturn [{ json: {\n  success: true,\n  clientName: input.clientName,\n  sdr: input.sdrData,\n  adobeCredentials: adobeCredentials,\n  stats: {\n    evars: input.sdrData.evars?.length || 0,\n    props: input.sdrData.props?.length || 0,\n    events: input.sdrData.events?.length || 0,\n  },\n  validation: { coverage_pct: 100, warnings: [] },\n} }];"
       },
       "id": "33333333-3333-3333-3333-333333333334",
       "name": "Parse SDR Output",
@@ -82,27 +82,6 @@
     },
     {
       "parameters": {
-        "method": "POST",
-        "url": "={{ $('Validate Tags Input').first().json.callbackUrl || 'http://host.docker.internal:3000/webhook/sdr-result' }}",
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ jobId: $('Validate Tags Input').first().json.jobId, executionId: $execution.id, status: 'failed', error: $json.error?.message || 'Tags creation failed', failedAt: new Date().toISOString() }) }}",
-        "options": {
-          "timeout": 10000
-        }
-      },
-      "id": "33333333-3333-3333-3333-333333333336",
-      "name": "Notify Tags Error",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [
-        1400,
-        600
-      ],
-      "continueOnFail": true
-    },
-    {
-      "parameters": {
         "respondWith": "json",
         "responseBody": "={{ JSON.stringify({ success: true, jobId: $('Validate Tags Input').first().json.jobId, message: 'Adobe Launch Tags 생성 완료' }) }}",
         "options": {}
@@ -119,7 +98,7 @@
     {
       "parameters": {
         "mode": "raw",
-        "jsonOutput": "{\n  \"CLIENT_SECRET\": \"REPLACE_WITH_CLIENT_SECRET\",\n  \"API_KEY\": \"REPLACE_WITH_API_KEY\",\n  \"IMS_ORG\": \"REPLACE_WITH_IMS_ORG@AdobeOrg\",\n  \"PROPERTY_ID\": \"REPLACE_WITH_PROPERTY_ID\",\n  \"DATASTREAM_ID\": \"REPLACE_WITH_DATASTREAM_ID\"\n}",
+        "jsonOutput": "={{ $json.adobeCredentials }}",
         "options": {}
       },
       "id": "f1da97dd-6dc4-487c-b70b-bbb59162c7f5",
@@ -131,7 +110,7 @@
         2688
       ],
       "notesInFlow": true,
-      "notes": "⚠️ Replace all REPLACE_WITH_* values with actual credentials before activating"
+      "notes": "Credentials are passed dynamically from the webhook payload via the adobeCredentials field. Set them in the webhook-service UI (Tags tab → Set Credentials)."
     },
     {
       "parameters": {
@@ -244,14 +223,131 @@
     },
     {
       "parameters": {
-        "jsCode": "// Dynamically load rules from TSD Agent's launchPayload output\nconst input = $input.first().json;\n\nconst tsdData = $('Parse TSD Output').first().json;\nconst launchPayloadContent = tsdData.files?.launchPayload?.content;\n\nif (!launchPayloadContent) {\n  console.warn('⚠️  No launchPayload found in TSD output — skipping Adobe Launch deployment');\n  return [];\n}\n\nlet launchConfig;\ntry {\n  launchConfig = typeof launchPayloadContent === 'string'\n    ? JSON.parse(launchPayloadContent)\n    : launchPayloadContent;\n} catch (e) {\n  throw new Error('Failed to parse launchPayload JSON: ' + e.message);\n}\n\nconst rules = launchConfig.rules || [];\nif (rules.length === 0) {\n  console.warn('⚠️  launchPayload contains no rules');\n  return [];\n}\n\nconsole.log(`Preparing ${rules.length} rules from launchPayload for Adobe Launch deployment`);\n\nreturn rules.map((rule, idx) => ({\n  json: {\n    ...input,\n    ruleIndex: idx,\n    ruleName: rule.name,\n    ruleEvents: rule.events || [],\n    ruleConditions: rule.conditions || [],\n    ruleActions: rule.actions || [],\n    totalRules: rules.length\n  }\n}));"
+        "jsCode": "// Extract all unique %dl.xxx% references from launchPayload and generate Data Element list\nconst input = $input.first().json;\nconst sdrOutput = $('Parse SDR Output').first().json;\nconst launchPayloadContent = sdrOutput.sdr?.launchPayload;\n\nfunction extractDlRefs(obj, refs) {\n  if (typeof obj === 'string') {\n    const matches = obj.match(/%dl\\.[^%]+%/g) || [];\n    matches.forEach(m => refs.add(m));\n  } else if (Array.isArray(obj)) {\n    obj.forEach(item => extractDlRefs(item, refs));\n  } else if (obj && typeof obj === 'object') {\n    Object.values(obj).forEach(v => extractDlRefs(v, refs));\n  }\n}\n\nconst allRefs = new Set();\n\nif (launchPayloadContent) {\n  let lp;\n  try {\n    lp = typeof launchPayloadContent === 'string' ? JSON.parse(launchPayloadContent) : launchPayloadContent;\n  } catch(e) {\n    console.warn('Failed to parse launchPayload for Data Element extraction:', e.message);\n    lp = null;\n  }\n  if (lp?.rules) extractDlRefs(lp.rules, allRefs);\n}\n\nif (allRefs.size === 0) {\n  console.log('No %dl.xxx% references found — skipping Data Element creation');\n  // Return single dummy item so Loop Data Elements immediately goes to done branch\n  return [{ json: { ...input, dataElement: null, skipDataElements: true, totalDataElements: 0 } }];\n}\n\n// %dl.foo.bar% → { name: 'dl.foo.bar', path: 'digitalData.foo.bar' }\nconst dataElements = [...allRefs].map(ref => {\n  const inner = ref.replace(/%/g, '');\n  const path = inner.replace(/^dl\\./, 'digitalData.');\n  return { name: inner, path, ref };\n});\n\nconsole.log(`[Data Elements] Found ${dataElements.length} unique references to create`);\n\nreturn dataElements.map(de => ({\n  json: { ...input, dataElement: de, skipDataElements: false, totalDataElements: dataElements.length }\n}));"
+      },
+      "id": "de000001-0000-0000-0000-000000000001",
+      "name": "Extract Data Elements",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        33120,
+        2688
+      ]
+    },
+    {
+      "parameters": {
+        "options": {
+          "reset": false
+        }
+      },
+      "id": "de000002-0000-0000-0000-000000000002",
+      "name": "Loop Data Elements",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        33344,
+        2688
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://reactor.adobe.io/properties/{{ $('Merge Token & Credentials').item.json.credentials.PROPERTY_ID }}/data_elements",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $('Merge Token & Credentials').item.json.access_token }}"
+            },
+            {
+              "name": "x-api-key",
+              "value": "={{ $('Merge Token & Credentials').item.json.credentials.API_KEY }}"
+            },
+            {
+              "name": "x-gw-ims-org-id",
+              "value": "={{ $('Merge Token & Credentials').item.json.credentials.IMS_ORG }}"
+            },
+            {
+              "name": "Accept",
+              "value": "application/vnd.api+json;revision=1"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/vnd.api+json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"data\": {\n    \"type\": \"data_elements\",\n    \"attributes\": {\n      \"name\": \"{{ $json.dataElement.name }}\",\n      \"delegate_descriptor_id\": \"core::dataElements::javascript-variable\",\n      \"enabled\": true,\n      \"settings\": \"{\\\"path\\\":\\\"{{ $json.dataElement.path }}\\\"}\"\n    },\n    \"relationships\": {\n      \"extension\": {\n        \"data\": {\n          \"id\": \"{{ $('Parse Extensions').item.json.coreExtensionId }}\",\n          \"type\": \"extensions\"\n        }\n      }\n    }\n  }\n}",
+        "options": {}
+      },
+      "id": "de000003-0000-0000-0000-000000000003",
+      "name": "Create Data Element",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        33568,
+        2688
+      ],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "check-de-done",
+              "leftValue": "={{ $json.data }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "exists",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "de000004-0000-0000-0000-000000000004",
+      "name": "Data Element Created?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        33568,
+        2880
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "de000005-0000-0000-0000-000000000005",
+      "name": "Log DE Error",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        33792,
+        2880
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Dynamically load rules from sdrData.launchPayload (if present) or generate from evars/events\nconst input = $input.first().json;\n\nconst sdrOutput = $('Parse SDR Output').first().json;\nconst launchPayloadContent = sdrOutput.sdr?.launchPayload;\n\nif (launchPayloadContent) {\n  // ── Path A: pre-built launchPayload rules ──────────────────────────────\n  let launchConfig;\n  try {\n    launchConfig = typeof launchPayloadContent === 'string'\n      ? JSON.parse(launchPayloadContent)\n      : launchPayloadContent;\n  } catch (e) {\n    throw new Error('Failed to parse launchPayload JSON: ' + e.message);\n  }\n\n  const rules = launchConfig.rules || [];\n  if (rules.length === 0) {\n    console.warn('⚠️  launchPayload contains no rules');\n    return [];\n  }\n\n  console.log(`[Path A] Preparing ${rules.length} pre-built rules from launchPayload`);\n\n  return rules.map((rule, idx) => ({\n    json: {\n      ...input,\n      ruleIndex: idx,\n      ruleName: rule.name,\n      ruleEvents: rule.events || [],\n      ruleConditions: rule.conditions || [],\n      ruleActions: rule.actions || [],\n      totalRules: rules.length\n    }\n  }));\n\n} else {\n  // ── Path B: fallback — auto-generate rules from sdrData evars/events ──\n  console.log('[Path B] No launchPayload — auto-generating rules from SDR evars/events');\n\n  const sdr = sdrOutput.sdr || {};\n  const events = sdr.events || [];\n\n  if (events.length === 0) {\n    console.warn('⚠️  No events found in sdrData — cannot generate rules');\n    return [];\n  }\n\n  // Generate one Adobe Launch rule per event:\n  // Trigger: core::events::dom-ready\n  // Action:  adobe-alloy::actions::send-event (Web SDK sendEvent)\n  const rules = events.map((evt, idx) => {\n    const eventLabel = evt.event_name || evt.event || `Event ${idx + 1}`;\n    const eventKey   = (evt.event || '').replace(/\\s*\\[.*?\\]\\s*/g, '').trim().toLowerCase().replace(/\\s+/g, '_');\n\n    return {\n      name: `Track - ${eventLabel}`,\n      events: [{\n        modulePath: 'core/src/lib/events/domReady.js',\n        settings: {}\n      }],\n      conditions: [],\n      actions: [{\n        modulePath: 'adobe-alloy/src/lib/actions/sendEvent.js',\n        settings: {\n          xdm: `%${eventKey}_xdm%`,\n          type: `web.${eventKey}`\n        }\n      }]\n    };\n  });\n\n  console.log(`[Path B] Generated ${rules.length} rules from ${events.length} SDR events`);\n\n  return rules.map((rule, idx) => ({\n    json: {\n      ...input,\n      ruleIndex: idx,\n      ruleName: rule.name,\n      ruleEvents: rule.events,\n      ruleConditions: rule.conditions,\n      ruleActions: rule.actions,\n      totalRules: rules.length,\n      autoGenerated: true\n    }\n  }));\n}"
       },
       "id": "92bda946-847a-4717-84cd-6a061ffa0c73",
       "name": "Prepare Rules (Dynamic)",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        33120,
+        34520,
         2688
       ]
     },
@@ -266,7 +362,7 @@
       "type": "n8n-nodes-base.splitInBatches",
       "typeVersion": 3,
       "position": [
-        33344,
+        34744,
         2688
       ]
     },
@@ -309,20 +405,20 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        33568,
+        34968,
         2688
       ]
     },
     {
       "parameters": {
-        "jsCode": "// Extract rule ID and prepare rule components (Events, Conditions, Actions)\nconst ruleResult = $input.first().json;\nconst prevData = $('Loop Rules').first().json;\n\nconst ruleObj = JSON.parse(ruleResult.data);\nconst ruleId = ruleObj?.data.id;\n\nconst descriptorMapping = {\n  \"adobe-alloy/src/lib/actions/sendEvent.js\": \"adobe-alloy::actions::send-event\",\n  \"core/src/lib/events/click.js\": \"core::events::click\",\n  \"core/src/lib/events/libraryLoaded.js\": \"core::events::library-loaded\",\n  \"core/src/lib/events/domReady.js\": \"core::events::dom-ready\",\n  \"core/src/lib/conditions/customCode.js\": \"core::conditions::custom-code\"\n};\n\nif (!ruleId) {\n  throw new Error(`Rule creation failed (${prevData.ruleName}): ${JSON.stringify(ruleResult)}`);\n}\n\nconst components = [];\n\n// Events\n(prevData.ruleEvents || []).forEach((evt, idx) => {\n  components.push({\n    componentType: 'events',\n    order: idx,\n    modulePath: evt.modulePath,\n    extensionDescriptorId: descriptorMapping[evt.modulePath] || evt.modulePath,\n    extensionId: prevData.coreExtensionId,\n    settings: JSON.stringify(evt.settings || {}),\n    name: `Event ${idx + 1}`\n  });\n});\n\n// Conditions\n(prevData.ruleConditions || []).forEach((cond, idx) => {\n  components.push({\n    componentType: 'conditions',\n    order: idx,\n    modulePath: cond.modulePath,\n    extensionDescriptorId: descriptorMapping[cond.modulePath] || cond.modulePath,\n    extensionId: prevData.coreExtensionId,\n    settings: JSON.stringify(cond.settings || {}),\n    name: `Condition ${idx + 1}`,\n    negate: false\n  });\n});\n\n// Actions\n(prevData.ruleActions || []).forEach((act, idx) => {\n  const isAlloy = act.modulePath?.includes('alloy') || act.modulePath?.includes('adobe-alloy') || act.modulePath?.includes('adobe-alchemy');\n  components.push({\n    componentType: 'actions',\n    order: idx,\n    modulePath: act.modulePath,\n    extensionDescriptorId: descriptorMapping[act.modulePath] || act.modulePath,\n    extensionId: isAlloy ? prevData.alloyExtensionId : prevData.coreExtensionId,\n    settings: JSON.stringify(act.settings || {}),\n    name: `Action ${idx + 1}`\n  });\n});\n\nreturn components.map(comp => ({\n  json: { ...prevData, ruleId, component: comp }\n}));"
+        "jsCode": "// Extract rule ID and prepare rule components (Events, Conditions, Actions)\nconst ruleResult = $input.first().json;\nconst prevData = $('Loop Rules').first().json;\n\nconst ruleObj = JSON.parse(ruleResult.data);\nconst ruleId = ruleObj?.data.id;\n\nconst descriptorMapping = {\n  \"adobe-alloy/src/lib/actions/sendEvent.js\": \"adobe-alloy::actions::send-event\",\n  \"core/src/lib/events/click.js\": \"core::events::click\",\n  \"core/src/lib/events/libraryLoaded.js\": \"core::events::library-loaded\",\n  \"core/src/lib/events/domReady.js\": \"core::events::dom-ready\",\n  \"core/src/lib/events/customEvent.js\": \"core::events::custom-event\",\n  \"core/src/lib/conditions/customCode.js\": \"core::conditions::custom-code\"\n};\n\n// Fallback: type/name → modulePath (for legacy launchPayload format)\nconst typeToModulePath = {\n  'dom-ready':      'core/src/lib/events/domReady.js',\n  'page-load':      'core/src/lib/events/domReady.js',\n  'library-loaded': 'core/src/lib/events/libraryLoaded.js',\n  'click':          'core/src/lib/events/click.js',\n  'custom':         'core/src/lib/events/customEvent.js',\n  'sendEvent':      'adobe-alloy/src/lib/actions/sendEvent.js'\n};\n\nfunction resolveModulePath(component) {\n  if (component.modulePath) return component.modulePath;\n  if (component.type) return typeToModulePath[component.type] || 'core/src/lib/events/customEvent.js';\n  return 'core/src/lib/events/customEvent.js';\n}\n\nfunction resolveSettings(component) {\n  if (component.settings) return component.settings;\n  if (component.type === 'custom' && component.name) return { type: component.name };\n  if (component.type === 'sendEvent' && component.xdm) return { xdm: component.xdm };\n  return {};\n}\n\nif (!ruleId) {\n  throw new Error(`Rule creation failed (${prevData.ruleName}): ${JSON.stringify(ruleResult)}`);\n}\n\nconst components = [];\n\n// Events\n(prevData.ruleEvents || []).forEach((evt, idx) => {\n  const modulePath = resolveModulePath(evt);\n  components.push({\n    componentType: 'events',\n    order: idx,\n    modulePath,\n    extensionDescriptorId: descriptorMapping[modulePath] || modulePath,\n    extensionId: prevData.coreExtensionId,\n    settings: JSON.stringify(resolveSettings(evt)),\n    name: `Event ${idx + 1}`\n  });\n});\n\n// Conditions\n(prevData.ruleConditions || []).forEach((cond, idx) => {\n  const modulePath = resolveModulePath(cond);\n  components.push({\n    componentType: 'conditions',\n    order: idx,\n    modulePath,\n    extensionDescriptorId: descriptorMapping[modulePath] || modulePath,\n    extensionId: prevData.coreExtensionId,\n    settings: JSON.stringify(resolveSettings(cond)),\n    name: `Condition ${idx + 1}`,\n    negate: false\n  });\n});\n\n// Actions\n(prevData.ruleActions || []).forEach((act, idx) => {\n  const modulePath = resolveModulePath(act);\n  const isAlloy = modulePath.includes('alloy') || modulePath.includes('adobe-alloy') || modulePath.includes('adobe-alchemy');\n  components.push({\n    componentType: 'actions',\n    order: idx,\n    modulePath,\n    extensionDescriptorId: descriptorMapping[modulePath] || modulePath,\n    extensionId: isAlloy ? prevData.alloyExtensionId : prevData.coreExtensionId,\n    settings: JSON.stringify(resolveSettings(act)),\n    name: `Action ${idx + 1}`\n  });\n});\n\nreturn components.map(comp => ({\n  json: { ...prevData, ruleId, component: comp }\n}));"
       },
       "id": "bf6d6474-d1d7-4262-a09e-f89ea37bde4f",
       "name": "Prepare Components",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        33792,
+        35192,
         2688
       ]
     },
@@ -335,7 +431,7 @@
       "type": "n8n-nodes-base.splitInBatches",
       "typeVersion": 3,
       "position": [
-        34016,
+        35416,
         2688
       ]
     },
@@ -378,7 +474,7 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        34240,
+        35640,
         2688
       ]
     },
@@ -412,20 +508,20 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
       "position": [
-        34464,
+        35864,
         2904
       ]
     },
     {
       "parameters": {
-        "jsCode": "const credentials = {\n  accessToken: $('Merge Token & Credentials').first().json.access_token,\n  apiKey: $('Merge Token & Credentials').first().json.credentials.API_KEY,\n  imgOrg: $('Merge Token & Credentials').first().json.credentials.IMS_ORG\n};\n\nreturn [{\n  json: Object.assign(credentials, JSON.parse($('Create Rule').first().json.data))\n}];"
+        "jsCode": "const credentials = {\n  accessToken: $('Merge Token & Credentials').first().json.access_token,\n  apiKey: $('Merge Token & Credentials').first().json.credentials.API_KEY,\n  imgOrg: $('Merge Token & Credentials').first().json.credentials.IMS_ORG\n};\n\nconst ruleData = $('Create Rule').first().json;\n\nreturn [{\n  json: Object.assign(credentials, { data: ruleData.data })\n}];"
       },
       "id": "db9c34c7-4d3f-4994-9021-fb0d4fd60aa2",
       "name": "Check Rule Setup",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        34240,
+        35640,
         2496
       ]
     },
@@ -464,20 +560,20 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        34464,
+        35864,
         2712
       ]
     },
     {
       "parameters": {
-        "jsCode": "const items = $input.all();\nconst clientName = $('Validate Tags Input').first().json.clientName || 'Unknown';\n\nreturn [{\n  json: {\n    success: true,\n    clientName: clientName,\n    message: 'Adobe Launch Rules deployed successfully',\n    summary: {\n      rulesCreated: items.length,\n      componentsCreated: 'Events, Conditions, Actions included',\n    },\n    nextSteps: [\n      '1. Verify created rules in Adobe Launch UI',\n      '2. Create Library and build to Development environment',\n      '3. QA test all tracking events',\n      '4. Promote to Production after sign-off',\n    ],\n  }\n}];"
+        "jsCode": "const items = $input.all();\nconst clientName = $('Validate Tags Input').first().json.clientName || 'Unknown';\n\nreturn [{\n  json: {\n    success: true,\n    clientName: clientName,\n    message: 'Adobe Launch Rules & Data Elements deployed successfully',\n    summary: {\n      rulesCreated: items.length,\n      componentsCreated: 'Events, Conditions, Actions included',\n      dataElementsCreated: 'All %dl.xxx% references created as JavaScript Variable Data Elements',\n    },\n    nextSteps: [\n      '1. Verify created rules and data elements in Adobe Launch UI',\n      '2. Create Library and build to Development environment',\n      '3. QA test all tracking events',\n      '4. Promote to Production after sign-off',\n    ],\n  }\n}];"
       },
       "id": "a06a8506-21ee-47eb-a9eb-02744b9f092f",
       "name": "Final Summary",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        33568,
+        34968,
         2496
       ]
     },
@@ -488,30 +584,9 @@
       "type": "n8n-nodes-base.noOp",
       "typeVersion": 1,
       "position": [
-        34688,
+        36088,
         2904
       ]
-    },
-    {
-      "parameters": {
-        "method": "POST",
-        "url": "={{ $('Validate Tags Input').first().json.callbackUrl || 'http://host.docker.internal:3000/webhook/sdr-result' }}",
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ jobId: $('Validate Tags Input').first().json.jobId, executionId: $execution.id, status: 'step_tags_start', message: 'Adobe Launch Tags 생성 시작' }) }}",
-        "options": {
-          "timeout": 5000
-        }
-      },
-      "id": "progress-done-start-0012-000000000012",
-      "name": "Notify Done Start",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [
-        31050,
-        2688
-      ],
-      "continueOnFail": true
     }
   ],
   "pinData": {},
@@ -525,11 +600,6 @@
             "index": 0
           }
         ]
-      ]
-    },
-    "Notify Done Start": {
-      "main": [
-        []
       ]
     },
     "Set Credentials": {
@@ -580,7 +650,65 @@
       "main": [
         [
           {
+            "node": "Extract Data Elements",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Data Elements": {
+      "main": [
+        [
+          {
+            "node": "Loop Data Elements",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Data Elements": {
+      "main": [
+        [
+          {
             "node": "Prepare Rules (Dynamic)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Create Data Element",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Data Element": {
+      "main": [
+        [
+          {
+            "node": "Data Element Created?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Data Element Created?": {
+      "main": [
+        [
+          {
+            "node": "Loop Data Elements",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Log DE Error",
             "type": "main",
             "index": 0
           }
@@ -761,7 +889,7 @@
   "settings": {
     "executionOrder": "v1"
   },
-  "versionId": "tags-v2-0001-0001-000000000001",
+  "versionId": "tags-v2-0002-0001-000000000001",
   "meta": {
     "templateCredsSetupCompleted": true
   },

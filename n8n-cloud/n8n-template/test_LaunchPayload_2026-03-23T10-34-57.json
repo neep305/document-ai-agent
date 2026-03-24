@@ -1,0 +1,449 @@
+{
+  "property_info": {
+    "name": "test Production",
+    "platform": "web"
+  },
+  "extensions": [
+    {
+      "name": "Adobe Experience Platform Web SDK",
+      "settings": {}
+    }
+  ],
+  "rules": [
+    {
+      "name": "PageView - SPA",
+      "events": [
+        {
+          "type": "page-load"
+        }
+      ],
+      "conditions": [],
+      "actions": [
+        {
+          "type": "sendEvent",
+          "xdm": {
+            "web": {
+              "webPageDetails": {
+                "name": "%dl.web.webPageDetails.name%",
+                "siteSection": "%dl.web.webPageDetails.siteSection%",
+                "pageType": "%dl.web.webPageDetails.pageType%",
+                "errorType": "%dl.web.webPageDetails.errorType%",
+                "errorTypeRealtime": "%dl.web.webPageDetails.errorTypeRealtime%"
+              }
+            },
+            "site": {
+              "spa": {
+                "transitionType": "%dl.site.spa.transitionType%"
+              }
+            },
+            "marketing": {
+              "channel": "%dl.marketing.channel%"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Banner Click",
+      "events": [
+        {
+          "type": "custom",
+          "name": "BannerClick"
+        }
+      ],
+      "conditions": [],
+      "actions": [
+        {
+          "type": "sendEvent",
+          "xdm": {
+            "marketing": {
+              "banner": {
+                "name": "%dl.marketing.banner.name%"
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "CTA Click",
+      "events": [
+        {
+          "type": "custom",
+          "name": "CTAClick"
+        }
+      ],
+      "conditions": [],
+      "actions": [
+        {
+          "type": "sendEvent",
+          "xdm": {
+            "interaction": {
+              "cta": {
+                "text": "%dl.interaction.cta.text%"
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Navigation Click",
+      "events": [
+        {
+          "type": "custom",
+          "name": "NavClick"
+        }
+      ],
+      "conditions": [],
+      "actions": [
+        {
+          "type": "sendEvent",
+          "xdm": {}
+        }
+      ]
+    },
+    {
+      "name": "Recommendation Click",
+      "events": [
+        {
+          "type": "custom",
+          "name": "RecommendationClick"
+        }
+      ],
+      "conditions": [],
+      "actions": [
+        {
+          "type": "sendEvent",
+          "xdm": {}
+        }
+      ]
+    },
+    {
+      "name": "PDP View",
+      "events": [
+        {
+          "type": "custom",
+          "name": "PDPView-CJA"
+        }
+      ],
+      "conditions": [],
+      "actions": [
+        {
+          "type": "sendEvent",
+          "xdm": {
+            "commerce": {
+              "product": {
+                "id": "%dl.commerce.product.id%",
+                "categoryL1": "%dl.commerce.product.categoryL1%",
+                "categoryL2": "%dl.commerce.product.categoryL2%",
+                "price": "%dl.commerce.product.price%",
+                "qty": "%dl.commerce.product.qty%"
+              },
+              "order": {
+                "purchaseID": "%dl.commerce.order.purchaseID%",
+                "revenue": "%dl.commerce.order.revenue%",
+                "units": "%dl.commerce.order.units%"
+              },
+              "checkout": {
+                "step": "%dl.commerce.checkout.step%"
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Wishlist Add",
+      "events": [
+        {
+          "type": "custom",
+          "name": "WishlistAdd"
+        }
+      ],
+      "conditions": [],
+      "actions": [
+        {
+          "type": "sendEvent",
+          "xdm": {}
+        }
+      ]
+    },
+    {
+      "name": "Wishlist To Cart",
+      "events": [
+        {
+          "type": "custom",
+          "name": "WishlistToCart"
+        }
+      ],
+      "conditions": [],
+      "actions": [
+        {
+          "type": "sendEvent",
+          "xdm": {}
+        }
+      ]
+    },
+    {
+      "name": "Checkout Step Complete",
+      "events": [
+        {
+          "type": "custom",
+          "name": "CheckoutStepComplete"
+        }
+      ],
+      "conditions": [],
+      "actions": [
+        {
+          "type": "sendEvent",
+          "xdm": {
+            "commerce": {
+              "checkout": {
+                "step": "%dl.commerce.checkout.step%"
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Coupon Apply",
+      "events": [
+        {
+          "type": "custom",
+          "name": "CouponApply"
+        }
+      ],
+      "conditions": [],
+      "actions": [
+        {
+          "type": "sendEvent",
+          "xdm": {}
+        }
+      ]
+    },
+    {
+      "name": "Points Redeemed",
+      "events": [
+        {
+          "type": "custom",
+          "name": "PointsRedeemed"
+        }
+      ],
+      "conditions": [],
+      "actions": [
+        {
+          "type": "sendEvent",
+          "xdm": {}
+        }
+      ]
+    },
+    {
+      "name": "Login Success",
+      "events": [
+        {
+          "type": "custom",
+          "name": "LoginSuccess"
+        }
+      ],
+      "conditions": [],
+      "actions": [
+        {
+          "type": "sendEvent",
+          "xdm": {
+            "user": {
+              "loginStatus": "%dl.user.loginStatus%",
+              "memberGrade": "%dl.user.memberGrade%",
+              "crm": {
+                "id": "%dl.user.crm.id%"
+              },
+              "cohort": "%dl.user.cohort%"
+            },
+            "loyalty": {
+              "program": {
+                "enrollment": "%dl.loyalty.program.enrollment%"
+              },
+              "grade": "%dl.loyalty.grade%",
+              "points": {
+                "redemption": {
+                  "type": "%dl.loyalty.points.redemption.type%"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Registration Complete",
+      "events": [
+        {
+          "type": "custom",
+          "name": "RegistrationComplete"
+        }
+      ],
+      "conditions": [],
+      "actions": [
+        {
+          "type": "sendEvent",
+          "xdm": {}
+        }
+      ]
+    },
+    {
+      "name": "Video Start",
+      "events": [
+        {
+          "type": "custom",
+          "name": "VideoStart"
+        }
+      ],
+      "conditions": [],
+      "actions": [
+        {
+          "type": "sendEvent",
+          "xdm": {
+            "media": {
+              "video": {
+                "name": "%dl.media.video.name%"
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Video Complete",
+      "events": [
+        {
+          "type": "custom",
+          "name": "VideoComplete"
+        }
+      ],
+      "conditions": [],
+      "actions": [
+        {
+          "type": "sendEvent",
+          "xdm": {
+            "media": {
+              "video": {
+                "name": "%dl.media.video.name%"
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Video Pause",
+      "events": [
+        {
+          "type": "custom",
+          "name": "VideoPause"
+        }
+      ],
+      "conditions": [],
+      "actions": [
+        {
+          "type": "sendEvent",
+          "xdm": {
+            "media": {
+              "video": {
+                "name": "%dl.media.video.name%"
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Video Milestone",
+      "events": [
+        {
+          "type": "custom",
+          "name": "VideoMilestone"
+        }
+      ],
+      "conditions": [],
+      "actions": [
+        {
+          "type": "sendEvent",
+          "xdm": {
+            "media": {
+              "video": {
+                "name": "%dl.media.video.name%"
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Form Start",
+      "events": [
+        {
+          "type": "custom",
+          "name": "FormStart"
+        }
+      ],
+      "conditions": [],
+      "actions": [
+        {
+          "type": "sendEvent",
+          "xdm": {
+            "interaction": {
+              "form": {
+                "name": "%dl.interaction.form.name%"
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Form Submit",
+      "events": [
+        {
+          "type": "custom",
+          "name": "FormSubmit"
+        }
+      ],
+      "conditions": [],
+      "actions": [
+        {
+          "type": "sendEvent",
+          "xdm": {
+            "interaction": {
+              "form": {
+                "name": "%dl.interaction.form.name%"
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Form Error",
+      "events": [
+        {
+          "type": "custom",
+          "name": "FormError"
+        }
+      ],
+      "conditions": [],
+      "actions": [
+        {
+          "type": "sendEvent",
+          "xdm": {
+            "interaction": {
+              "form": {
+                "name": "%dl.interaction.form.name%"
+              }
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
