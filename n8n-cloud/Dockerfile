@@ -33,4 +33,8 @@ RUN python3 -c "import openpyxl; print('✅ Python openpyxl installed and access
 
 EXPOSE 5678
 
-ENTRYPOINT ["tini", "--", "n8n"]
+# Copy entrypoint script (runs npm install for community packages before n8n starts)
+COPY --chown=node:node entrypoint.sh /home/node/entrypoint.sh
+RUN chmod +x /home/node/entrypoint.sh
+
+ENTRYPOINT ["/home/node/entrypoint.sh"]

@@ -1,0 +1,72 @@
+{
+  "_comment": "Maps SDR field names to possible Excel column header variations. Add new aliases here to support new templates without code changes.",
+
+  "discovery": {
+    "req_id":            ["Requirement ID", "Req ID", "REQ ID", "req_id", "ID", "ID#", "No.", "번호"],
+    "category":          ["Category", "카테고리", "Type", "Section", "분류"],
+    "business_req":      ["Business Requirement", "Business Req", "Requirement", "요구사항", "Business Need", "Description", "Question"],
+    "additional_notes":  ["Additional Notes", "Notes", "비고", "Remarks", "Comment", "Comments", "메모", "Feedback"]
+  },
+
+  "evars": {
+    "req_id":              ["Requirement ID", "Req ID", "REQ ID", "req_id", "ID", "ID#"],
+    "variable":            ["Analytics Variable", "Variable", "eVar", "Analytics Var", "variable", "AA Variable"],
+    "variable_name":       ["Variable Name", "Name", "eVar Name", "variable_name", "이름"],
+    "variable_description":["Variable Description", "Description", "Desc", "variable_description", "설명"],
+    "value_format":        ["Value Format", "Format", "value_format", "포맷"],
+    "example_value":       ["Example Value", "Example", "Sample", "example_value", "예시"],
+    "allocation":          ["eVar Allocation", "Allocation", "allocation", "할당"],
+    "expiration":          ["eVar Expiration", "Expiration", "Expire", "expiration", "만료"],
+    "merchandising":       ["Merchandising", "Merch", "merchandising", "Merchandising Binding"],
+    "capture_method":      ["Capture Method", "capture_method", "수집 방법"],
+    "implementation_note": ["Implementation Note", "Implementation Notes", "Note", "implementation_note"],
+    "group":               ["Group", "group", "그룹"]
+  },
+
+  "props": {
+    "req_id":              ["Requirement ID", "Req ID", "REQ ID", "req_id", "ID", "ID#"],
+    "variable":            ["Analytics Variable", "Variable", "Prop", "Analytics Var", "variable", "AA Variable"],
+    "variable_name":       ["Variable Name", "Name", "Prop Name", "variable_name", "이름"],
+    "variable_description":["Variable Description", "Description", "Desc", "variable_description", "설명"],
+    "value_format":        ["Value Format", "Format", "Value", "value_format", "포맷"],
+    "example_value":       ["Example Value", "Example", "Sample", "example_value", "예시"],
+    "capture_method":      ["Capture Method", "Additional Notes", "capture_method", "수집 방법", "비고"],
+    "implementation_note": ["Implementation Note", "Implementation Notes", "Note", "implementation_note"],
+    "group":               ["Group", "group", "그룹"]
+  },
+
+  "events": {
+    "req_id":              ["Requirement ID", "Req ID", "REQ ID", "req_id", "ID", "ID#"],
+    "event":               ["Event", "Event ID", "event", "이벤트 ID"],
+    "event_name":          ["Event Name", "Name", "event_name", "이름"],
+    "event_description":   ["Event Description", "Description", "Desc", "event_description", "설명"],
+    "event_type":          ["Event Type", "Type", "event_type", "타입"],
+    "related_vars":        ["Related eVar/Prop", "Related Variables", "Related Vars", "related_vars", "관련 변수"],
+    "implementation_note": ["Implementation Note", "Implementation Notes", "Note", "implementation_note"],
+    "capture_method":      ["Capture Method", "capture_method", "수집 방법"],
+    "group":               ["Group", "group", "그룹"]
+  },
+
+  "section_a_ootb": {
+    "req_id":              ["Requirement ID", "Req ID", "REQ ID", "req_id", "ID", "ID#"],
+    "variable":            ["Variable", "Analytics Variable", "OOTB Variable", "variable"],
+    "variable_name":       ["Variable Name", "Name", "variable_name"],
+    "variable_description":["Variable Description", "Description", "Desc", "variable_description"],
+    "value_format":        ["Value Format", "Format", "value_format"],
+    "capture_method":      ["Capture Method", "capture_method"],
+    "implementation_note": ["Implementation Note", "Implementation Notes", "Note", "implementation_note"],
+    "group":               ["Group", "group", "그룹"]
+  },
+
+  "sheet_patterns": {
+    "evars":          ["eVar", "evars", "eVars", "Evars", "conversion variable", "eVar Variables"],
+    "props":          ["prop", "Props", "props", "traffic variable", "Traffic Variables"],
+    "events":         ["event", "Events", "events", "custom event", "custom events", "metrics"],
+    "section_a_ootb": ["Section A", "section_a_ootb", "OOTB", "ootb variables", "Section A - OOTB"]
+  },
+
+  "discovery_header_keywords": [
+    "requirement id", "req id", "business requirement", "category", "요구사항", "번호",
+    "question", "type", "feedback", "id"
+  ]
+}

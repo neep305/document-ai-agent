@@ -1,0 +1,924 @@
+{
+  "name": "Document AI - TSD v2.0",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "tsd",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "22222222-2222-2222-2222-222222222221",
+      "name": "Webhook Trigger TSD",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        200,
+        300
+      ],
+      "webhookId": "22222222-2222-2222-2222-222222222221"
+    },
+    {
+      "parameters": {
+        "jsCode": "const input = $input.first().json;\nconst body = input.body || input;\nconst jobId = body.jobId || ('tsd-' + Date.now() + '-' + Math.random().toString(36).substr(2, 8));\nconst clientName = body.clientName;\nlet sdrData = body.sdrData || body.sdr;\n\nif (!clientName || !sdrData) throw new Error('Missing required fields: clientName, sdrData');\n\n// ── Field alias normalization ─────────────────────────────────\n// SDR workflow may produce section_b_evars / section_b_props / section_b_events\nif (!sdrData.evars   && sdrData.section_b_evars)   sdrData.evars   = sdrData.section_b_evars;\nif (!sdrData.props   && sdrData.section_b_props)   sdrData.props   = sdrData.section_b_props;\nif (!sdrData.events  && sdrData.section_b_events)  sdrData.events  = sdrData.section_b_events;\n\n// Ensure arrays exist (fallback to empty)\nif (!sdrData.evars)        sdrData.evars        = [];\nif (!sdrData.props)        sdrData.props        = [];\nif (!sdrData.events)       sdrData.events       = [];\nif (!sdrData.section_a_ootb) sdrData.section_a_ootb = [];\nif (!sdrData.data_layer_map) sdrData.data_layer_map = [];\n\nconst callbackUrl = body.callbackUrl || null;\n\nconsole.log('=== TSD Job ===');\nconsole.log('Job ID:', jobId);\nconsole.log('Client:', clientName);\nconsole.log('eVars:', sdrData.evars.length, 'Props:', sdrData.props.length, 'Events:', sdrData.events.length);\nconsole.log('OOTB:', sdrData.section_a_ootb.length, 'DLM:', sdrData.data_layer_map.length);\n\nreturn [{ json: { jobId, clientName, sdrData, callbackUrl, jobStartedAt: new Date().toISOString() } }];",
+        "options": {
+          "continueOnFail": true
+        }
+      },
+      "id": "22222222-2222-2222-2222-222222222222",
+      "name": "Validate TSD Input",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        600,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ success: true, jobId: $('Validate TSD Input').first().json.jobId, executionId: $execution.id, message: 'TSD 생성이 시작되었습니다.' }) }}",
+        "options": {}
+      },
+      "id": "22222222-2222-2222-2222-222222222223",
+      "name": "Respond TSD",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1000,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const input = $('Validate TSD Input').first().json;\nconst tsdPayload = {\n  body: [{\n    clientName: input.clientName,\n    sdr: input.sdrData\n  }]\n};\nreturn [{ json: tsdPayload }];"
+      },
+      "id": "22222222-2222-2222-2222-222222222224",
+      "name": "Prepare TSD Input",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1000,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Validate TSD Input').first().json.callbackUrl || 'http://host.docker.internal:3000/webhook/sdr-result' }}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ jobId: $('Validate TSD Input').first().json.jobId, executionId: $execution.id, status: 'failed', error: $json.error?.message || 'TSD generation failed', failedAt: new Date().toISOString() }) }}",
+        "options": {
+          "timeout": 10000
+        }
+      },
+      "id": "22222222-2222-2222-2222-222222222225",
+      "name": "Notify TSD Error",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1400,
+        600
+      ],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "model": "gpt-4o",
+        "options": {
+          "maxTokens": 16000,
+          "temperature": 0.2,
+          "timeout": 300000
+        }
+      },
+      "id": "244b62d6-a7be-4224-8497-1739cfa5af0b",
+      "name": "Azure OpenAI - TSD JS",
+      "type": "@n8n/n8n-nodes-langchain.lmChatAzureOpenAi",
+      "typeVersion": 1,
+      "position": [
+        29360,
+        2864
+      ],
+      "credentials": {
+        "azureOpenAiApi": {
+          "id": "fOkuDfAn1lW6KnOE",
+          "name": "Azure Open AI account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"javascript\": { \"type\": \"string\" }\n  },\n  \"required\": [\"javascript\"],\n  \"additionalProperties\": true\n}",
+        "autoFix": true
+      },
+      "id": "675cf94e-99f1-4279-a801-a28c69c15831",
+      "name": "Structured Output Parser",
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.2,
+      "position": [
+        29488,
+        2864
+      ]
+    },
+    {
+      "parameters": {
+        "model": "gpt-4o-mini",
+        "options": {
+          "temperature": 0,
+          "maxTokens": 4096
+        }
+      },
+      "id": "d5ecc848-edae-4c3b-a5a9-37484c93bfc8",
+      "name": "Azure OpenAI - SOP",
+      "type": "@n8n/n8n-nodes-langchain.lmChatAzureOpenAi",
+      "typeVersion": 1,
+      "position": [
+        29568,
+        3072
+      ],
+      "credentials": {
+        "azureOpenAiApi": {
+          "id": "fOkuDfAn1lW6KnOE",
+          "name": "Azure Open AI account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Generate the adobeDataLayer.js implementation file for this client.\n\n## Client: {{ $json.body[0].clientName }}\n\n## SDR Summary:\n- OOTB Variables: {{ ($json.body[0].sdr.section_a_ootb || []).length }}\n- Custom eVars: {{ $json.body[0].sdr.evars.length }}\n- Custom Props: {{ $json.body[0].sdr.props.length }}\n- Events: {{ $json.body[0].sdr.events.length }}\n\n## OOTB Variables (section_a_ootb):\n={{ ($json.body[0].sdr.section_a_ootb || []).slice(0,10).map(v => v.variable+'='+v.variable_name+'|'+v.capture_method).join(', ') }}\n\n## Custom eVars (variable | name | capture_method):\n={{ $json.body[0].sdr.evars.map(e => e.variable+'='+e.variable_name+'|'+e.capture_method+'|group:'+e.group).join('\\n') }}\n\n## Custom Props:\n={{ $json.body[0].sdr.props.slice(0,15).map(p => p.variable+'='+p.variable_name+'|'+p.capture_method).join('\\n') }}\n\n## Events:\n={{ $json.body[0].sdr.events.filter(e=>e.event_type!=='OOTB Commerce').slice(0,20).map(e => e.event+'='+e.event_name+'|'+e.event_type).join('\\n') }}\n\n## Data Layer → XDM Mapping (key paths for JS implementation):\n={{ JSON.stringify(($json.body[0].sdr.data_layer_map || []).slice(0,20)) }}\n\nRespond with: { \"javascript\": \"...complete adobeDataLayer.js...\" }",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "You are an Adobe Analytics / AEP Web SDK implementation expert.\n\nTHIS IS PART 1 OF 2 — Generate ONLY the \"javascript\" field.\n\nYour output is the complete adobeDataLayer.js implementation file for the client.\n\nRules:\n- Use the DATA LAYER MAP paths (data_layer_path field) for all window.adobeDataLayer.push() structures\n- One function per page type: trackHomePage, trackCategoryPage, trackPDPPage, trackSearchPage, trackCartPage, trackCheckoutPage, trackOrderConfirmPage, trackAccountPage\n- Each function: window.adobeDataLayer.push({ event, web, user, product, commerce })\n- Include click event listeners for: banner, CTA, navigation, recommendation, video, form, wishlist\n- Use <angle-bracket> placeholders for all dynamic values\n- Comments in Korean for Korean clients (when clientName suggests Korean company)\n- Respond with ONLY valid JSON: { \"javascript\": \"...\" }\n- No markdown fences. No other keys.\n- Escape all special characters properly in the JSON string value."
+        }
+      },
+      "id": "eb91da4a-feb3-415c-8188-486ff14d0013",
+      "name": "TSD JS Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [
+        29392,
+        2640
+      ],
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "model": "gpt-4o",
+        "options": {
+          "maxTokens": 16000,
+          "temperature": 0.2,
+          "timeout": 300000
+        }
+      },
+      "id": "0f822a89-566c-4f49-b445-95a7420f508f",
+      "name": "Azure OpenAI - TSD Doc",
+      "type": "@n8n/n8n-nodes-langchain.lmChatAzureOpenAi",
+      "typeVersion": 1,
+      "position": [
+        30152,
+        2816
+      ],
+      "credentials": {
+        "azureOpenAiApi": {
+          "id": "fOkuDfAn1lW6KnOE",
+          "name": "Azure Open AI account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Generate the TSD Markdown documentation and Adobe Launch Payload.\n\n## Client: {{ $('Prepare TSD Input').first().json.body[0].clientName }}\n\n## SDR Summary:\n- OOTB: {{ ($('Prepare TSD Input').first().json.body[0].sdr.section_a_ootb || []).length }}\n- eVars: {{ $('Prepare TSD Input').first().json.body[0].sdr.evars.length }}\n- Props: {{ $('Prepare TSD Input').first().json.body[0].sdr.props.length }}\n- Events: {{ $('Prepare TSD Input').first().json.body[0].sdr.events.length }}\n\n## OOTB Variables:\n={{ ($('Prepare TSD Input').first().json.body[0].sdr.section_a_ootb || []).map(v => v.variable+'='+v.variable_name+'|'+v.capture_method).join('\\n') }}\n\n## Custom eVars (variable | name | group | capture_method):\n={{ $('Prepare TSD Input').first().json.body[0].sdr.evars.map(e => e.variable+'='+e.variable_name+'|'+e.group+'|'+e.capture_method).join('\\n') }}\n\n## Custom Props:\n={{ $('Prepare TSD Input').first().json.body[0].sdr.props.map(p => p.variable+'='+p.variable_name+'|'+p.capture_method).join('\\n') }}\n\n## Events (event | name | type):\n={{ $('Prepare TSD Input').first().json.body[0].sdr.events.filter(e=>e.event_type!=='OOTB Commerce').map(e => e.event+'='+e.event_name+'|'+e.event_type).join('\\n') }}\n\n## Data Layer → XDM Mapping (use these exact paths in your tables):\n={{ JSON.stringify($('Prepare TSD Input').first().json.body[0].sdr.data_layer_map || []) }}\n\nRespond with: { \"markdown\": \"...\", \"launchPayload\": { ... } }",
+        "options": {
+          "systemMessage": "You are an Adobe Analytics / AEP Web SDK implementation expert.\n\nTHIS IS PART 2 OF 2 — Generate \"markdown\" (TSD documentation) and \"launchPayload\" fields.\n\n## ━━ CRITICAL: EXACT MARKDOWN FORMAT ━━\nThe markdown MUST follow this EXACT heading structure for correct DOCX generation:\n\n## 6.1 섹션명 (Section Name)\n### 6.1.1 Analytics 변수 매핑\n| 변수명 | 데이터 레이어 경로 | 설명 | SDR 매핑 |\n|--------|-------------------|------|----------|\n| eVarN  | data.layer.path   | desc | VarName  |\n\n### 6.1.2 배포 지침\n| 단계 | 설명 |\n|------|------|\n| 1    | ... |\n\n### 6.1.3 예시 Script\n```js\nwindow.adobeDataLayer.push({...});\n```\n\n### 6.1.4 트래킹 설정 방법\n| 설정 항목 | 값 |\n|-----------|-----|\n| 이벤트명  | ... |\n\n### 6.1.5 Adobe Launch Rule 생성\n| Rule 이름 | 이벤트 | 조건 | 액션 |\n|-----------|--------|------|------|\n| RuleName  | event  | 항상 | sendEvent |\n\n---\n\n## Sections to generate:\n6.1 페이지뷰 트래킹 (Page View Tracking)\n6.2 인터랙션 트래킹 (Interaction Tracking)\n6.3 커머스 트래킹 (Commerce Tracking)\n6.4 사용자 트래킹 (User Tracking)\n6.5 비디오 트래킹 (Video Tracking)\n6.6 폼 트래킹 (Form Tracking)\n\nRules:\n- Use data_layer_path values from DATA LAYER MAP for the \"데이터 레이어 경로\" column\n- Use actual variable names from eVars/Props/Events in the \"변수명\" column\n- Korean headings and annotations (for Korean clients)\n- Each section MUST have all 5 subsections (6.x.1 through 6.x.5)\n- Use --- (horizontal rule) between major sections\n- NO extra headings outside this structure (no # or ## title at the top)\n\n## launchPayload (Adobe Launch API JSON):\n- \"property_info\": { \"name\": \"<ClientName> Production\", \"platform\": \"web\" }\n- \"extensions\": [{ \"name\": \"Adobe Experience Platform Web SDK\", \"settings\": {...} }]\n- \"rules\": array — one rule per tracking event (PageView, BannerClick, CTAClick, AddToCart, Purchase, LoginSuccess, etc.)\n  Each rule: { \"name\": \"\", \"events\": [...], \"conditions\": [...], \"actions\": [{ \"type\": \"sendEvent\", \"xdm\": {...} }] }\n- Use %dl.{path}% format for data element references\n\nRespond with ONLY valid JSON: { \"markdown\": \"...\", \"launchPayload\": { \"property_info\": {}, \"extensions\": [], \"rules\": [] } }\nNo markdown fences. No other keys. Escape all newlines in markdown as \\n."
+        }
+      },
+      "id": "b04798c7-3426-4c9f-8e0e-9d6bf75dec29",
+      "name": "TSD Doc Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [
+        30080,
+        2592
+      ],
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "amount": 30
+      },
+      "id": "2cd942f2-e0df-4ac4-9237-d5a85a84264c",
+      "name": "Wait 30s (TSD TPM buffer)",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        29856,
+        2592
+      ],
+      "webhookId": "cc000005-0005-0005-0005-000000000005"
+    },
+    {
+      "parameters": {
+        "amount": 35
+      },
+      "id": "dc182f7c-36a7-4605-ab39-8aa43e05b00a",
+      "name": "Wait 35s (pre-TSD TPM)",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        29136,
+        2640
+      ],
+      "webhookId": "cc000008-0008-0008-0008-000000000008"
+    },
+    {
+      "parameters": {
+        "jsCode": "\n// ── Merge TSD JS (Part 1) + TSD Doc (Part 2) ─────────────────────────\n// Handles both output formats:\n//   A) json.output = string (standard Agent node output)\n//   B) json.output = object (Structured Output Parser result)\n//   C) json itself = the parsed object (Structured Output Parser direct)\n\nfunction getAgentOutput(nodeName) {\n  const nodeJson = $(nodeName).first().json;\n  const raw = nodeJson.output;\n\n  // Case A: output is a JSON string — most common\n  if (typeof raw === 'string') return raw;\n\n  // Case B: output is an already-parsed object (Structured Output Parser)\n  if (raw !== null && raw !== undefined && typeof raw === 'object') {\n    return JSON.stringify(raw);\n  }\n\n  // Case C: output missing — the parsed fields ARE the json (SOP direct result)\n  // Strip internal n8n fields and return remaining as JSON\n  const clone = Object.assign({}, nodeJson);\n  delete clone.sessionId;\n  delete clone.action;\n  if (Object.keys(clone).length > 0) return JSON.stringify(clone);\n\n  return '{}';\n}\n\nfunction safeParse(raw) {\n  // raw is always a string here (from getAgentOutput)\n  try {\n    const m = raw.match(/\\{[\\s\\S]*\\}/);\n    return m ? JSON.parse(m[0]) : JSON.parse(raw);\n  } catch(e) {\n    console.warn('⚠️ safeParse failed:', e.message, '| snippet:', raw.slice(0, 120));\n    return {};\n  }\n}\n\nconst rawJS  = getAgentOutput('TSD JS Agent');\nconst rawDoc = getAgentOutput('TSD Doc Agent');\n\nconsole.log('rawJS type:', typeof rawJS,  '| length:', rawJS.length);\nconsole.log('rawDoc type:', typeof rawDoc, '| length:', rawDoc.length);\n\nconst part1 = safeParse(rawJS);\nconst part2 = safeParse(rawDoc);\nconst clientName = $('Prepare TSD Input').first().json.body?.[0]?.clientName || 'Unknown';\n\nif (!part1.javascript) console.warn('⚠️ TSD JS missing — part1 keys:', Object.keys(part1).join(','));\nif (!part2.markdown)   console.warn('⚠️ TSD Doc missing — part2 keys:', Object.keys(part2).join(','));\n\nconst merged = {\n  output: JSON.stringify({\n    clientName,\n    javascript:    part1.javascript    || '// TSD JS generation failed',\n    markdown:      part2.markdown      || '# TSD Doc generation failed',\n    launchPayload: part2.launchPayload || { property_info:{}, extensions:[], rules:[] }\n  })\n};\n\nconsole.log('=== Merge TSD Parts ===');\nconsole.log('JS size:',       (part1.javascript    || '').length, 'chars');\nconsole.log('Markdown size:', (part2.markdown      || '').length, 'chars');\nconsole.log('Rules count:',   (part2.launchPayload?.rules || []).length);\n\nreturn [{ json: merged }];\n",
+        "options": {
+          "continueOnFail": true
+        }
+      },
+      "id": "433ae7a1-8dc4-441d-b190-50ef99730b19",
+      "name": "Merge TSD Parts",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        30432,
+        2592
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse TSD Agent output (2-3 files: JavaScript, Markdown, optional Launch Payload)\n// input.output is a JSON STRING from Merge TSD Parts — must parse before accessing fields\nconst input = $input.first().json;\n\n// ── Robust output extraction ─────────────────────────────────────\nlet tsdOutput;\n\nif (typeof input.output === 'string') {\n  // Standard case: Merge TSD Parts returns output as JSON string\n  try {\n    const m = input.output.match(/\\{[\\s\\S]*\\}/);\n    tsdOutput = m ? JSON.parse(m[0]) : JSON.parse(input.output);\n  } catch(e) {\n    throw new Error('Failed to parse Merge TSD Parts output JSON: ' + e.message + ' | snippet: ' + input.output.slice(0, 200));\n  }\n} else if (input.output && typeof input.output === 'object') {\n  // Already an object (e.g. Structured Output Parser result)\n  tsdOutput = input.output;\n} else {\n  // Fallback: input itself may be the TSD data\n  tsdOutput = input;\n}\n\n// ── Validate required fields ─────────────────────────────────────\nconst clientName = tsdOutput.clientName || input.clientName;\nif (!clientName) {\n  throw new Error('TSD output missing clientName field. Keys found: ' + Object.keys(tsdOutput).join(', '));\n}\n\nif (!tsdOutput.javascript || !tsdOutput.markdown) {\n  const missing = [!tsdOutput.javascript && 'javascript', !tsdOutput.markdown && 'markdown'].filter(Boolean).join(', ');\n  throw new Error('TSD output missing required fields: ' + missing + '. Keys found: ' + Object.keys(tsdOutput).join(', '));\n}\n\nconst hasLaunchPayload = !!tsdOutput.launchPayload;\nif (!hasLaunchPayload) {\n  console.warn('WARNING: launchPayload not found in TSD output - operating in 2-file mode');\n}\n\nconst timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);\nconst jsFilename = clientName + '_adobeDataLayer_' + timestamp + '.js';\nconst mdFilename = clientName + '_TSD_' + timestamp + '.md';\nconst launchFilename = clientName + '_LaunchPayload_' + timestamp + '.json';\n\nconst launchPayloadStr = typeof tsdOutput.launchPayload === 'string'\n  ? tsdOutput.launchPayload\n  : JSON.stringify(tsdOutput.launchPayload, null, 2);\n\nconsole.log('=== Parse TSD Output (' + (hasLaunchPayload ? '3' : '2') + ' Files) ===');\nconsole.log('Client:', clientName);\nconsole.log('JavaScript size:', tsdOutput.javascript.length);\nconsole.log('Markdown size:', tsdOutput.markdown.length);\nif (hasLaunchPayload) console.log('Launch Payload size:', launchPayloadStr.length);\n\nreturn [{\n  json: {\n    clientName: clientName,\n    files: {\n      javascript: { filename: jsFilename, content: tsdOutput.javascript, size: tsdOutput.javascript.length, type: 'application/javascript' },\n      markdown:   { filename: mdFilename, content: tsdOutput.markdown,   size: tsdOutput.markdown.length,   type: 'text/markdown' },\n      ...(hasLaunchPayload && {\n        launchPayload: { filename: launchFilename, content: launchPayloadStr, size: launchPayloadStr.length, type: 'application/json' }\n      })\n    },\n    stats: {\n      jsLines: tsdOutput.javascript.split('\\n').length,\n      mdLines: tsdOutput.markdown.split('\\n').length,\n      ...(hasLaunchPayload && { launchRulesCount: (tsdOutput.launchPayload.rules || []).length }),\n      generatedAt: new Date().toISOString()\n    }\n  }\n}];\n",
+        "options": {
+          "continueOnFail": true
+        }
+      },
+      "id": "f56d11fa-008b-40d0-85ec-76b231aca6a9",
+      "name": "Parse TSD Output",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        30656,
+        2592
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "'use strict';\n\n// ── n8n Input ─────────────────────────────────────────────────────────────────\n// Reads DOCX base64 from the upstream \"Call DOCX Service\" HTTP Request node.\n// No require() is needed — the webhook-service handles docx generation.\nconst svcResult  = $('Call DOCX Service').first().json;\nconst parsedData = $('Parse TSD Output').first().json;\nconst clientName = parsedData.clientName || 'Client';\n\nif (!svcResult || !svcResult.success) {\n  throw new Error('DOCX service returned failure: ' + (svcResult && svcResult.error || 'unknown error'));\n}\n\nconst base64       = svcResult.base64;\nconst docxFilename = svcResult.filename;\nconst sectionCount = svcResult.sectionCount || 0;\n\nif (!base64) {\n  throw new Error('DOCX service response missing base64 field');\n}\n\nlet preparedBinary;\ntry {\n  if (this?.helpers?.prepareBinaryData) {\n    const buffer = Buffer.from(base64, 'base64');\n    preparedBinary = await this.helpers.prepareBinaryData(buffer, docxFilename);\n  }\n} catch (e) {\n  console.warn('prepareBinaryData failed, using manual base64:', e?.message || e);\n}\n\nconst manualBinary = {\n  data: base64,\n  mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',\n  fileName: docxFilename,\n};\n\nreturn [{\n  json: { clientName, filename: docxFilename, fileType: 'DOCX', sectionCount },\n  binary: { data: (preparedBinary || manualBinary) },\n}];\n\n// ── NOTE: Code below is unreachable (returned above). Kept to preserve node ──\n// structure. The require('docx') line below is never executed.\n\n/**\n * Strip XML 1.0 invalid control characters (all C0 except \\t \\n \\r, plus \\x0B \\x0C).\n * DOCX is XML — these chars cause \"not well-formed\" parse errors in Word.\n */\nfunction sanitizeXml(str) {\n    if (typeof str !== 'string') return String(str ?? '');\n    // Remove: 0x00-0x08, 0x0B, 0x0C, 0x0E-0x1F, 0xFFFE, 0xFFFF\n    return str.replace(/[\\x00-\\x08\\x0B\\x0C\\x0E-\\x1F\\uFFFE\\uFFFF]/g, '');\n}\n\nconst {\n    Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell,\n    Header, Footer, AlignmentType, HeadingLevel, BorderStyle, WidthType,\n    ShadingType, VerticalAlign, PageNumber, PageBreak, LevelFormat,\n    TableOfContents, BookmarkStart, BookmarkEnd, InternalHyperlink,\n    UnderlineType,\n} = require('docx');\n\n// ── Color Palette ─────────────────────────────────────────────────────────────\n\nconst ADOBE_BLUE      = '1473E6';  // Primary Adobe blue (headers, headings)\nconst ADOBE_BLUE_DARK = '0D4DA1';  // Darker blue (cover)\nconst ADOBE_BLUE_LIGHT = 'EBF5FF'; // Light blue (table row alt)\nconst TABLE_HEADER_BG  = '1473E6'; // Table header background\nconst TABLE_HEADER_FG  = 'FFFFFF'; // Table header text (white)\nconst CODE_BG          = 'F5F5F5'; // Code block background\nconst CODE_BORDER      = '1473E6'; // Code block left border\nconst BORDER_GRAY      = 'D1D1D1'; // General cell border\nconst TEXT_DARK        = '2C2C2C'; // Body text\nconst TEXT_GRAY        = '6E6E6E'; // Muted / subtitle\nconst TEXT_WHITE       = 'FFFFFF'; // White text\nconst CTRL_ROW_BG      = 'EBF5FF'; // Document control label bg\nconst ROW_ALT          = 'F8FBFF'; // Alternating row\n\n// A4 page: width=11906, margins 1\"=1440 each side → content=11906-2880=9026\nconst PAGE_W       = 11906;\nconst PAGE_H       = 16838;\nconst MARGIN       = 1440;\nconst CONTENT_W    = PAGE_W - MARGIN * 2; // 9026\n\n// ── Cell Border Helpers ───────────────────────────────────────────────────────\n\nconst border1 = (color = BORDER_GRAY) => ({ style: BorderStyle.SINGLE, size: 4, color });\nconst allBorders = (color = BORDER_GRAY) => ({\n    top: border1(color), bottom: border1(color),\n    left: border1(color), right: border1(color),\n});\nconst noBorder = { style: BorderStyle.NONE, size: 0, color: 'FFFFFF' };\nconst noBorders = { top: noBorder, bottom: noBorder, left: noBorder, right: noBorder };\n\n// ── Inline Markdown Parser ───────────────────────────────────────────────────\n\n/**\n * Parse inline markdown (bold, italic, inline code) into TextRun array.\n */\nfunction parseInline(rawText, baseOpts = {}) {\n    const text = sanitizeXml(String(rawText ?? ''));\n    const runs = [];\n    // Pattern order: **bold**, *italic*, `code`\n    const pattern = /\\*\\*([^*]+?)\\*\\*|\\*([^*]+?)\\*|`([^`]+?)`/g;\n    let lastIndex = 0;\n    let match;\n    while ((match = pattern.exec(text)) !== null) {\n        if (match.index > lastIndex) {\n            const plain = text.slice(lastIndex, match.index);\n            if (plain) runs.push(new TextRun({ text: plain, ...baseOpts }));\n        }\n        if (match[1] !== undefined) {\n            runs.push(new TextRun({ text: match[1], bold: true, ...baseOpts }));\n        } else if (match[2] !== undefined) {\n            runs.push(new TextRun({ text: match[2], italics: true, ...baseOpts }));\n        } else if (match[3] !== undefined) {\n            runs.push(new TextRun({\n                text: match[3],\n                font: 'Courier New',\n                size: (baseOpts.size || 20) - 2,\n                color: '333333',\n                shading: { type: ShadingType.CLEAR, fill: 'EEEEEE' },\n                ...baseOpts,\n            }));\n        }\n        lastIndex = pattern.lastIndex;\n    }\n    if (lastIndex < text.length) {\n        const tail = text.slice(lastIndex);\n        if (tail) runs.push(new TextRun({ text: tail, ...baseOpts }));\n    }\n    if (runs.length === 0) runs.push(new TextRun({ text: '', ...baseOpts }));\n    return runs;\n}\n\n// ── Markdown → AST ───────────────────────────────────────────────────────────\n\n/**\n * Parse the TSD markdown into a structured AST.\n * Handles: ## section, ### subsection, #### sub-subsection,\n *          pipe tables, ```code```, bullet lists (- / *), blank lines, text.\n */\nfunction parseMarkdown(md) {\n    const lines = md.split('\\n');\n    const doc = { title: '', sections: [] };\n    let currentSection = null;\n    let currentSub     = null;\n    let currentSubSub  = null;\n    let inCode         = false;\n    let codeLang       = '';\n    let codeLines      = [];\n    let tableLines     = [];\n    let textLines      = [];\n    let bulletItems    = [];\n\n    function target() {\n        return currentSubSub || currentSub || currentSection;\n    }\n\n    function push(node) {\n        const t = target();\n        if (t) t.children.push(node);\n    }\n\n    function flushText() {\n        const text = textLines.join('\\n').trim();\n        if (text) push({ type: 'text', text });\n        textLines = [];\n    }\n\n    function flushTable() {\n        if (!tableLines.length) return;\n        const table = parseTable(tableLines);\n        if (table) push({ type: 'table', table });\n        tableLines = [];\n    }\n\n    function flushBullets() {\n        if (!bulletItems.length) return;\n        push({ type: 'bullets', items: [...bulletItems] });\n        bulletItems = [];\n    }\n\n    for (const line of lines) {\n        // ── Code block ──\n        if (inCode) {\n            if (line.trimStart().startsWith('```')) {\n                push({ type: 'code', lang: codeLang, code: codeLines.join('\\n') });\n                inCode = false; codeLines = []; codeLang = '';\n            } else {\n                codeLines.push(line);\n            }\n            continue;\n        }\n\n        if (line.trimStart().startsWith('```')) {\n            flushTable(); flushBullets(); flushText();\n            inCode = true;\n            codeLang = line.trim().slice(3).trim();\n            continue;\n        }\n\n        // ── Headings ──\n        if (line.startsWith('# ')) {\n            doc.title = line.slice(2).trim();\n            continue;\n        }\n\n        if (line.startsWith('## ')) {\n            flushTable(); flushBullets(); flushText();\n            currentSubSub = null;\n            currentSub    = null;\n            currentSection = { type: 'section', title: line.slice(3).trim(), children: [] };\n            doc.sections.push(currentSection);\n            continue;\n        }\n\n        if (line.startsWith('### ')) {\n            flushTable(); flushBullets(); flushText();\n            currentSubSub = null;\n            currentSub = { type: 'subsection', title: line.slice(4).trim(), children: [] };\n            if (currentSection) currentSection.children.push(currentSub);\n            continue;\n        }\n\n        if (line.startsWith('#### ')) {\n            flushTable(); flushBullets(); flushText();\n            currentSubSub = { type: 'subsubsection', title: line.slice(5).trim(), children: [] };\n            if (currentSub) currentSub.children.push(currentSubSub);\n            else if (currentSection) currentSection.children.push(currentSubSub);\n            continue;\n        }\n\n        // ── Horizontal rule ──\n        if (/^---+$/.test(line.trim())) {\n            flushTable(); flushBullets(); flushText();\n            continue;\n        }\n\n        // ── Table ──\n        if (line.trimStart().startsWith('|')) {\n            flushBullets(); flushText();\n            tableLines.push(line);\n            continue;\n        }\n        if (tableLines.length && !line.trimStart().startsWith('|')) {\n            flushTable();\n        }\n\n        // ── Bullets ──\n        const bulletMatch = line.match(/^(\\s*)[*\\-]\\s+(.+)/);\n        if (bulletMatch) {\n            flushText();\n            bulletItems.push(bulletMatch[2]);\n            continue;\n        }\n        if (bulletItems.length && line.trim() && !line.match(/^(\\s*)[*\\-]\\s+/)) {\n            flushBullets();\n        }\n\n        textLines.push(line);\n    }\n\n    flushTable();\n    flushBullets();\n    flushText();\n    if (inCode && codeLines.length) push({ type: 'code', lang: codeLang, code: codeLines.join('\\n') });\n\n    return doc;\n}\n\nfunction parseTable(lines) {\n    const rows = [];\n    for (const line of lines) {\n        const trimmed = line.trim();\n        // Skip separator rows like |---|---|\n        if (/^\\|[\\s\\-:|]+\\|$/.test(trimmed)) continue;\n        const cells = trimmed.split('|').slice(1, -1).map(c => c.trim());\n        if (cells.length) rows.push(cells);\n    }\n    if (!rows.length) return null;\n    return { headers: rows[0], rows: rows.slice(1) };\n}\n\n// ── docx Element Builders ────────────────────────────────────────────────────\n\nfunction makeTableCell(text, {\n    header = false, width = null, shade = null, bold = null,\n    align = AlignmentType.LEFT, fontSize = 18, color = null,\n} = {}) {\n    const isHeader = header;\n    const fillColor = shade || (isHeader ? TABLE_HEADER_BG : null);\n    const textColor = color || (isHeader ? TABLE_HEADER_FG : TEXT_DARK);\n    const isBold    = bold !== null ? bold : isHeader;\n\n    return new TableCell({\n        borders: allBorders(),\n        width: width ? { size: width, type: WidthType.DXA } : undefined,\n        shading: fillColor ? { fill: fillColor, type: ShadingType.CLEAR } : undefined,\n        margins: { top: 100, bottom: 100, left: 144, right: 144 },\n        verticalAlign: VerticalAlign.CENTER,\n        children: [new Paragraph({\n            alignment: align,\n            spacing: { before: 0, after: 0 },\n            children: parseInline(String(text ?? ''), {\n                bold: isBold,\n                font: 'Arial',\n                size: fontSize,\n                color: textColor,\n            }),\n        })],\n    });\n}\n\nfunction buildDataTable(tableData) {\n    const colCount = tableData.headers.length;\n    // Distribute widths; first col slightly wider for label columns\n    const colWidth = Math.floor(CONTENT_W / colCount);\n    const colWidths = tableData.headers.map((_, i) =>\n        i === colCount - 1 ? CONTENT_W - colWidth * (colCount - 1) : colWidth\n    );\n\n    const headerRow = new TableRow({\n        tableHeader: true,\n        children: tableData.headers.map((h, i) =>\n            makeTableCell(h, { header: true, width: colWidths[i] })\n        ),\n    });\n\n    const dataRows = tableData.rows.map((row, ri) =>\n        new TableRow({\n            children: tableData.headers.map((_, i) =>\n                makeTableCell(row[i] ?? '', {\n                    width: colWidths[i],\n                    shade: ri % 2 === 1 ? ROW_ALT : null,\n                    fontSize: 17,\n                })\n            ),\n        })\n    );\n\n    return new Table({\n        width: { size: CONTENT_W, type: WidthType.DXA },\n        columnWidths: colWidths,\n        rows: [headerRow, ...dataRows],\n    });\n}\n\nfunction buildTwoColCtrlTable(pairs) {\n    // Used for Document Control / Version Control\n    const LABEL_W = Math.floor(CONTENT_W * 0.28);\n    const VALUE_W = CONTENT_W - LABEL_W;\n\n    const rows = pairs.map((pair, ri) => {\n        if (pair.length === 1) {\n            // full-width header spanning 2 cols\n            const label = pair[0];\n            return new TableRow({\n                children: [new TableCell({\n                    columnSpan: 2,\n                    borders: allBorders(),\n                    shading: { fill: ADOBE_BLUE, type: ShadingType.CLEAR },\n                    margins: { top: 80, bottom: 80, left: 144, right: 144 },\n                    children: [new Paragraph({\n                        children: [new TextRun({ text: label, bold: true, font: 'Arial', size: 20, color: TEXT_WHITE })],\n                    })],\n                })],\n            });\n        }\n        return new TableRow({\n            children: [\n                makeTableCell(pair[0], {\n                    width: LABEL_W,\n                    shade: CTRL_ROW_BG,\n                    bold: true,\n                    fontSize: 18,\n                    color: ADOBE_BLUE_DARK,\n                }),\n                makeTableCell(pair[1], {\n                    width: VALUE_W,\n                    shade: ri % 2 === 0 ? null : 'FAFCFF',\n                    fontSize: 18,\n                }),\n            ],\n        });\n    });\n\n    return new Table({\n        width: { size: CONTENT_W, type: WidthType.DXA },\n        columnWidths: [Math.floor(CONTENT_W * 0.28), CONTENT_W - Math.floor(CONTENT_W * 0.28)],\n        rows,\n    });\n}\n\nfunction buildCodeBlock(code, lang = '') {\n    const header = lang\n        ? [new Paragraph({\n            children: [new TextRun({\n                text: lang.toUpperCase(),\n                font: 'Arial',\n                size: 14,\n                bold: true,\n                color: TEXT_WHITE,\n            })],\n            shading: { fill: '333333', type: ShadingType.CLEAR },\n            spacing: { before: 0, after: 0 },\n            indent: { left: 360, right: 0 },\n        })]\n        : [];\n\n    const codeParas = sanitizeXml(code).split('\\n').map(line =>\n        new Paragraph({\n            children: [new TextRun({\n                text: line || ' ',\n                font: 'Courier New',\n                size: 17,\n                color: '1A1A1A',\n            })],\n            shading: { fill: CODE_BG, type: ShadingType.CLEAR },\n            spacing: { before: 0, after: 0, line: 240 },\n            indent: { left: 360 },\n            border: {\n                left: { style: BorderStyle.SINGLE, size: 16, color: CODE_BORDER },\n            },\n        })\n    );\n\n    const spacer = new Paragraph({ children: [], spacing: { after: 160 } });\n    return [...header, ...codeParas, spacer];\n}\n\nfunction buildBullets(items) {\n    return items.map(item =>\n        new Paragraph({\n            children: [\n                new TextRun({ text: '• ', font: 'Arial', size: 20, color: ADOBE_BLUE }),\n                ...parseInline(item, { font: 'Arial', size: 20, color: TEXT_DARK }),\n            ],\n            spacing: { before: 40, after: 40 },\n            indent: { left: 360, hanging: 200 },\n        })\n    );\n}\n\nfunction buildTextParagraphs(text) {\n    return text.split('\\n')\n        .map(line => line.trim())\n        .filter(line => line.length > 0)\n        .map(line =>\n            new Paragraph({\n                children: parseInline(line, { font: 'Arial', size: 20, color: TEXT_DARK }),\n                spacing: { before: 80, after: 80 },\n            })\n        );\n}\n\nfunction nodeToElements(node, depth = 0) {\n    const elements = [];\n\n    if (node.type === 'subsection') {\n        elements.push(\n            new Paragraph({\n                heading: HeadingLevel.HEADING_2,\n                children: [new TextRun({\n                    text: node.title,\n                    font: 'Arial',\n                    size: 22,\n                    bold: true,\n                    color: '333333',\n                })],\n                spacing: { before: 240, after: 120 },\n                border: {\n                    bottom: { style: BorderStyle.SINGLE, size: 4, color: 'DDDDDD', space: 4 },\n                },\n            })\n        );\n        for (const child of node.children) {\n            elements.push(...nodeToElements(child, depth + 1));\n        }\n        return elements;\n    }\n\n    if (node.type === 'subsubsection') {\n        elements.push(\n            new Paragraph({\n                heading: HeadingLevel.HEADING_3,\n                children: [new TextRun({\n                    text: node.title,\n                    font: 'Arial',\n                    size: 20,\n                    bold: true,\n                    color: '555555',\n                })],\n                spacing: { before: 160, after: 80 },\n            })\n        );\n        for (const child of node.children) {\n            elements.push(...nodeToElements(child, depth + 1));\n        }\n        return elements;\n    }\n\n    if (node.type === 'text') {\n        elements.push(...buildTextParagraphs(node.text));\n        return elements;\n    }\n\n    if (node.type === 'table') {\n        elements.push(buildDataTable(node.table));\n        elements.push(new Paragraph({ children: [], spacing: { before: 80, after: 120 } }));\n        return elements;\n    }\n\n    if (node.type === 'code') {\n        elements.push(...buildCodeBlock(node.code, node.lang));\n        return elements;\n    }\n\n    if (node.type === 'bullets') {\n        elements.push(...buildBullets(node.items));\n        elements.push(new Paragraph({ children: [], spacing: { after: 80 } }));\n        return elements;\n    }\n\n    return elements;\n}\n\n// ── Document Assembly ─────────────────────────────────────────────────────────\n\nfunction buildDocument(parsed, clientName, javascript) {\n    const now     = new Date();\n    const dateStr = now.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });\n    const verDate = now.toISOString().slice(0, 10);\n\n    // ── Cover Page ──────────────────────────────────────────────────────────\n    const coverChildren = [\n        // Top accent bar (simulated with a thick blue paragraph border)\n        new Paragraph({\n            children: [],\n            spacing: { before: 0, after: 0 },\n            border: { top: { style: BorderStyle.SINGLE, size: 48, color: ADOBE_BLUE, space: 0 } },\n        }),\n        new Paragraph({ children: [], spacing: { before: 2000, after: 0 } }),\n\n        // \"Technical Solution Design\" title\n        new Paragraph({\n            children: [new TextRun({\n                text: 'Technical Solution Design',\n                bold: true,\n                font: 'Arial',\n                size: 56,\n                color: ADOBE_BLUE_DARK,\n            })],\n            alignment: AlignmentType.LEFT,\n            spacing: { before: 0, after: 240 },\n        }),\n\n        // Client name\n        new Paragraph({\n            children: [new TextRun({\n                text: clientName,\n                font: 'Arial',\n                size: 40,\n                color: TEXT_DARK,\n                bold: false,\n            })],\n            alignment: AlignmentType.LEFT,\n            spacing: { after: 120 },\n        }),\n\n        // Sub-line\n        new Paragraph({\n            children: [new TextRun({\n                text: 'Adobe Analytics — AEP Web SDK Implementation',\n                font: 'Arial',\n                size: 24,\n                color: TEXT_GRAY,\n            })],\n            alignment: AlignmentType.LEFT,\n            spacing: { after: 600 },\n        }),\n\n        // Horizontal divider\n        new Paragraph({\n            children: [],\n            border: { bottom: { style: BorderStyle.SINGLE, size: 8, color: ADOBE_BLUE, space: 4 } },\n            spacing: { before: 0, after: 400 },\n        }),\n\n        // Date + Version row\n        new Paragraph({\n            children: [\n                new TextRun({ text: 'Date: ', bold: true, font: 'Arial', size: 20, color: TEXT_GRAY }),\n                new TextRun({ text: dateStr + '   ', font: 'Arial', size: 20, color: TEXT_DARK }),\n                new TextRun({ text: '  Version: ', bold: true, font: 'Arial', size: 20, color: TEXT_GRAY }),\n                new TextRun({ text: '1.0', font: 'Arial', size: 20, color: TEXT_DARK }),\n            ],\n            alignment: AlignmentType.LEFT,\n        }),\n\n        // Confidentiality note\n        new Paragraph({\n            children: [new TextRun({\n                text: 'CONFIDENTIAL — For internal use and authorized stakeholders only.',\n                font: 'Arial',\n                size: 16,\n                color: TEXT_GRAY,\n                italics: true,\n            })],\n            alignment: AlignmentType.LEFT,\n            spacing: { before: 200 },\n        }),\n\n        new Paragraph({ children: [new PageBreak()] }),\n    ];\n\n    // ── Document Control ────────────────────────────────────────────────────\n    const docControlSection = [\n        new Paragraph({\n            heading: HeadingLevel.HEADING_1,\n            children: [new TextRun({ text: 'Document Control', font: 'Arial', size: 32, bold: true, color: ADOBE_BLUE })],\n            spacing: { before: 240, after: 200 },\n        }),\n\n        buildTwoColCtrlTable([\n            ['Document Control'],\n            ['Document Title',   `Technical Solution Design — ${clientName}`],\n            ['Client / Company', clientName],\n            ['Project',          'Adobe Analytics AEP Web SDK Implementation'],\n            ['Document Type',    'Technical Specification'],\n            ['Prepared By',      'Tagging AI (Document Automation System)'],\n            ['Reviewed By',      ''],\n            ['Approved By',      ''],\n        ]),\n\n        new Paragraph({ children: [], spacing: { before: 200, after: 0 } }),\n\n        buildTwoColCtrlTable([\n            ['Version History'],\n            ['Version', '1.0'],\n            ['Date',    verDate],\n            ['Author',  'Tagging AI'],\n            ['Changes', 'Initial release — auto-generated from SDR data'],\n            ['Status',  'Draft'],\n        ]),\n\n        new Paragraph({ children: [], spacing: { before: 200, after: 0 } }),\n\n        new Paragraph({\n            children: [new TextRun({\n                text: 'Notes',\n                bold: true,\n                font: 'Arial',\n                size: 22,\n                color: ADOBE_BLUE,\n            })],\n            spacing: { before: 280, after: 120 },\n            border: { bottom: { style: BorderStyle.SINGLE, size: 4, color: 'DDDDDD', space: 4 } },\n        }),\n        new Paragraph({\n            children: [new TextRun({\n                text: 'This document has been auto-generated by the Tagging AI document automation system '\n                    + 'based on the Solution Design Reference (SDR) for ' + clientName + '. '\n                    + 'All tracking specifications, data layer schemas, and Adobe Launch rule configurations '\n                    + 'should be validated against the actual implementation before go-live.',\n                font: 'Arial',\n                size: 19,\n                color: TEXT_DARK,\n            })],\n            spacing: { before: 80, after: 80 },\n        }),\n\n        new Paragraph({ children: [new PageBreak()] }),\n    ];\n\n    // ── TOC ─────────────────────────────────────────────────────────────────\n    const tocSection = [\n        new Paragraph({\n            heading: HeadingLevel.HEADING_1,\n            children: [new TextRun({ text: 'Table of Contents', font: 'Arial', size: 32, bold: true, color: ADOBE_BLUE })],\n            spacing: { before: 240, after: 200 },\n        }),\n        new TableOfContents('Table of Contents', {\n            hyperlink: true,\n            headingStyleRange: '1-3',\n        }),\n        new Paragraph({ children: [new PageBreak()] }),\n    ];\n\n    // ── Content Sections ────────────────────────────────────────────────────\n    const contentChildren = [];\n    for (let si = 0; si < parsed.sections.length; si++) {\n        const section = parsed.sections[si];\n        contentChildren.push(\n            new Paragraph({\n                heading: HeadingLevel.HEADING_1,\n                children: [new TextRun({\n                    text: section.title,\n                    font: 'Arial',\n                    size: 30,\n                    bold: true,\n                    color: ADOBE_BLUE,\n                })],\n                spacing: { before: 360, after: 200 },\n                pageBreakBefore: si > 0,\n            })\n        );\n        for (const child of section.children) {\n            contentChildren.push(...nodeToElements(child));\n        }\n    }\n\n    // ── Appendix: JavaScript ─────────────────────────────────────────────────\n    const appendixChildren = [\n        new Paragraph({ children: [new PageBreak()] }),\n        new Paragraph({\n            heading: HeadingLevel.HEADING_1,\n            children: [new TextRun({\n                text: 'Appendix A — Adobe Data Layer Implementation',\n                font: 'Arial',\n                size: 30,\n                bold: true,\n                color: ADOBE_BLUE,\n            })],\n            spacing: { before: 360, after: 200 },\n        }),\n        new Paragraph({\n            children: [new TextRun({\n                text: 'Complete JavaScript implementation for adobeDataLayer integration. '\n                    + 'This code provides all tracking functions referenced in the sections above.',\n                font: 'Arial',\n                size: 19,\n                color: TEXT_GRAY,\n            })],\n            spacing: { after: 200 },\n        }),\n        ...buildCodeBlock(javascript || '// No JavaScript generated', 'javascript'),\n    ];\n\n    // ── Header / Footer ──────────────────────────────────────────────────────\n    const makeHeader = () => new Header({\n        children: [\n            new Paragraph({\n                children: [\n                    new TextRun({ text: 'Technical Solution Design  |  ', font: 'Arial', size: 17, color: TEXT_GRAY }),\n                    new TextRun({ text: clientName, font: 'Arial', size: 17, bold: true, color: ADOBE_BLUE }),\n                ],\n                alignment: AlignmentType.RIGHT,\n                border: { bottom: { style: BorderStyle.SINGLE, size: 6, color: ADOBE_BLUE, space: 4 } },\n                spacing: { after: 0 },\n            }),\n        ],\n    });\n\n    const makeFooter = () => new Footer({\n        children: [\n            new Paragraph({\n                children: [\n                    new TextRun({ text: 'CONFIDENTIAL  |  Adobe Analytics Implementation', font: 'Arial', size: 15, color: TEXT_GRAY }),\n                    new TextRun({ text: '\\t\\t\\tPage ', font: 'Arial', size: 15, color: TEXT_GRAY }),\n                    new TextRun({ children: [PageNumber.CURRENT], font: 'Arial', size: 15, color: TEXT_GRAY }),\n                    new TextRun({ text: ' of ', font: 'Arial', size: 15, color: TEXT_GRAY }),\n                    new TextRun({ children: [PageNumber.TOTAL_PAGES], font: 'Arial', size: 15, color: TEXT_GRAY }),\n                ],\n                border: { top: { style: BorderStyle.SINGLE, size: 6, color: BORDER_GRAY, space: 4 } },\n                spacing: { before: 0 },\n            }),\n        ],\n    });\n\n    // ── Heading Styles ───────────────────────────────────────────────────────\n    const paragraphStyles = [\n        {\n            id: 'Heading1', name: 'Heading 1', basedOn: 'Normal', next: 'Normal', quickFormat: true,\n            run: { size: 30, bold: true, font: 'Arial', color: ADOBE_BLUE },\n            paragraph: {\n                spacing: { before: 360, after: 200 },\n                outlineLevel: 0,\n            },\n        },\n        {\n            id: 'Heading2', name: 'Heading 2', basedOn: 'Normal', next: 'Normal', quickFormat: true,\n            run: { size: 22, bold: true, font: 'Arial', color: '333333' },\n            paragraph: { spacing: { before: 240, after: 120 }, outlineLevel: 1 },\n        },\n        {\n            id: 'Heading3', name: 'Heading 3', basedOn: 'Normal', next: 'Normal', quickFormat: true,\n            run: { size: 20, bold: true, font: 'Arial', color: '555555' },\n            paragraph: { spacing: { before: 160, after: 80 }, outlineLevel: 2 },\n        },\n    ];\n\n    // ── Assemble ─────────────────────────────────────────────────────────────\n    const pageLayout = {\n        page: {\n            size: { width: PAGE_W, height: PAGE_H },\n            margin: { top: MARGIN, right: MARGIN, bottom: MARGIN, left: MARGIN },\n        },\n    };\n\n    return new Document({\n        styles: {\n            default: {\n                document: { run: { font: 'Arial', size: 20, color: TEXT_DARK } },\n            },\n            paragraphStyles,\n        },\n        sections: [\n            // Section 1: Cover page (no header/footer)\n            {\n                properties: { ...pageLayout },\n                children: coverChildren,\n            },\n            // Section 2: Document Control + TOC + Content + Appendix (with header/footer)\n            {\n                properties: { ...pageLayout },\n                headers: { default: makeHeader() },\n                footers: { default: makeFooter() },\n                children: [\n                    ...docControlSection,\n                    ...tocSection,\n                    ...contentChildren,\n                    ...appendixChildren,\n                ],\n            },\n        ],\n    });\n}\n\n// ── Generate DOCX ─────────────────────────────────────────────────────────────\nconst parsed = parseMarkdown(markdown);\nconst doc    = buildDocument(parsed, clientName, javascript);\nconst buffer = await Packer.toBuffer(doc);\nif (buffer.byteLength < 1024) {\n  throw new Error('DOCX buffer too small (' + buffer.byteLength + ' bytes) — generation likely failed');\n}\n\nlet preparedBinary;\ntry {\n  // n8n Code node helper (keeps binary serialization compatible with task runners)\n  if (this?.helpers?.prepareBinaryData) {\n    preparedBinary = await this.helpers.prepareBinaryData(buffer, docxFilename);\n  }\n} catch (e) {\n  console.warn('prepareBinaryData failed, falling back to manual base64:', e?.message || e);\n}\n\n// Fallback: manual base64 encoding\nconst base64 = buffer.toString('base64');\nconst manualBinary = {\n  data: base64,\n  mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',\n  fileName: docxFilename\n};\n\nreturn [{\n  json: { clientName, filename: docxFilename, fileType: 'DOCX', sectionCount: parsed.sections.length },\n  binary: {\n    data: (preparedBinary || manualBinary)\n  }\n}];\n",
+        "options": {
+          "continueOnFail": false
+        }
+      },
+      "id": "fbe1699a-6024-41e5-80c0-57f1dcf6e5a4",
+      "name": "Generate TSD DOCX",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        31104,
+        2496
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:3000/generate-tsd?format=json",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ clientName: $('Parse TSD Output').first().json.clientName, markdown: $('Parse TSD Output').first().json.files.markdown.content, javascript: ($('Parse TSD Output').first().json.files.javascript || {}).content || '' }) }}",
+        "options": {
+          "timeout": 120000
+        }
+      },
+      "id": "a4b7c2d1-e5f6-7890-abcd-ef1234567890",
+      "name": "Call DOCX Service",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        30880,
+        2496
+      ],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "resource": "folder",
+        "name": "TSD",
+        "driveId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "My Drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "1Jnbq3-HDIPvubf7nqCEWD1JukEmCUnCV",
+          "cachedResultName": "Document AI Outputs"
+        },
+        "options": {}
+      },
+      "id": "4534703f-2cfb-4882-b2d0-4a75f47e0008",
+      "name": "Create TSD Folder",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        30880,
+        2688
+      ],
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "AYG1qOCT9TIoQ4ia",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "folder",
+        "name": "={{ $('Parse TSD Output').item.json.clientName }}",
+        "driveId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "My Drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $json.id }}"
+        },
+        "options": {}
+      },
+      "id": "1e0e17f5-13e3-4554-95b3-9205ccece9b3",
+      "name": "Create Client Folder",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        31104,
+        2688
+      ],
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "AYG1qOCT9TIoQ4ia",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Convert files to binary format for Google Drive with UTF-8 encoding\nconst parsedData = $('Parse TSD Output').first().json;\nconst folderId = $('Create Client Folder').first().json.id;\nconst timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);\n\nconst jsBase64 = Buffer.from(parsedData.files.javascript.content, 'utf-8').toString('base64');\nconst mdBase64 = Buffer.from(parsedData.files.markdown.content, 'utf-8').toString('base64');\n\nconst result = [\n  {\n    json: { clientName: parsedData.clientName, filename: parsedData.files.javascript.filename, fileType: 'JavaScript', folderId, stats: parsedData.stats },\n    binary: { data: { data: jsBase64, mimeType: 'text/plain; charset=utf-8', fileName: parsedData.files.javascript.filename } }\n  },\n  {\n    json: { clientName: parsedData.clientName, filename: parsedData.files.markdown.filename, fileType: 'Markdown', folderId, stats: parsedData.stats },\n    binary: { data: { data: mdBase64, mimeType: 'text/plain; charset=utf-8', fileName: parsedData.files.markdown.filename } }\n  }\n];\n\n// Add TSD .docx if Generate TSD DOCX node succeeded\ntry {\n  const docxNode = $('Generate TSD DOCX').first();\n  const docxBinary = docxNode?.binary?.data; if (docxBinary?.data) {\n    const docxFilename = `${parsedData.clientName}_TSD_${timestamp}.docx`;\n    result.push({\n      json: { clientName: parsedData.clientName, filename: docxFilename, fileType: 'DOCX', folderId, stats: parsedData.stats },\n      binary: { data: { ...docxBinary, mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', fileName: docxFilename } }\n    });\n    console.log('✅ TSD .docx included: ' + docxFilename);\n  }\n} catch (e) { console.warn('⚠️  TSD DOCX not available: ' + e.message); }\n\n// Add Launch Payload if exists\nif (parsedData.files.launchPayload) {\n  const launchBase64 = Buffer.from(parsedData.files.launchPayload.content, 'utf-8').toString('base64');\n  result.push({\n    json: { clientName: parsedData.clientName, filename: parsedData.files.launchPayload.filename, fileType: 'Launch Payload', folderId, stats: parsedData.stats },\n    binary: { data: { data: launchBase64, mimeType: 'application/json; charset=utf-8', fileName: parsedData.files.launchPayload.filename } }\n  });\n} else {\n  console.warn('⚠️  WARNING: launchPayload not found - uploading without it');\n}\n\nreturn result;"
+      },
+      "id": "94dadd8e-5484-40b9-80ef-8a40a6312d35",
+      "name": "Split Files for Upload",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        31328,
+        2688
+      ]
+    },
+    {
+      "parameters": {
+        "name": "={{ $json.filename }}",
+        "driveId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "My Drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $json.folderId }}"
+        },
+        "options": {}
+      },
+      "id": "febe1058-2e62-4c38-96ed-55c21bc311e3",
+      "name": "Upload to Google Drive",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        31552,
+        2688
+      ],
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "AYG1qOCT9TIoQ4ia",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Collect all uploaded files info\n// $input = Make TSD File Public output (permission data — no file metadata)\n// → use $('Upload to Google Drive').all() for actual file info\nconst items      = $('Upload to Google Drive').all();\nconst clientName = $('Parse TSD Output').first().json.clientName\n                   || items[0].json.name.split('_')[0];\n\nconsole.log('=== TSD Files Uploaded to Google Drive ===');\nconsole.log('Client:', clientName, '| Files:', items.length);\n\nconst uploadedFiles = items.map(item => ({\n  fileId:         item.json.id,\n  fileName:       item.json.name,\n  mimeType:       item.json.mimeType,\n  webViewLink:    item.json.webViewLink,\n  webContentLink: item.json.webContentLink,\n  createdTime:    item.json.createdTime,\n}));\n\nconst fileTypes = {\n  javascript:    uploadedFiles.find(f => f.fileName && f.fileName.includes('adobeDataLayer')),\n  markdown:      uploadedFiles.find(f => f.fileName && f.fileName.includes('TSD') && f.fileName.endsWith('.md')),\n  docx:          uploadedFiles.find(f => f.fileName && f.fileName.endsWith('.docx')),\n  launchPayload: uploadedFiles.find(f => f.fileName && f.fileName.includes('LaunchPayload')),\n};\n\nconst hasDocx          = !!fileTypes.docx;\nconst hasLaunchPayload = !!fileTypes.launchPayload;\n\n// Google Doc (optional — may not have run yet; safe fallback)\nlet googleDocs = null;\ntry {\n  const gdocResult = $('Create TSD Google Doc').first();\n  const gdocId = gdocResult?.json?.id || gdocResult?.json?.documentId || null;\n  if (gdocId) {\n    googleDocs = {\n      id:  gdocId,\n      url: `https://docs.google.com/document/d/${gdocId}/edit`,\n      name: gdocResult?.json?.name || '',\n    };\n    console.log('Google Doc:', googleDocs.url);\n  }\n} catch (e) {\n  console.warn('⚠️  Create TSD Google Doc not available:', e.message);\n}\n\nuploadedFiles.forEach(f => console.log(`  - ${f.fileName} (${f.fileId})`));\n\nif (!hasLaunchPayload) console.warn('⚠️  Launch Payload not found');\nif (!hasDocx)          console.warn('⚠️  DOCX not found — generate-tsd may have failed');\n\nconst fileTypesList = ['JavaScript', 'Markdown',\n  hasDocx ? 'DOCX' : null,\n  hasLaunchPayload ? 'Launch Payload' : null,\n].filter(Boolean).join(', ');\n\nreturn [{\n  json: {\n    success: true,\n    clientName,\n    googleDrive: {\n      folder:    `TSD/${clientName}`,\n      files:     uploadedFiles,\n      fileTypes,\n    },\n    googleDocs,\n    totalFiles:       items.length,\n    hasDocx,\n    hasLaunchPayload,\n    message: `Successfully uploaded ${items.length} files (${fileTypesList}) to Google Drive`,\n  },\n}];"
+      },
+      "id": "0b8c156b-8cf6-48f5-859f-2bd658867fd8",
+      "name": "Collect Upload Results",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        31776,
+        2688
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Validate TSD Input').first().json.callbackUrl || 'http://host.docker.internal:3000/webhook/sdr-result' }}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({  jobId: $('Validate TSD Input').first().json.jobId,  executionId: $execution.id,  status: 'completed',  clientName: $('Validate TSD Input').first().json.clientName,  completedAt: new Date().toISOString(),  googleDrive: $('Collect Upload Results').first().json.googleDrive,  googleDocs: $('Collect Upload Results').first().json.googleDocs,  totalFiles: $('Collect Upload Results').first().json.totalFiles,  hasDocx: $('Collect Upload Results').first().json.hasDocx,  hasLaunchPayload: $('Collect Upload Results').first().json.hasLaunchPayload,  message: $('Collect Upload Results').first().json.message}) }}",
+        "options": {
+          "timeout": 5000
+        }
+      },
+      "id": "progress-tsd-done-0003-000000000003",
+      "name": "Notify Step TSD Done",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        30880,
+        2900
+      ],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Validate TSD Input').first().json.callbackUrl || 'http://host.docker.internal:3000/webhook/sdr-result' }}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ jobId: $('Validate TSD Input').first().json.jobId, executionId: $execution.id, status: 'step_tsd_start', message: 'TSD 문서 생성 시작' }) }}",
+        "options": {
+          "timeout": 5000
+        }
+      },
+      "id": "progress-tsd-start-0011-000000000011",
+      "name": "Notify TSD Start",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        29500,
+        2760
+      ],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {},
+      "id": "05209399-97a5-482a-a513-972fa1cb3aab",
+      "name": "Log Error",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        34688,
+        2904
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "tsd-cfg-asgn-0001",
+              "name": "DOCX_WEBHOOK_URL",
+              "value": "http://host.docker.internal:3000/generate-tsd",
+              "type": "string"
+            },
+            {
+              "id": "tsd-cfg-asgn-0002",
+              "name": "clientName",
+              "value": "={{ $json.body.clientName }}",
+              "type": "string"
+            },
+            {
+              "id": "tsd-cfg-asgn-0003",
+              "name": "sdrData",
+              "value": "={{ $json.body.sdrData }}",
+              "type": "object"
+            },
+            {
+              "id": "tsd-cfg-asgn-0004",
+              "name": "callbackUrl",
+              "value": "={{ $json.body.callbackUrl }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "tsd-cfg-0001-0001-0001-000000000001",
+      "name": "Set Webhook Config",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        400,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "share",
+        "fileId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $json.id }}"
+        },
+        "permissionsUi": {
+          "permissionsValues": {
+            "role": "reader",
+            "type": "anyone",
+            "allowFileDiscovery": false
+          }
+        },
+        "options": {}
+      },
+      "id": "perm-tsd-file-0001-0001-000000000001",
+      "name": "Make TSD File Public",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        31664,
+        2688
+      ],
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "AYG1qOCT9TIoQ4ia",
+          "name": "Google Drive account"
+        }
+      },
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "operation": "createFromText",
+        "content": "={{ $('Parse TSD Output').first().json.files.markdown.content }}",
+        "name": "={{ $('Parse TSD Output').first().json.clientName + '_TSD_' + new Date().toISOString().slice(0,10) }}",
+        "driveId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "My Drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $('Create Client Folder').first().json.id }}"
+        },
+        "options": {
+          "convertToGoogleDocument": true
+        },
+        "optionsUi": {}
+      },
+      "id": "gdoc-tsd-create-0001-0001-000000000001",
+      "name": "Create TSD Google Doc",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        31600,
+        2780
+      ],
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "AYG1qOCT9TIoQ4ia",
+          "name": "Google Drive account"
+        }
+      },
+      "continueOnFail": true
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Azure OpenAI - TSD JS": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "TSD JS Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "TSD JS Agent",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Azure OpenAI - SOP": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Structured Output Parser",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Azure OpenAI - TSD Doc": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "TSD Doc Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook Trigger TSD": {
+      "main": [
+        [
+          {
+            "node": "Set Webhook Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Webhook Config": {
+      "main": [
+        [
+          {
+            "node": "Validate TSD Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate TSD Input": {
+      "main": [
+        [
+          {
+            "node": "Respond TSD",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Notify TSD Start",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Notify TSD Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Notify TSD Start": {
+      "main": [
+        [
+          {
+            "node": "Prepare TSD Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare TSD Input": {
+      "main": [
+        [
+          {
+            "node": "Wait 35s (pre-TSD TPM)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait 35s (pre-TSD TPM)": {
+      "main": [
+        [
+          {
+            "node": "TSD JS Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "TSD JS Agent": {
+      "main": [
+        [
+          {
+            "node": "Wait 30s (TSD TPM buffer)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Notify TSD Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait 30s (TSD TPM buffer)": {
+      "main": [
+        [
+          {
+            "node": "TSD Doc Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "TSD Doc Agent": {
+      "main": [
+        [
+          {
+            "node": "Merge TSD Parts",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Notify TSD Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge TSD Parts": {
+      "main": [
+        [
+          {
+            "node": "Parse TSD Output",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Notify TSD Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse TSD Output": {
+      "main": [
+        [
+          {
+            "node": "Call DOCX Service",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Create TSD Folder",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Notify TSD Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call DOCX Service": {
+      "main": [
+        [
+          {
+            "node": "Generate TSD DOCX",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate TSD DOCX": {
+      "main": [
+        [
+          {
+            "node": "Split Files for Upload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create TSD Folder": {
+      "main": [
+        [
+          {
+            "node": "Create Client Folder",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Client Folder": {
+      "main": [
+        [
+          {
+            "node": "Split Files for Upload",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Create TSD Google Doc",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Files for Upload": {
+      "main": [
+        [
+          {
+            "node": "Upload to Google Drive",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload to Google Drive": {
+      "main": [
+        [
+          {
+            "node": "Make TSD File Public",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Collect Upload Results": {
+      "main": [
+        [
+          {
+            "node": "Notify Step TSD Done",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Notify TSD Error": {
+      "main": [
+        [
+          {
+            "node": "Log Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Make TSD File Public": {
+      "main": [
+        [
+          {
+            "node": "Collect Upload Results",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "tsd-v2-0001-0001-000000000001",
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "id": "TSD-V2",
+  "tags": [
+    {
+      "id": "tag-tsd",
+      "name": "tsd",
+      "createdAt": "2026-03-20T00:00:00.000Z",
+      "updatedAt": "2026-03-20T00:00:00.000Z"
+    }
+  ]
+}

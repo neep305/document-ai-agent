@@ -2,6 +2,24 @@
 
 All notable changes to the webhook-service will be documented in this file.
 
+## [0.8.0] - 2026-03-18
+
+### Changed
+- **UI**: Version badge updated to `v0.8.0` (title, header badge, startup log)
+- **Health endpoint**: Added `n8nCompatibility: 'v0.8'` field to `/health` response
+- **Stats display**: Added `OOTB Variables` count to success message (maps to `stats.ootb` from n8n v0.8 response)
+- **Compatibility panel**: Added visual n8n version compatibility panel to UI
+  - ✅ n8n v0.8 (current) — `section_a_ootb`, `data_layer_map`, `brd_traceability` fields
+  - ✅ n8n v0.7 / v0.6 / v0.5 — backward compatible
+  - ❌ n8n v0.4 and below — incompatible webhook response structure
+
+### Verified Compatible
+- Webhook path: `22ad9668-47fd-4d5c-9cf7-69d72aa838e1` — unchanged from v0.6
+- Input fields: `baseSheetName`, `clientName`, `fileData` — unchanged
+- Response structure: `success`, `sdr.evars`, `sdr.props`, `sdr.events` — unchanged
+
+---
+
 ## [0.5.1] - 2026-01-29
 
 ### Fixed
