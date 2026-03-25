@@ -1,4 +1,4 @@
-FROM node:18-bookworm-slim
+FROM node:20-bookworm-slim
 
 WORKDIR /app
 
@@ -10,7 +10,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 # Install Node dependencies
 COPY package*.json ./
-RUN npm ci --only=production
+RUN npm ci --omit=dev
 
 # Copy application
 COPY server.js ./
