@@ -1,0 +1,155 @@
+{
+  "name": "M365 Upload via webhook-service-m365 (example)",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "m365-ex-001-manual",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [0, 0]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a0",
+              "name": "uploadUrl",
+              "value": "http://host.docker.internal:3001/v1/upload",
+              "type": "string"
+            },
+            {
+              "id": "a1",
+              "name": "folder",
+              "value": "DocumentAI",
+              "type": "string"
+            },
+            {
+              "id": "a2",
+              "name": "m365ApiKey",
+              "value": "REPLACE_WITH_M365_SERVICE_API_KEY",
+              "type": "string"
+            },
+            {
+              "id": "a3",
+              "name": "requesterId",
+              "value": "n8n-m365-template",
+              "type": "string"
+            },
+            {
+              "id": "a4",
+              "name": "requestContext",
+              "value": "n8n-cloud-m365/example",
+              "type": "string"
+            },
+            {
+              "id": "a5",
+              "name": "filename",
+              "value": "demo-upload.txt",
+              "type": "string"
+            },
+            {
+              "id": "a6",
+              "name": "contentBase64",
+              "value": "SGVsbG8gZnJvbSBuOG4=",
+              "type": "string"
+            },
+            {
+              "id": "a7",
+              "name": "contentType",
+              "value": "application/json",
+              "type": "string"
+            },
+            {
+              "id": "a8",
+              "name": "timeoutMs",
+              "value": 120000,
+              "type": "number"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "m365-ex-002-set",
+      "name": "Payload shape (demo)",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [220, 0]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $json.uploadUrl }}",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "folder",
+              "value": "={{ $json.folder }}"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-api-key",
+              "value": "={{ $json.m365ApiKey || $json.apiKey }}"
+            },
+            {
+              "name": "x-requester-id",
+              "value": "={{ $json.requesterId }}"
+            },
+            {
+              "name": "x-request-context",
+              "value": "={{ $json.requestContext }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "={{ $json.contentType || 'application/json' }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify(Object.assign({}, { filename: $json.filename, contentBase64: $json.contentBase64 }, ($json.bodyFolder != null && $json.bodyFolder !== '') ? { folder: $json.bodyFolder } : {})) }}",
+        "options": {
+          "timeout": "={{ $json.timeoutMs || 120000 }}"
+        }
+      },
+      "id": "m365-ex-003-http",
+      "name": "POST webhook-service-m365",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [460, 0]
+    }
+  ],
+  "connections": {
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "Payload shape (demo)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Payload shape (demo)": {
+      "main": [
+        [
+          {
+            "node": "POST webhook-service-m365",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

@@ -7,16 +7,19 @@ const https = require('https');
 const http = require('http');
 const session = require('express-session');
 const { google } = require('googleapis');
+const multer = require('multer');
+const { acquireGraphToken } = require('./lib/graphToken');
+const { uploadToSiteDriveRoot } = require('./lib/uploadDriveItem');
 require('dotenv').config();
 
-// In-memory job store
-const jobs = new Map();   // jobId -> { status, createdAt, updatedAt, result, error }
-const sseClients = new Map(); // jobId -> Set<res>
+// â”€â”€ In-memory job store â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+const jobs = new Map();   // jobId â†’ { status, createdAt, updatedAt, result, error }
+const sseClients = new Map(); // jobId â†’ Set<res>
 
 const SCRIPTS_DIR = path.join(__dirname, 'scripts');
 
 // Configuration from environment variables
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3001;
 const PYTHON_CMD = process.env.PYTHON_CMD || (process.platform === 'win32' ? 'python' : 'python3');
 const SHEET_NAMES = {
   evars: process.env.SHEET_NAME_EVARS || 'eVars',
@@ -36,6 +39,12 @@ const AUTO_CHAIN_TSD = (process.env.AUTO_CHAIN_TSD || 'false').toLowerCase() ===
 
 // n8n API Key — execution 강제 중단에 사용 (없으면 n8n 중단 스킵)
 const N8N_API_KEY = process.env.N8N_API_KEY || '';
+
+const M365_SERVICE_API_KEY = process.env.M365_SERVICE_API_KEY || '';
+const m365Upload = multer({
+    storage: multer.memoryStorage(),
+    limits: { fileSize: Number(process.env.MAX_UPLOAD_MB || 50) * 1024 * 1024 },
+});
 
 // ── n8n API Base URL ──────────────────────────────────────────────────────────
 // Docker 환경에서 webhook-service가 컨테이너 안에서 실행될 경우,
@@ -1484,27 +1493,134 @@ app.get('/api/drive/file/:fileId', async (req, res) => {
     }
 });
 
+function m365GraphEnvConfigured() {
+    return Boolean(
+        process.env.AZURE_TENANT_ID &&
+            process.env.AZURE_CLIENT_ID &&
+            process.env.AZURE_CLIENT_SECRET &&
+            (process.env.GRAPH_SITE_ID || process.env.GRAPH_SITE_PATH)
+    );
+}
+
+function m365RequireApiKey(req, res, next) {
+    if (!M365_SERVICE_API_KEY) {
+        return res.status(503).json({ error: 'M365_SERVICE_API_KEY is not configured' });
+    }
+    const key = req.get('x-api-key') || '';
+    if (key !== M365_SERVICE_API_KEY) {
+        return res.status(401).json({ error: 'Invalid or missing x-api-key' });
+    }
+    next();
+}
+
+function m365ShouldLogUploads() {
+    const v = (process.env.LOG_UPLOADS || '').toLowerCase();
+    return v === '1' || v === 'true' || v === 'yes';
+}
+
+function m365AuditFromReq(req) {
+    return {
+        requesterId: req.get('x-requester-id') || null,
+        requestContext: req.get('x-request-context') || null,
+    };
+}
+
+/**
+ * Microsoft Graph → SharePoint/Teams library (central upload API for n8n etc.)
+ */
+app.post('/v1/upload', m365RequireApiKey, m365Upload.single('file'), async (req, res) => {
+    const folder = (req.query.folder || req.body?.folder || process.env.GRAPH_DEFAULT_FOLDER || '').toString();
+    const audit = m365AuditFromReq(req);
+
+    let buffer;
+    let fileName;
+
+    if (req.file) {
+        buffer = req.file.buffer;
+        fileName = req.file.originalname || 'upload.bin';
+    } else if (req.body?.contentBase64 && req.body?.filename) {
+        fileName = String(req.body.filename);
+        try {
+            buffer = Buffer.from(String(req.body.contentBase64), 'base64');
+        } catch {
+            return res.status(400).json({ error: 'Invalid contentBase64' });
+        }
+    } else {
+        return res.status(400).json({
+            error: 'Send multipart field "file" or JSON { filename, contentBase64, folder? }',
+        });
+    }
+
+    try {
+        const token = await acquireGraphToken();
+        const meta = await uploadToSiteDriveRoot(token, folder, fileName, buffer);
+        if (m365ShouldLogUploads()) {
+            console.log(
+                JSON.stringify({
+                    event: 'm365_upload_ok',
+                    at: new Date().toISOString(),
+                    fileName,
+                    folder: folder || null,
+                    sizeBytes: buffer.length,
+                    webUrl: meta.webUrl || null,
+                    driveItemId: meta.id || null,
+                    ...audit,
+                })
+            );
+        }
+        res.status(201).json({
+            ok: true,
+            webUrl: meta.webUrl || null,
+            id: meta.id || null,
+            name: meta.name || fileName,
+            graph: meta,
+        });
+    } catch (err) {
+        const status = err.status && err.status >= 400 && err.status < 600 ? err.status : 500;
+        console.error(
+            JSON.stringify({
+                event: 'm365_upload_error',
+                at: new Date().toISOString(),
+                message: err.message,
+                fileName,
+                folder: folder || null,
+                ...audit,
+            }),
+            err.body || ''
+        );
+        res.status(status).json({
+            error: err.message,
+            details: process.env.NODE_ENV === 'development' ? err.body : undefined,
+        });
+    }
+});
+
 // Health check
 app.get('/health', (req, res) => {
     res.json({
         status: 'ok',
-        service: 'excel-generator',
+        service: 'excel-generator-m365',
         version: '1.3.0',
         n8nCompatibility: 'v1.3',
         uptime: process.uptime(),
         activeJobs: [...jobs.values()].filter(j => j.status === 'processing').length,
         totalJobs: jobs.size,
-        n8nMode: n8nMode
+        n8nMode: n8nMode,
+        m365GraphConfigured: m365GraphEnvConfigured(),
+        m365ApiKeyConfigured: Boolean(M365_SERVICE_API_KEY),
+        m365UploadReady: Boolean(M365_SERVICE_API_KEY && m365GraphEnvConfigured()),
+        m365UploadPath: '/v1/upload',
     });
 });
 
 // ì„œë²„ ì‹œìž‘
 app.listen(PORT, () => {
     console.log('');
-    console.log('ðŸš€ Adobe Excel Service v0.8 started');
+    console.log('Adobe Excel Service + M365 upload (webhook-service-m365) started');
     console.log('================================================');
     console.log(`   Web UI:  http://localhost:${PORT}/`);
     console.log(`   API:     http://localhost:${PORT}/generate-excel`);
+    console.log(`   M365:    POST http://localhost:${PORT}/v1/upload`);
     console.log(`   Health:  http://localhost:${PORT}/health`);
     console.log('================================================');
     console.log(`   Python:  ${PYTHON_CMD}`);
@@ -1513,6 +1629,11 @@ app.listen(PORT, () => {
     console.log(`     Props:  ${SHEET_NAMES.props}`);
     console.log(`     Events: ${SHEET_NAMES.events}`);
     console.log('================================================');
+    if (!M365_SERVICE_API_KEY) {
+        console.warn('[M365] M365_SERVICE_API_KEY is not set — POST /v1/upload returns 503. Add it to .env (same value as n8n x-api-key) and restart.');
+    } else if (!m365GraphEnvConfigured()) {
+        console.warn('[M365] Graph env incomplete (AZURE_TENANT_ID, AZURE_CLIENT_ID, AZURE_CLIENT_SECRET, GRAPH_SITE_*) — uploads will fail until set.');
+    }
     console.log('');
 });
 

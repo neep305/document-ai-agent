@@ -1,4 +1,13 @@
-<!DOCTYPE html>
+/**
+ * build_index.js — regenerate public/index.html (3-tab UI)
+ * Run: node scripts/build_index.js  (from webhook-service/ root)
+ */
+const fs   = require('fs');
+const path = require('path');
+
+const OUT = path.join(__dirname, '..', 'public', 'index.html');
+
+const html = `<!DOCTYPE html>
 <html lang="en" data-theme="dark">
 <head>
   <meta charset="UTF-8" />
@@ -87,7 +96,6 @@
     [data-theme="light"] .btn-sm:hover { background: #E4EBF7; color: #1E293B; }
     [data-theme="light"] .n8n-mode-btn.mode-production { color: #059669; border-color: rgba(5,150,105,0.4); }
     [data-theme="light"] .n8n-mode-btn.mode-test { color: #d97706; border-color: rgba(217,119,6,0.4); background: rgba(217,119,6,0.05); }
-    [data-theme="light"] .cred-field-input { background: #fff; color: #1E293B; }
 
     html { scroll-behavior: smooth; }
 
@@ -133,8 +141,6 @@
     }
     .brand h1 { font-size: 19px; font-weight: 800; color: #fff; letter-spacing: -0.4px; }
     .brand h1 em { font-style: normal; color: var(--blue-l); }
-    .build-date { font-size: 11px; color: rgba(255,255,255,0.35); font-weight: 400; margin-left: 10px; vertical-align: middle; letter-spacing: 0; }
-    [data-theme="light"] .build-date { color: rgba(30,40,80,0.4); }
     .brand p { font-size: 12px; color: rgba(255,255,255,0.4); margin-top: 3px; font-weight: 500; }
     .live-badge {
       display: flex; align-items: center; gap: 6px; padding: 5px 12px;
@@ -143,34 +149,6 @@
       color: var(--green-l); letter-spacing: 0.08em;
     }
     .pulse { width: 6px; height: 6px; border-radius: 50%; background: var(--green-l); animation: pulse 2s infinite; }
-
-    /* ── CLIENT BAR ── */
-    .client-bar {
-      background: var(--bg-2); border: 1px solid var(--border);
-      border-radius: var(--r-lg); padding: 8px 14px;
-      display: flex; align-items: center; margin-bottom: 8px;
-    }
-    .client-bar-inner { display: flex; align-items: center; gap: 10px; width: 100%; }
-    .client-bar-label { font-size: 11px; font-weight: 700; letter-spacing: 0.07em; color: var(--text-3); text-transform: uppercase; }
-    .client-bar-name { font-size: 14px; font-weight: 700; color: var(--text-1); flex: 1; }
-    .client-bar-name.empty { color: var(--text-3); font-weight: 400; font-style: italic; }
-    .client-bar-btn {
-      font-size: 12px; font-weight: 600; padding: 4px 12px; border-radius: 6px; border: none; cursor: pointer;
-      background: rgba(99,102,241,0.12); color: var(--purple-l); transition: background 0.15s;
-    }
-    .client-bar-btn:hover { background: rgba(99,102,241,0.22); }
-    [data-theme="light"] .client-bar { background: #F8FAFC; border-color: #E2E8F0; }
-    [data-theme="light"] .client-bar-btn { background: rgba(37,99,235,0.08); color: #1D4ED8; }
-    [data-theme="light"] .client-bar-btn:hover { background: rgba(37,99,235,0.16); }
-
-    /* Client modal */
-    .client-modal-input {
-      width: 100%; padding: 10px 14px; border-radius: 8px; border: 1px solid var(--border);
-      background: var(--bg-3); color: var(--text-1); font-size: 14px; font-family: inherit;
-      box-sizing: border-box; margin: 4px 0 16px;
-    }
-    .client-modal-input:focus { outline: none; border-color: var(--purple-l); }
-    [data-theme="light"] .client-modal-input { background: #fff; color: #1E293B; border-color: #CBD5E1; }
 
     /* ── TAB NAV ── */
     .tab-nav {
@@ -436,177 +414,6 @@
     }
     .modal-btn-confirm:hover { background: rgba(239,68,68,0.2); }
 
-    /* ── CREDENTIALS MODAL ── */
-    .cred-modal-box { max-width: 520px; }
-    .cred-modal-icon {
-      width: 44px; height: 44px; border-radius: 50%;
-      background: rgba(139,92,246,0.12); border: 1px solid rgba(139,92,246,0.28);
-      display: flex; align-items: center; justify-content: center;
-      font-size: 20px; margin-bottom: 16px;
-    }
-    .cred-field-row {
-      display: grid; grid-template-columns: 130px 1fr; gap: 6px;
-      align-items: center; margin-bottom: 10px;
-    }
-    .cred-field-label {
-      font-size: 11px; font-weight: 700; letter-spacing: 0.06em;
-      text-transform: uppercase; color: var(--text-2);
-    }
-    .cred-field-input {
-      width: 100%; padding: 8px 12px; background: var(--bg-3);
-      border: 1px solid var(--border-md); border-radius: var(--r-sm);
-      color: var(--text); font-size: 12px; font-family: 'JetBrains Mono', monospace;
-      transition: border 0.2s; box-sizing: border-box;
-    }
-    .cred-field-input:focus { outline: none; border-color: var(--purple); box-shadow: 0 0 0 3px rgba(139,92,246,0.12); }
-    .cred-modal-btn-save {
-      padding: 8px 18px; border-radius: var(--r-sm);
-      border: 1px solid rgba(139,92,246,0.5);
-      background: rgba(139,92,246,0.12); color: var(--purple-l);
-      font-size: 13px; font-weight: 700; cursor: pointer; font-family: inherit;
-      transition: background 0.15s;
-    }
-    .cred-modal-btn-save:hover { background: rgba(139,92,246,0.22); }
-    .cred-modal-btn-clear {
-      padding: 8px 14px; border-radius: var(--r-sm);
-      border: 1px solid var(--border-md); background: transparent;
-      color: var(--text-3); font-size: 12px; font-weight: 600;
-      cursor: pointer; font-family: inherit;
-    }
-    .btn-sm {
-      padding: 4px 10px; border-radius: var(--r-sm);
-      border: 1px solid var(--border-md); background: var(--bg-3);
-      color: var(--text-2); font-size: 11px; font-weight: 700;
-      cursor: pointer; font-family: inherit; transition: all 0.15s;
-    }
-    .btn-sm:hover { background: var(--bg-4); color: var(--text); }
-
-    /* ── SDR DATA LOAD ── */
-    .sdr-load-actions { display: flex; gap: 8px; margin-bottom: 10px; }
-    .btn-load {
-      display: flex; align-items: center; gap: 6px; padding: 7px 13px;
-      border: 1px solid var(--border-md); border-radius: var(--r-sm);
-      background: var(--bg-3); color: var(--text-2); font-size: 12px; font-weight: 700;
-      cursor: pointer; font-family: inherit; transition: all 0.18s;
-    }
-    .btn-load:hover { background: var(--bg-4); color: var(--text); border-color: var(--border-b); }
-    .btn-load:disabled { opacity: 0.4; cursor: not-allowed; }
-    .btn-load .ld-spin { display: none; animation: spin 0.8s linear infinite; }
-    .btn-load.loading .ld-spin  { display: inline; }
-    .btn-load.loading .ld-icon  { display: none; }
-
-    .sdr-drive-panel {
-      display: none; background: var(--bg-3); border: 1px solid var(--border-md);
-      border-radius: var(--r); padding: 12px 14px; margin-bottom: 10px;
-    }
-    .sdr-drive-panel.open { display: block; }
-    .sdr-drive-row { display: flex; gap: 8px; align-items: stretch; }
-    .sdr-drive-row input { flex: 1; }
-    .sdr-drive-hint { font-size: 11px; color: var(--text-3); margin-top: 6px; }
-    .sdr-drive-hint a { color: var(--blue-l); text-decoration: none; }
-
-    /* ── GOOGLE AUTH BAR ── */
-    .google-auth-bar {
-      display: flex; align-items: center; gap: 8px; padding: 7px 10px;
-      background: var(--bg-3); border: 1px solid var(--border-md);
-      border-radius: var(--r); margin-bottom: 8px; font-size: 12px;
-    }
-    .google-auth-bar .g-status { flex: 1; color: var(--text-2); }
-    .google-auth-bar .g-status .g-email { font-weight: 600; color: var(--text-1); }
-    .btn-g-login  { font-size: 11px; padding: 4px 10px; background: #4285f4; color: #fff; border: none; border-radius: 4px; cursor: pointer; white-space: nowrap; }
-    .btn-g-login:hover { background: #3367d6; }
-    .btn-g-logout { font-size: 11px; padding: 4px 10px; background: var(--bg-2); color: var(--text-2); border: 1px solid var(--border-md); border-radius: 4px; cursor: pointer; }
-    .btn-g-browse { font-size: 11px; padding: 4px 10px; background: var(--bg-2); color: var(--text-1); border: 1px solid var(--border-md); border-radius: 4px; cursor: pointer; white-space: nowrap; }
-    .btn-g-browse:hover { border-color: var(--blue-l); color: var(--blue-l); }
-
-    /* ── DRIVE FILE EXPLORER MODAL ── */
-    .drive-modal-overlay {
-      display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.55);
-      z-index: 1000; align-items: center; justify-content: center;
-    }
-    .drive-modal-overlay.open { display: flex; }
-    .drive-modal {
-      background: var(--bg-2); border: 1px solid var(--border-md); border-radius: 10px;
-      width: 560px; max-width: 95vw; max-height: 80vh; display: flex; flex-direction: column;
-      box-shadow: 0 20px 60px rgba(0,0,0,0.35);
-    }
-    .drive-modal-header {
-      padding: 14px 18px; border-bottom: 1px solid var(--border-md);
-      display: flex; align-items: center; gap: 10px;
-    }
-    .drive-modal-header .dm-title { font-weight: 600; font-size: 14px; flex: 1; }
-    .drive-modal-header .dm-close { background: none; border: none; cursor: pointer; color: var(--text-3); font-size: 18px; padding: 0 4px; }
-    .drive-modal-toolbar {
-      padding: 10px 18px; border-bottom: 1px solid var(--border-light);
-      display: flex; gap: 8px; align-items: center;
-    }
-    .btn-drive-back { background: none; border: none; cursor: pointer; color: var(--text-2); font-size: 15px; padding: 2px 6px; border-radius: 4px; line-height: 1; }
-    .btn-drive-back:hover { background: var(--bg-3); }
-    .btn-drive-back:disabled { opacity: 0.3; cursor: default; }
-    .drive-breadcrumb { font-size: 11px; color: var(--text-3); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .drive-breadcrumb span { cursor: pointer; color: var(--blue-l); }
-    .drive-breadcrumb span:last-child { color: var(--text-2); cursor: default; }
-    .drive-search { padding: 5px 9px; font-size: 12px; border: 1px solid var(--border-md); border-radius: 5px; background: var(--bg-2); color: var(--text-1); width: 160px; }
-    .drive-file-list { flex: 1; overflow-y: auto; padding: 6px 0; min-height: 200px; }
-    .drive-file-item {
-      display: flex; align-items: center; gap: 10px; padding: 7px 18px;
-      cursor: pointer; font-size: 13px; color: var(--text-1);
-      border-left: 3px solid transparent;
-    }
-    .drive-file-item:hover { background: var(--bg-3); }
-    .drive-file-item.selected { background: rgba(66,133,244,0.12); border-left-color: #4285f4; }
-    .drive-file-item .df-icon { font-size: 16px; flex-shrink: 0; }
-    .drive-file-item .df-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .drive-file-item .df-meta { font-size: 10px; color: var(--text-3); white-space: nowrap; }
-    .drive-empty { padding: 30px 18px; text-align: center; color: var(--text-3); font-size: 13px; }
-    .drive-loading { padding: 30px 18px; text-align: center; color: var(--text-3); font-size: 13px; }
-    .drive-modal-footer {
-      padding: 10px 18px; border-top: 1px solid var(--border-md);
-      display: flex; justify-content: flex-end; gap: 8px; align-items: center;
-    }
-    .drive-selected-name { font-size: 11px; color: var(--text-3); flex: 1; overflow: hidden; text-overflow: ellipsis; }
-    .btn-drive-cancel { padding: 6px 14px; font-size: 13px; background: var(--bg-2); border: 1px solid var(--border-md); border-radius: 5px; cursor: pointer; color: var(--text-1); }
-    .btn-drive-select { padding: 6px 14px; font-size: 13px; background: #4285f4; color: #fff; border: none; border-radius: 5px; cursor: pointer; }
-    .btn-drive-select:disabled { opacity: 0.4; cursor: not-allowed; }
-
-    /* ── VALIDATION BANNER ── */
-    .validation-banner {
-      display: none; align-items: flex-start; gap: 10px; padding: 10px 13px;
-      border-radius: var(--r); font-size: 12px; line-height: 1.6; margin-top: 8px;
-      border: 1px solid;
-    }
-    .validation-banner.show { display: flex; }
-    .validation-banner.valid   { background: rgba(16,185,129,0.07); border-color: var(--border-g); color: var(--green-l); }
-    .validation-banner.invalid { background: rgba(239,68,68,0.07);  border-color: var(--border-r); color: var(--red-l); }
-    .validation-banner.warning { background: rgba(245,158,11,0.07); border-color: rgba(245,158,11,0.38); color: var(--amber-l); }
-    .vb-icon { font-size: 15px; flex-shrink: 0; margin-top: 1px; }
-    .vb-body { flex: 1; }
-    .vb-title { font-weight: 700; }
-    .vb-issues { margin-top: 5px; padding-left: 16px; }
-    .vb-issues li { margin-top: 2px; }
-
-    /* ── LOCAL FILE CARDS ── */
-    .local-file-card {
-      display: flex; align-items: center; gap: 12px; padding: 10px 13px;
-      border-radius: var(--r); border: 1px solid rgba(245,158,11,0.22);
-      background: rgba(245,158,11,0.05); margin-bottom: 8px;
-    }
-    .local-file-card .lf-icon { font-size: 19px; flex-shrink: 0; }
-    .local-file-card .lf-meta { flex: 1; }
-    .local-file-card .lf-name { font-size: 13px; font-weight: 600; color: var(--text); word-break: break-all; }
-    .local-file-card .lf-type { font-size: 10px; font-weight: 700; letter-spacing: 0.05em; color: var(--amber-l); margin-top: 2px; }
-    .local-file-card .lf-size { font-size: 11px; color: var(--text-3); margin-top: 1px; }
-    .btn-dl {
-      flex-shrink: 0; display: flex; align-items: center; gap: 5px;
-      padding: 6px 12px; border-radius: var(--r-sm);
-      border: 1px solid rgba(245,158,11,0.4); background: rgba(245,158,11,0.08);
-      color: var(--amber-l); font-size: 12px; font-weight: 700;
-      cursor: pointer; font-family: inherit; text-decoration: none; transition: background 0.15s;
-    }
-    .btn-dl:hover { background: rgba(245,158,11,0.16); }
-
-    @keyframes spin { to { transform: rotate(360deg); } }
-
     @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
 
     @media (max-width: 620px) {
@@ -624,7 +431,7 @@
   <header class="site-header">
     <div class="header-row">
       <div class="brand">
-        <h1>Tagging AI <em>v2.0</em><span class="build-date">Built 2026-03-24</span></h1>
+        <h1>Document AI <em>v2.0</em></h1>
         <p>Adobe Analytics Automated Documentation Pipeline</p>
       </div>
       <div class="header-controls">
@@ -632,25 +439,16 @@
           <span class="mode-dot" id="n8nModeIcon">&#9679;</span>
           <span id="n8nModeLabel">PRODUCTION</span>
         </button>
+        <button id="themeToggle" class="theme-toggle" title="Toggle theme">
+          <span class="tt-label light">LIGHT</span><span class="tt-sep">|</span><span class="tt-label dark active">DARK</span>
+        </button>
         <div class="live-badge">
           <span class="pulse"></span>
           LIVE
         </div>
-        <button id="themeToggle" class="theme-toggle" title="Toggle theme">
-          <span class="tt-label light">LIGHT</span><span class="tt-sep">|</span><span class="tt-label dark active">DARK</span>
-        </button>
       </div>
     </div>
   </header>
-
-  <!-- Global Client Bar -->
-  <div class="client-bar" id="clientBar">
-    <div class="client-bar-inner">
-      <span class="client-bar-label">Client</span>
-      <span class="client-bar-name empty" id="clientBarName">Not set</span>
-      <button class="client-bar-btn" id="clientBarBtn" onclick="openClientModal()">Set Client</button>
-    </div>
-  </div>
 
   <!-- Tab navigation -->
   <div class="tab-nav">
@@ -699,6 +497,10 @@
         <label class="field-label" for="sdr-sheetSelect">Select BRD Sheet</label>
         <select id="sdr-sheetSelect"><option value="">&#8212; Loading sheets &#8212;</option></select>
         <div class="hint">Select the sheet containing your requirements.</div>
+      </div>
+      <div class="form-group">
+        <label class="field-label" for="sdr-clientName">Client Name</label>
+        <input type="text" id="sdr-clientName" placeholder="e.g., GSSHOP" />
       </div>
       <button class="btn-primary btn-sdr" id="sdr-btn" onclick="triggerStage('sdr')">
         <span>&#9889;</span> Generate SDR
@@ -768,34 +570,13 @@
       <div id="tsd-warning" class="alert warning" style="display:none"><span>&#9888;</span><span id="tsd-warningMsg"></span></div>
       <div id="tsd-sdrPill"></div>
       <div class="form-group">
+        <label class="field-label" for="tsd-clientName">Client Name</label>
+        <input type="text" id="tsd-clientName" placeholder="e.g., GSSHOP" />
+      </div>
+      <div class="form-group">
         <label class="field-label" for="tsd-sdrInput">SDR Data JSON</label>
-        <div class="sdr-load-actions">
-          <button class="btn-load" id="tsd-loadFileBtn" onclick="triggerJsonFileLoad('tsd')" title="Load from local JSON file">
-            <span class="ld-icon">&#128193;</span><span class="ld-spin">&#9696;</span> Load JSON File
-          </button>
-          <input type="file" id="tsd-jsonFileInput" accept=".json" style="display:none" onchange="onJsonFileSelected(event,'tsd')" />
-          <button class="btn-load" id="tsd-driveToggleBtn" onclick="toggleDrivePanel('tsd')" title="Load from Google Drive public link">
-            <span class="ld-icon">&#9729;</span><span class="ld-spin">&#9696;</span> Load from Drive
-          </button>
-        </div>
-        <div class="sdr-drive-panel" id="tsd-drivePanel">
-          <div class="google-auth-bar" id="tsd-googleAuthBar">
-            <span class="g-status" id="tsd-googleStatus">Google 로그인 확인 중...</span>
-            <button class="btn-g-browse" id="tsd-browseBtn" onclick="openDriveExplorer('tsd')" style="display:none">&#128193; Browse Drive</button>
-            <button class="btn-g-login" id="tsd-loginBtn" onclick="googleLogin()" style="display:none">Google 로그인</button>
-            <button class="btn-g-logout" id="tsd-logoutBtn" onclick="googleLogout()" style="display:none">로그아웃</button>
-          </div>
-          <div class="sdr-drive-row">
-            <input type="text" id="tsd-driveUrl" placeholder="https://drive.google.com/file/d/... (공개 링크)" />
-            <button class="btn-load" id="tsd-driveLoadBtn" onclick="loadFromDrive('tsd')">
-              <span class="ld-icon">&#8594;</span><span class="ld-spin">&#9696;</span> Load URL
-            </button>
-          </div>
-          <div class="sdr-drive-hint">&#9888; Google 로그인 후 Browse Drive로 파일을 직접 선택하거나, 공개 링크를 붙여넣어 사용하세요.</div>
-        </div>
-        <textarea id="tsd-sdrInput" placeholder='{"evars":[...],"props":[...],"events":[]}' oninput="onSdrInputChange('tsd')"></textarea>
-        <div class="validation-banner" id="tsd-sdrValidation"></div>
-        <div class="hint">Auto-filled after SDR tab completes. Or paste / load directly.</div>
+        <textarea id="tsd-sdrInput" placeholder='{"evars":[...],"props":[...],"events":[]}'></textarea>
+        <div class="hint">Auto-filled after SDR tab completes. Or paste directly.</div>
       </div>
       <button class="btn-primary btn-tsd" id="tsd-btn" onclick="triggerStage('tsd')">
         <span>&#9889;</span> Generate TSD
@@ -841,14 +622,7 @@
         <div class="card-ico ico-done">&#9989;</div>
         <div><div class="card-head-title">TSD Generation Complete</div></div>
       </div>
-      <div id="tsd-driveSection">
-        <div class="section-sep">Google Drive</div>
-        <div id="tsd-driveLinks"></div>
-      </div>
-      <div id="tsd-localSection" style="margin-top:14px">
-        <div class="section-sep">Local Files <span style="font-weight:400;font-size:10px;color:var(--text-3)">(always available)</span></div>
-        <div id="tsd-localFiles"><div style="color:var(--text-3);font-size:13px">Loading...</div></div>
-      </div>
+      <div id="tsd-driveLinks"></div>
     </div>
   </div><!-- /tab-tsd -->
 
@@ -866,37 +640,17 @@
       <div id="tags-warning" class="alert warning" style="display:none"><span>&#9888;</span><span id="tags-warningMsg"></span></div>
       <div id="tags-sdrPill"></div>
       <div class="form-group">
-        <label class="field-label" for="tags-sdrInput">SDR Data JSON</label>
-        <div class="sdr-load-actions">
-          <button class="btn-load" id="tags-loadFileBtn" onclick="triggerJsonFileLoad('tags')" title="Load from local JSON file">
-            <span class="ld-icon">&#128193;</span><span class="ld-spin">&#9696;</span> Load JSON File
-          </button>
-          <input type="file" id="tags-jsonFileInput" accept=".json" style="display:none" onchange="onJsonFileSelected(event,'tags')" />
-          <button class="btn-load" id="tags-driveToggleBtn" onclick="toggleDrivePanel('tags')" title="Load from Google Drive public link">
-            <span class="ld-icon">&#9729;</span><span class="ld-spin">&#9696;</span> Load from Drive
-          </button>
-        </div>
-        <div class="sdr-drive-panel" id="tags-drivePanel">
-          <div class="google-auth-bar" id="tags-googleAuthBar">
-            <span class="g-status" id="tags-googleStatus">Google 로그인 확인 중...</span>
-            <button class="btn-g-browse" id="tags-browseBtn" onclick="openDriveExplorer('tags')" style="display:none">&#128193; Browse Drive</button>
-            <button class="btn-g-login" id="tags-loginBtn" onclick="googleLogin()" style="display:none">Google 로그인</button>
-            <button class="btn-g-logout" id="tags-logoutBtn" onclick="googleLogout()" style="display:none">로그아웃</button>
-          </div>
-          <div class="sdr-drive-row">
-            <input type="text" id="tags-driveUrl" placeholder="https://drive.google.com/file/d/... (공개 링크)" />
-            <button class="btn-load" id="tags-driveLoadBtn" onclick="loadFromDrive('tags')">
-              <span class="ld-icon">&#8594;</span><span class="ld-spin">&#9696;</span> Load URL
-            </button>
-          </div>
-          <div class="sdr-drive-hint">&#9888; Google 로그인 후 Browse Drive로 파일을 직접 선택하거나, 공개 링크를 붙여넣어 사용하세요.</div>
-        </div>
-        <textarea id="tags-sdrInput" placeholder='{"evars":[...],"props":[...],"events":[]}' oninput="onSdrInputChange('tags')"></textarea>
-        <div class="validation-banner" id="tags-sdrValidation"></div>
-        <div class="hint">Auto-filled after SDR tab completes. Or paste / load directly.</div>
+        <label class="field-label" for="tags-clientName">Client Name</label>
+        <input type="text" id="tags-clientName" placeholder="e.g., GSSHOP" />
       </div>
-      <div class="form-group" style="margin-bottom:0">
-        <div id="tags-credStatusRow"></div>
+      <div class="form-group">
+        <label class="field-label" for="tags-sdrInput">SDR Data JSON</label>
+        <textarea id="tags-sdrInput" placeholder='{"evars":[...],"props":[...],"events":[]}'></textarea>
+        <div class="hint">Auto-filled after SDR tab completes. Or paste directly.</div>
+      </div>
+      <div class="alert info">
+        <span>&#8505;</span>
+        <div><code>N8N_TAGS_WEBHOOK_URL</code> and Adobe Launch credentials must be configured in the Set Credentials node of your n8n workflow.</div>
       </div>
       <button class="btn-primary btn-tags" id="tags-btn" onclick="triggerStage('tags')">
         <span>&#9889;</span> Generate Tags
@@ -1051,8 +805,6 @@ async function confirmCancel() {
   try {
     var r = await fetch('/jobs/' + jobId + '/cancel', { method: 'POST' });
     if (!r.ok) throw new Error('cancel request failed: ' + r.status);
-    // SSE가 cancelled 브로드캐스트 → handleJobUpdate → finishStage('cancelled')
-    // 3초 내 SSE 응답 없으면 fallback
     var currentJobId = jobId;
     setTimeout(function() {
       if (state[stage].jobId === currentJobId) {
@@ -1092,29 +844,15 @@ document.addEventListener('DOMContentLoaded', () => {
   if (modalNo)  modalNo.addEventListener('click', closeCancelModal);
   if (modalYes) modalYes.addEventListener('click', confirmCancel);
   document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape') { closeCancelModal(); closeCredModal(); closeClientModal(); }
+    if (e.key === 'Escape') closeCancelModal();
   });
   var cancelOverlay = document.getElementById('cancelModal');
   if (cancelOverlay) cancelOverlay.addEventListener('click', function(e) {
     if (e.target === cancelOverlay) closeCancelModal();
   });
-  var credOverlay = document.getElementById('credModal');
-  if (credOverlay) credOverlay.addEventListener('click', function(e) {
-    if (e.target === credOverlay) closeCredModal();
-  });
-  var clientOverlay = document.getElementById('clientModal');
-  if (clientOverlay) clientOverlay.addEventListener('click', function(e) {
-    if (e.target === clientOverlay) closeClientModal();
-  });
-  var clientModalInput = document.getElementById('clientModalInput');
-  if (clientModalInput) clientModalInput.addEventListener('keydown', function(e) {
-    if (e.key === 'Enter') saveClientName();
-  });
   loadJobs();
   setupDropZone('sdr');
   loadSdrDataToTabs();
-  renderCredStatus();
-  renderClientBar();
 });
 
 // ── Tab switching ─────────────────────────────────────────────────────────
@@ -1131,11 +869,6 @@ function saveSdrData(clientName, sdrObj) {
   try {
     localStorage.setItem('doc_ai_sdr_client', clientName);
     localStorage.setItem('doc_ai_sdr_data', JSON.stringify(sdrObj));
-    // Also sync global client name bar if not already set
-    if (clientName && !getClientName()) {
-      localStorage.setItem(CLIENT_NAME_KEY, clientName);
-      renderClientBar();
-    }
     loadSdrDataToTabs();
   } catch(e) { console.warn('localStorage write failed', e); }
 }
@@ -1150,15 +883,13 @@ function loadSdrDataToTabs() {
       pill.innerHTML =
         '<div class="sdr-data-pill">&#10003; SDR data loaded — ' + clientName +
         ' <button onclick="clearSdrCache()" style="background:none;border:none;cursor:pointer;color:#16a34a;font-size:11px;margin-left:6px;">&#10005; Clear</button></div>';
+      const cn = document.getElementById(tab + '-clientName');
       const si = document.getElementById(tab + '-sdrInput');
-      if (si && !si.value) {
-        si.value = sdrRaw;
-        renderValidation(tab, validateSdrJson(sdrRaw));
-      }
+      if (cn && !cn.value) cn.value = clientName;
+      if (si && !si.value) si.value = sdrRaw;
     } else {
-      pill.innerHTML = tab === 'tsd'
-        ? '<div class="sdr-data-pill missing">&#9888; No SDR data — generate in the SDR tab first, or paste directly.</div>'
-        : '';
+      pill.innerHTML =
+        '<div class="sdr-data-pill missing">&#9888; No SDR data — generate in the SDR tab first, or paste directly.</div>';
     }
   });
 }
@@ -1170,655 +901,10 @@ function clearSdrCache() {
   ['tsd', 'tags'].forEach(tab => {
     const si = document.getElementById(tab + '-sdrInput');
     if (si) si.value = '';
+    const cn = document.getElementById(tab + '-clientName');
+    if (cn) cn.value = '';
   });
   loadSdrDataToTabs();
-}
-
-// ── Global Client Name ────────────────────────────────────────────────────
-const CLIENT_NAME_KEY = 'doc_ai_client_name';
-
-function getClientName() {
-  return localStorage.getItem(CLIENT_NAME_KEY) || '';
-}
-
-function renderClientBar() {
-  var name = getClientName();
-  var nameEl = document.getElementById('clientBarName');
-  var btn = document.getElementById('clientBarBtn');
-  if (!nameEl) return;
-  if (name) {
-    nameEl.textContent = name;
-    nameEl.className = 'client-bar-name';
-    if (btn) btn.textContent = '✎ Edit';
-  } else {
-    nameEl.textContent = 'Not set';
-    nameEl.className = 'client-bar-name empty';
-    if (btn) btn.textContent = 'Set Client';
-  }
-}
-
-function openClientModal() {
-  var input = document.getElementById('clientModalInput');
-  if (input) input.value = getClientName();
-  var delBtn = document.getElementById('clientModalDeleteBtn');
-  if (delBtn) delBtn.style.display = getClientName() ? '' : 'none';
-  var overlay = document.getElementById('clientModal');
-  if (overlay) overlay.classList.add('open');
-  if (input) setTimeout(function() { input.focus(); input.select(); }, 50);
-}
-
-function closeClientModal() {
-  var overlay = document.getElementById('clientModal');
-  if (overlay) overlay.classList.remove('open');
-}
-
-function saveClientName() {
-  var input = document.getElementById('clientModalInput');
-  var name = input ? input.value.trim() : '';
-  if (!name) { if (input) input.focus(); return; }
-  localStorage.setItem(CLIENT_NAME_KEY, name);
-  closeClientModal();
-  renderClientBar();
-}
-
-function deleteClientName() {
-  if (!confirm('Remove client name?')) return;
-  localStorage.removeItem(CLIENT_NAME_KEY);
-  closeClientModal();
-  renderClientBar();
-}
-
-// ── Adobe Credentials (Tags tab) ─────────────────────────────────────────
-const CRED_STORAGE_KEY = 'doc_ai_tags_credentials';
-
-function loadCredentials() {
-  try {
-    var raw = localStorage.getItem(CRED_STORAGE_KEY);
-    return raw ? JSON.parse(raw) : null;
-  } catch(e) { return null; }
-}
-
-function renderCredStatus() {
-  var row = document.getElementById('tags-credStatusRow');
-  if (!row) return;
-  var creds = loadCredentials();
-  var filled = creds &&
-    creds.CLIENT_SECRET && creds.API_KEY &&
-    creds.IMS_ORG && creds.PROPERTY_ID && creds.DATASTREAM_ID;
-
-  if (filled) {
-    var propSuffix = creds.PROPERTY_ID.slice(-6);
-    row.innerHTML =
-      '<div class="alert success" style="cursor:pointer;margin-bottom:0" onclick="openCredModal()">' +
-      '<span>&#9989;</span>' +
-      '<div style="flex:1">Adobe Launch credentials configured &mdash; PROPERTY: &hellip;' + propSuffix + '</div>' +
-      '<button class="btn-sm" style="flex-shrink:0;white-space:nowrap" onclick="event.stopPropagation();openCredModal()">&#9998; Edit</button>' +
-      '</div>';
-  } else {
-    row.innerHTML =
-      '<div class="alert warning" style="margin-bottom:0">' +
-      '<span>&#9888;</span>' +
-      '<div style="flex:1">Adobe Launch credentials not configured. ' +
-      '<code>N8N_TAGS_WEBHOOK_URL</code> must also be set in .env.</div>' +
-      '<button class="btn-sm" onclick="openCredModal()" style="flex-shrink:0;white-space:nowrap;margin-left:8px">&#128273; Set Credentials</button>' +
-      '</div>';
-  }
-}
-
-function openCredModal() {
-  var creds = loadCredentials() || {};
-  document.getElementById('cred-clientSecret').value  = creds.CLIENT_SECRET  || '';
-  document.getElementById('cred-apiKey').value        = creds.API_KEY        || '';
-  document.getElementById('cred-imsOrg').value        = creds.IMS_ORG        || '';
-  document.getElementById('cred-propertyId').value    = creds.PROPERTY_ID    || '';
-  document.getElementById('cred-datastreamId').value  = creds.DATASTREAM_ID  || '';
-  document.getElementById('cred-paste-area').value    = '';
-  document.getElementById('cred-paste-status').textContent = '';
-  document.getElementById('credModal').classList.add('open');
-}
-
-function parsePastedCreds() {
-  var text = document.getElementById('cred-paste-area').value;
-  var map = {
-    'ADOBE_CLIENT_ID':     'cred-apiKey',
-    'ADOBE_CLIENT_SECRET': 'cred-clientSecret',
-    'ADOBE_ORG_ID':        'cred-imsOrg',
-    'ADOBE_PROPERTY_ID':   'cred-propertyId',
-    'ADOBE_DATASTREAM_ID': 'cred-datastreamId',
-    // direct key names also supported
-    'API_KEY':        'cred-apiKey',
-    'CLIENT_SECRET':  'cred-clientSecret',
-    'IMS_ORG':        'cred-imsOrg',
-    'PROPERTY_ID':    'cred-propertyId',
-    'DATASTREAM_ID':  'cred-datastreamId',
-  };
-  var required = ['cred-apiKey','cred-clientSecret','cred-imsOrg','cred-propertyId','cred-datastreamId'];
-  var filled = 0;
-  text.split('\n').forEach(function(line) {
-    line = line.trim();
-    if (!line || line.charAt(0) === '#') return;
-    var eqIdx = line.indexOf('=');
-    if (eqIdx < 0) return;
-    var key = line.substring(0, eqIdx).trim();
-    var val = line.substring(eqIdx + 1).trim();
-    if (key === 'ADOBE_PROPERTY_ID' || key === 'PROPERTY_ID') {
-      val = val.replace(/\/overview.*$/, '').trim();
-    }
-    var inputId = map[key];
-    if (inputId) {
-      document.getElementById(inputId).value = val;
-      filled++;
-    }
-  });
-  var statusEl = document.getElementById('cred-paste-status');
-  if (!text.trim()) { statusEl.textContent = ''; return; }
-  var total = required.length;
-  var detected = required.filter(function(id) { return document.getElementById(id).value.trim(); }).length;
-  if (detected === total) {
-    statusEl.style.color = '#16a34a';
-    statusEl.textContent = '✓ ' + detected + '/' + total + ' fields detected — review and click Save';
-  } else if (detected > 0) {
-    statusEl.style.color = '#d97706';
-    statusEl.textContent = '⚠ ' + detected + '/' + total + ' fields detected — some fields missing';
-  } else {
-    statusEl.style.color = '#dc2626';
-    statusEl.textContent = '✗ No matching keys found. Expected ADOBE_CLIENT_ID, ADOBE_CLIENT_SECRET, ADOBE_ORG_ID, ADOBE_PROPERTY_ID, ADOBE_DATASTREAM_ID';
-  }
-}
-
-function closeCredModal() {
-  document.getElementById('credModal').classList.remove('open');
-}
-
-function saveCredentials() {
-  var creds = {
-    CLIENT_SECRET:  document.getElementById('cred-clientSecret').value.trim(),
-    API_KEY:        document.getElementById('cred-apiKey').value.trim(),
-    IMS_ORG:        document.getElementById('cred-imsOrg').value.trim(),
-    PROPERTY_ID:    document.getElementById('cred-propertyId').value.trim(),
-    DATASTREAM_ID:  document.getElementById('cred-datastreamId').value.trim(),
-  };
-  try {
-    localStorage.setItem(CRED_STORAGE_KEY, JSON.stringify(creds));
-  } catch(e) { console.warn('localStorage write failed', e); }
-  closeCredModal();
-  renderCredStatus();
-}
-
-function clearCredentials() {
-  if (!confirm('Clear saved Adobe credentials?')) return;
-  localStorage.removeItem(CRED_STORAGE_KEY);
-  closeCredModal();
-  renderCredStatus();
-}
-
-// ── SDR JSON Load: local file ─────────────────────────────────────────────
-function triggerJsonFileLoad(stage) {
-  document.getElementById(stage + '-jsonFileInput').click();
-}
-
-function onJsonFileSelected(e, stage) {
-  const file = e.target.files[0];
-  if (!file) return;
-  const btn = document.getElementById(stage + '-loadFileBtn');
-  btn.classList.add('loading'); btn.disabled = true;
-  const reader = new FileReader();
-  reader.onload = function(ev) {
-    const content = ev.target.result;
-    const ta = document.getElementById(stage + '-sdrInput');
-    ta.value = content;
-    renderValidation(stage, validateSdrJson(content));
-    btn.classList.remove('loading'); btn.disabled = false;
-    // reset file input so same file can be re-selected
-    e.target.value = '';
-  };
-  reader.onerror = function() {
-    btn.classList.remove('loading'); btn.disabled = false;
-    e.target.value = '';
-    showErr(stage, '파일을 읽을 수 없습니다.');
-  };
-  reader.readAsText(file);
-}
-
-// ── SDR JSON Load: Google Drive ────────────────────────────────────────────
-function toggleDrivePanel(stage) {
-  var panel = document.getElementById(stage + '-drivePanel');
-  if (!panel) return;
-  panel.classList.toggle('open');
-  if (panel.classList.contains('open')) {
-    var inp = document.getElementById(stage + '-driveUrl');
-    if (inp) inp.focus();
-  }
-}
-
-async function loadFromDrive(stage) {
-  var url = (document.getElementById(stage + '-driveUrl').value || '').trim();
-  if (!url) { showErr(stage, 'Google Drive URL을 입력하세요.'); return; }
-
-  var loadBtn = document.getElementById(stage + '-driveLoadBtn');
-  var toggleBtn = document.getElementById(stage + '-driveToggleBtn');
-  loadBtn.classList.add('loading'); loadBtn.disabled = true;
-  toggleBtn.classList.add('loading'); toggleBtn.disabled = true;
-  showErr(stage, null);
-
-  try {
-    var r = await fetch('/api/load-from-drive', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ url: url })
-    });
-    var data = await r.json();
-    if (!data.success) throw new Error(data.error || 'Drive load failed');
-
-    var ta = document.getElementById(stage + '-sdrInput');
-    ta.value = data.content;
-    var vr = validateSdrJson(data.content);
-    renderValidation(stage, vr);
-
-    // Close drive panel on success
-    var panel = document.getElementById(stage + '-drivePanel');
-    if (panel && vr.valid) panel.classList.remove('open');
-  } catch(e) {
-    showErr(stage, e.message);
-  } finally {
-    loadBtn.classList.remove('loading'); loadBtn.disabled = false;
-    toggleBtn.classList.remove('loading'); toggleBtn.disabled = false;
-  }
-}
-
-// ── Google Auth ──────────────────────────────────────────────────────────────
-
-var _driveStage = null;          // 현재 어느 stage에서 explorer를 열었는지
-var _driveSelected = null;       // { id, name }
-var _driveFolderStack = [];      // breadcrumb 스택 [{ id, name }]
-var _driveAllFiles = [];         // 현재 폴더의 파일 목록 (검색 필터용)
-
-// Google 로그인 상태 확인 후 auth bar 업데이트
-async function refreshGoogleAuthStatus() {
-  try {
-    var r = await fetch('/auth/google/status');
-    var data = await r.json();
-    ['tsd', 'tags'].forEach(function(stage) {
-      var statusEl  = document.getElementById(stage + '-googleStatus');
-      var loginBtn  = document.getElementById(stage + '-loginBtn');
-      var logoutBtn = document.getElementById(stage + '-logoutBtn');
-      var browseBtn = document.getElementById(stage + '-browseBtn');
-      if (!statusEl) return;
-
-      if (!data.configured) {
-        statusEl.innerHTML = '<span style="color:var(--text-3)">Google OAuth 미설정 (.env에 GOOGLE_CLIENT_ID 필요)</span>';
-        loginBtn.style.display = 'none';
-        logoutBtn.style.display = 'none';
-        browseBtn.style.display = 'none';
-      } else if (data.loggedIn) {
-        statusEl.innerHTML = '&#10003; <span class="g-email">' + (data.email || '') + '</span> 로그인됨';
-        loginBtn.style.display = 'none';
-        logoutBtn.style.display = '';
-        browseBtn.style.display = '';
-      } else {
-        statusEl.innerHTML = '<span style="color:var(--text-3)">로그인 필요</span>';
-        loginBtn.style.display = '';
-        logoutBtn.style.display = 'none';
-        browseBtn.style.display = 'none';
-      }
-    });
-  } catch(e) {
-    console.warn('Google auth status check failed:', e.message);
-  }
-}
-
-var _googleLoginSession = 0;
-
-function googleLogin() {
-  var session = ++_googleLoginSession;
-  window.open('/auth/google', 'google-auth', 'width=500,height=620,left=200,top=100');
-
-  var pollTimer = null;
-  var maxTimer = null;
-
-  function cleanup() {
-    if (pollTimer) {
-      clearInterval(pollTimer);
-      pollTimer = null;
-    }
-    if (maxTimer) {
-      clearTimeout(maxTimer);
-      maxTimer = null;
-    }
-  }
-
-  pollTimer = setInterval(function() {
-    if (session !== _googleLoginSession) {
-      cleanup();
-      return;
-    }
-    fetch('/auth/google/status')
-      .then(function(r) { return r.json(); })
-      .then(function(data) {
-        if (session !== _googleLoginSession) return;
-        if (data.loggedIn) {
-          cleanup();
-          refreshGoogleAuthStatus();
-        }
-      })
-      .catch(function() {});
-  }, 1000);
-
-  maxTimer = setTimeout(function() {
-    if (session !== _googleLoginSession) return;
-    cleanup();
-  }, 5 * 60 * 1000);
-
-  window.addEventListener('message', function onMsg(e) {
-    if (!e.data || e.data.type !== 'google-auth') return;
-    window.removeEventListener('message', onMsg);
-    if (session !== _googleLoginSession) return;
-    cleanup();
-    if (e.data.success) {
-      refreshGoogleAuthStatus();
-    } else {
-      alert('Google 로그인 실패: ' + (e.data.error || '알 수 없는 오류'));
-    }
-  });
-}
-
-async function googleLogout() {
-  await fetch('/auth/google/logout', { method: 'POST' });
-  refreshGoogleAuthStatus();
-}
-
-// Drive Explorer 열기
-function openDriveExplorer(stage) {
-  _driveStage = stage;
-  _driveSelected = null;
-  _driveFolderStack = [{ id: 'root', name: 'My Drive' }];
-  document.getElementById('driveSelectedName').textContent = '선택된 파일 없음';
-  document.getElementById('driveSelectBtn').disabled = true;
-  document.getElementById('driveSearch').value = '';
-  document.getElementById('driveModalOverlay').classList.add('open');
-  driveLoadFolder('root');
-}
-
-function closeDriveExplorer() {
-  document.getElementById('driveModalOverlay').classList.remove('open');
-}
-
-// 폴더 로드
-async function driveLoadFolder(folderId) {
-  var listEl = document.getElementById('driveFileList');
-  listEl.innerHTML = '<div class="drive-loading">&#9696; 로딩 중...</div>';
-  updateBreadcrumb();
-  try {
-    var r = await fetch('/api/drive/list?folderId=' + encodeURIComponent(folderId));
-    var data = await r.json();
-    if (!data.success) throw new Error(data.error || 'Drive list failed');
-    _driveAllFiles = data.files || [];
-    renderDriveFiles(_driveAllFiles);
-  } catch(e) {
-    listEl.innerHTML = '<div class="drive-empty">오류: ' + e.message + '</div>';
-  }
-}
-
-// 파일 목록 렌더링
-function renderDriveFiles(files) {
-  var listEl = document.getElementById('driveFileList');
-  var searchVal = (document.getElementById('driveSearch').value || '').toLowerCase();
-  var filtered = searchVal
-    ? files.filter(function(f) { return f.name.toLowerCase().includes(searchVal); })
-    : files;
-
-  if (!filtered.length) {
-    listEl.innerHTML = '<div class="drive-empty">JSON 파일 또는 폴더가 없습니다.</div>';
-    return;
-  }
-
-  var html = '';
-  filtered.forEach(function(f) {
-    var isFolder = f.mimeType === 'application/vnd.google-apps.folder';
-    var icon = isFolder ? '&#128193;' : '&#128196;';
-    var size = (!isFolder && f.size) ? formatBytes(parseInt(f.size)) : '';
-    var date = f.modifiedTime ? f.modifiedTime.slice(0,10) : '';
-    var selClass = (_driveSelected && _driveSelected.id === f.id) ? ' selected' : '';
-    html += '<div class="drive-file-item' + selClass + '" data-id="' + f.id + '" data-name="' + escHtml(f.name) + '" data-folder="' + isFolder + '" onclick="driveItemClick(this)">';
-    html += '<span class="df-icon">' + icon + '</span>';
-    html += '<span class="df-name">' + escHtml(f.name) + '</span>';
-    html += '<span class="df-meta">' + (size ? size + ' &nbsp; ' : '') + date + '</span>';
-    html += '</div>';
-  });
-  listEl.innerHTML = html;
-}
-
-function driveItemClick(el) {
-  var id = el.dataset.id;
-  var name = el.dataset.name;
-  var isFolder = el.dataset.folder === 'true';
-
-  if (isFolder) {
-    _driveFolderStack.push({ id: id, name: name });
-    _driveSelected = null;
-    document.getElementById('driveSelectedName').textContent = '선택된 파일 없음';
-    document.getElementById('driveSelectBtn').disabled = true;
-    document.getElementById('driveSearch').value = '';
-    driveLoadFolder(id);
-  } else {
-    // 파일 선택
-    _driveSelected = { id: id, name: name };
-    document.getElementById('driveSelectedName').textContent = name;
-    document.getElementById('driveSelectBtn').disabled = false;
-    // 선택 스타일 업데이트
-    document.querySelectorAll('.drive-file-item').forEach(function(item) {
-      item.classList.toggle('selected', item.dataset.id === id);
-    });
-  }
-}
-
-// 뒤로가기 — 스택에서 한 단계 위로
-function driveGoBack() {
-  if (_driveFolderStack.length <= 1) return;
-  _driveFolderStack = _driveFolderStack.slice(0, _driveFolderStack.length - 1);
-  var parent = _driveFolderStack[_driveFolderStack.length - 1];
-  _driveSelected = null;
-  document.getElementById('driveSelectedName').textContent = '선택된 파일 없음';
-  document.getElementById('driveSelectBtn').disabled = true;
-  document.getElementById('driveSearch').value = '';
-  updateBreadcrumb();
-  driveLoadFolder(parent.id);
-}
-
-// breadcrumb 클릭으로 상위 폴더 이동
-function driveNavigate(folderId, folderName) {
-  var idx = _driveFolderStack.findIndex(function(f) { return f.id === folderId; });
-  if (idx >= 0) _driveFolderStack = _driveFolderStack.slice(0, idx + 1);
-  else _driveFolderStack = [{ id: folderId, name: folderName }];
-  _driveSelected = null;
-  document.getElementById('driveSelectedName').textContent = '선택된 파일 없음';
-  document.getElementById('driveSelectBtn').disabled = true;
-  document.getElementById('driveSearch').value = '';
-  driveLoadFolder(folderId);
-}
-
-function updateBreadcrumb() {
-  document.getElementById('driveBackBtn').disabled = _driveFolderStack.length <= 1;
-  var el = document.getElementById('driveBreadcrumb');
-  el.innerHTML = _driveFolderStack.map(function(f, i) {
-    if (i === _driveFolderStack.length - 1) {
-      return '<span style="color:var(--text-2);cursor:default">' + escHtml(f.name) + '</span>';
-    }
-    return '<span onclick="driveNavigate(\'' + f.id + '\',\'' + escHtml(f.name) + '\')">' + escHtml(f.name) + '</span> &rsaquo; ';
-  }).join('');
-}
-
-function driveSearchFilter() {
-  renderDriveFiles(_driveAllFiles);
-}
-
-// 선택 확정 → 파일 내용 로드
-async function confirmDriveSelection() {
-  if (!_driveSelected) return;
-  var btn = document.getElementById('driveSelectBtn');
-  btn.disabled = true;
-  btn.textContent = '로딩 중...';
-  try {
-    var r = await fetch('/api/drive/file/' + encodeURIComponent(_driveSelected.id));
-    var data = await r.json();
-    if (!data.success) throw new Error(data.error || 'File load failed');
-
-    var ta = document.getElementById(_driveStage + '-sdrInput');
-    ta.value = data.content;
-    var vr = validateSdrJson(data.content);
-    renderValidation(_driveStage, vr);
-    closeDriveExplorer();
-
-    // drive panel 닫기
-    var panel = document.getElementById(_driveStage + '-drivePanel');
-    if (panel && vr.valid) panel.classList.remove('open');
-  } catch(e) {
-    showErr(_driveStage, e.message);
-    closeDriveExplorer();
-  } finally {
-    btn.disabled = false;
-    btn.textContent = '선택';
-  }
-}
-
-function escHtml(str) {
-  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-}
-
-function formatBytes(b) {
-  if (b < 1024) return b + ' B';
-  if (b < 1024*1024) return (b/1024).toFixed(1) + ' KB';
-  return (b/1024/1024).toFixed(1) + ' MB';
-}
-
-// 페이지 로드 시 Google 인증 상태 확인
-document.addEventListener('DOMContentLoaded', function() {
-  refreshGoogleAuthStatus();
-});
-
-// drive panel 열릴 때마다 상태 갱신
-var _origToggleDrivePanel = toggleDrivePanel;
-toggleDrivePanel = function(stage) {
-  _origToggleDrivePanel(stage);
-  var panel = document.getElementById(stage + '-drivePanel');
-  if (panel && panel.classList.contains('open')) {
-    refreshGoogleAuthStatus();
-  }
-};
-
-// ── SDR textarea change handler ────────────────────────────────────────────
-function onSdrInputChange(stage) {
-  var val = (document.getElementById(stage + '-sdrInput').value || '').trim();
-  if (!val) {
-    var banner = document.getElementById(stage + '-sdrValidation');
-    if (banner) { banner.className = 'validation-banner'; banner.innerHTML = ''; }
-    // re-enable button if validating is cleared
-    var btn = document.getElementById(stage + '-btn');
-    if (btn) btn.disabled = false;
-    return;
-  }
-  // Debounce: only validate after 400ms idle
-  clearTimeout(onSdrInputChange._t);
-  onSdrInputChange._t = setTimeout(function() {
-    renderValidation(stage, validateSdrJson(val));
-  }, 400);
-}
-
-// ── JSON Validation ───────────────────────────────────────────────────────
-function validateSdrJson(jsonStr) {
-  var result = { valid: false, counts: { evars: 0, props: 0, events: 0 }, issues: [], warnings: [] };
-  if (!jsonStr || !jsonStr.trim()) {
-    result.issues.push('입력이 비어 있습니다.');
-    return result;
-  }
-  var parsed;
-  try { parsed = JSON.parse(jsonStr); }
-  catch(e) { result.issues.push('JSON 파싱 오류: ' + e.message); return result; }
-
-  // Support wrapped SDR JSON file format: { _meta, clientName, sdrData: { evars, props, events } }
-  // Also support double-wrapped: { sdrData: { sdrData: { evars, ... } } }
-  var data = parsed.sdrData || parsed;
-  if (data.sdrData && !Array.isArray(data.evars)) data = data.sdrData;
-
-  // Structure check
-  ['evars','props','events'].forEach(function(key) {
-    if (!Array.isArray(data[key])) {
-      result.issues.push('"' + key + '" 배열이 없습니다.');
-    } else {
-      result.counts[key] = data[key].length;
-      if (data[key].length === 0) result.warnings.push('"' + key + '" 배열이 비어 있습니다.');
-    }
-  });
-  if (result.issues.length) return result;
-
-  // Field-level check (first 5 items each)
-  var REQUIRED = { evars: ['variable','variable_name'], props: ['variable','variable_name'], events: ['event','event_name'] };
-  Object.keys(REQUIRED).forEach(function(key) {
-    var items = (data[key] || []).slice(0, 5);
-    var missing = new Set();
-    items.forEach(function(item, idx) {
-      REQUIRED[key].forEach(function(field) {
-        if (item[field] === undefined || item[field] === null || item[field] === '') {
-          missing.add(field);
-        }
-      });
-    });
-    if (missing.size) {
-      result.warnings.push('"' + key + '" 항목에 누락 필드: ' + Array.from(missing).join(', '));
-    }
-  });
-
-  // Check launchPayload presence (Tags tab hint)
-  result.hasLaunchPayload = !!(data.launchPayload);
-
-  result.valid = true;
-  return result;
-}
-
-function renderValidation(stage, result) {
-  // Tags tab: add advisory warning if launchPayload is absent
-  if (stage === 'tags' && result && result.valid && !result.hasLaunchPayload) {
-    result = Object.assign({}, result, {
-      warnings: (result.warnings || []).concat(
-        'launchPayload 키가 없습니다 — evars/events에서 Adobe Launch 룰을 자동 생성합니다.'
-      )
-    });
-  }
-  var banner = document.getElementById(stage + '-sdrValidation');
-  var btn    = document.getElementById(stage + '-btn');
-  if (!banner) return;
-
-  if (!result || (!result.issues.length && !result.warnings.length && !result.valid)) {
-    banner.className = 'validation-banner';
-    banner.innerHTML = '';
-    return;
-  }
-
-  var cls, icon, title, body = '';
-  if (!result.valid && result.issues.length) {
-    cls = 'invalid'; icon = '&#10007;';
-    title = 'Invalid — SDR JSON 구조 오류';
-    if (result.issues.length) {
-      body += '<ul class="vb-issues">' + result.issues.map(function(i){ return '<li>' + i + '</li>'; }).join('') + '</ul>';
-    }
-    if (btn) btn.disabled = true;
-  } else if (result.valid) {
-    var countStr = result.counts.evars + ' eVars &middot; ' + result.counts.props + ' Props &middot; ' + result.counts.events + ' Events';
-    if (result.warnings.length) {
-      cls = 'warning'; icon = '&#9888;';
-      title = 'Valid (주의) &mdash; ' + countStr;
-      body = '<ul class="vb-issues">' + result.warnings.map(function(w){ return '<li>' + w + '</li>'; }).join('') + '</ul>';
-    } else {
-      cls = 'valid'; icon = '&#10003;';
-      title = 'Valid &mdash; ' + countStr + '. Generate 가능합니다.';
-    }
-    if (btn) btn.disabled = false;
-  }
-
-  banner.className = 'validation-banner show ' + cls;
-  banner.innerHTML =
-    '<span class="vb-icon">' + icon + '</span>' +
-    '<div class="vb-body"><div class="vb-title">' + title + '</div>' + body + '</div>';
 }
 
 // ── Drop zone ─────────────────────────────────────────────────────────────
@@ -1850,7 +936,7 @@ function handleFile(file, tab) {
   zone.classList.add('has-file');
   zone.querySelector('.dz-label').textContent = 'File selected (click to replace)';
   zone.querySelector('.dz-sub').textContent  = '';
-  const slug = file.name.replace(/\.[^.]+$/, '').replace(/[_\-]+/g, ' ');
+  const slug = file.name.replace(/\\.[^.]+$/, '').replace(/[_\\-]+/g, ' ');
   const cn = document.getElementById(tab + '-clientName');
   if (cn && !cn.value) cn.value = slug;
 
@@ -1902,8 +988,8 @@ async function loadSheets(base64, tab) {
 async function triggerStage(stage) {
   showErr(stage, null);
   hideWarning(stage);
-  const clientName = getClientName();
-  if (!clientName) { showErr(stage, 'Please set a client name using the Client bar above.'); return; }
+  const clientName = (document.getElementById(stage + '-clientName').value || '').trim();
+  if (!clientName) { showErr(stage, 'Please enter a client name.'); return; }
 
   let payload = { clientName };
 
@@ -1920,29 +1006,7 @@ async function triggerStage(stage) {
     let sdrData;
     try { sdrData = JSON.parse(rawSdr); }
     catch { showErr(stage, 'Invalid SDR data JSON format.'); return; }
-    // Support wrapped SDR JSON file format: { _meta, clientName, sdrData: { evars, props, events } }
-    // Also handle double-wrapped: { sdrData: { sdrData: { evars, ... } } }
-    sdrData = sdrData.sdrData || sdrData;
-    if (sdrData.sdrData && !Array.isArray(sdrData.evars)) sdrData = sdrData.sdrData;
-    // Field-level validation gate
-    const vr = validateSdrJson(rawSdr);
-    if (!vr.valid) {
-      renderValidation(stage, vr);
-      showErr(stage, 'SDR JSON 검증 실패. 오류를 확인하고 수정 후 다시 시도하세요.');
-      return;
-    }
-    if (stage === 'tags') {
-      const adobeCredentials = loadCredentials();
-      if (!adobeCredentials ||
-          !adobeCredentials.CLIENT_SECRET || !adobeCredentials.API_KEY ||
-          !adobeCredentials.IMS_ORG || !adobeCredentials.PROPERTY_ID || !adobeCredentials.DATASTREAM_ID) {
-        showErr('tags', 'Adobe Launch credentials are not configured. Click "Set Credentials" above to add them.');
-        return;
-      }
-      payload = { clientName, sdrData, adobeCredentials };
-    } else {
-      payload = { clientName, sdrData };
-    }
+    payload = { clientName, sdrData };
   }
 
   // Reset UI
@@ -1975,7 +1039,6 @@ async function triggerStage(stage) {
     showErr(stage, e.message);
     stopTimer(stage);
     setBtn(stage, false);
-    hideStopBtn(stage);  // 트리거 실패 시 Stop 버튼 숨김
   }
 }
 
@@ -2032,7 +1095,6 @@ function finishStage(stage, outcome, job) {
   hideStopBtn(stage);
   if (outcome === 'done') showResult(stage, job);
   else if (outcome === 'cancelled') {
-    // active/idle 상태인 step을 모두 cancelled로 전환
     var pane = document.getElementById('tab-' + stage);
     if (pane) {
       pane.querySelectorAll('.step-item.active, .step-item.idle').forEach(function(el) {
@@ -2047,13 +1109,10 @@ function finishStage(stage, outcome, job) {
 
 // ── Save SDR result to localStorage ──────────────────────────────────────
 function onSdrComplete(job) {
-  // SDR n8n sends 'sdrData' key; legacy fallback to 'sdrJson'
-  const sdrPayload = (job.result && (job.result.sdrData || job.result.sdrJson))
-    ? (job.result.sdrData || job.result.sdrJson)
-    : (job.sdrData || job.sdrJson);
+  const sdrJson = (job.result && job.result.sdrJson) ? job.result.sdrJson : job.sdrJson;
   const clientName = (document.getElementById('sdr-clientName').value || '').trim();
-  if (sdrPayload && clientName) {
-    saveSdrData(clientName, sdrPayload.sdr || sdrPayload);
+  if (sdrJson && clientName) {
+    saveSdrData(clientName, sdrJson.sdr || sdrJson);
     document.getElementById('sdr-nextStep').style.display = 'flex';
   }
 }
@@ -2074,29 +1133,21 @@ function showResult(stage, data) {
     let html = '';
     if (sdrLink) html += dlLink('📊', 'SDR Excel', '.xlsx', sdrLink);
     files.forEach(function(f){
-      const ext = (f.fileName||'').match(/\.[^.]+$/);
+      const ext = (f.fileName||'').match(/\\.[^.]+$/);
       const icons = {'.xlsx':'📊','.docx':'📄','.js':'📜','.md':'📝','.json':'🗃️'};
       html += dlLink((ext && icons[ext[0]]) || '📁', f.fileName || 'File', (ext && ext[0]) || '', f.webViewLink);
     });
     document.getElementById('sdr-driveLinks').innerHTML = html || '<p style="color:var(--text-3);font-size:13px">No Drive links available</p>';
 
   } else if (stage === 'tsd') {
-    // ── Drive links ──────────────────────────────────────────────────────
-    const driveFiles = (data.result && data.result.googleDrive && data.result.googleDrive.files) ? data.result.googleDrive.files : [];
-    let driveHtml = '';
-    driveFiles.forEach(function(f){
-      const ext = (f.fileName||'').match(/\.[^.]+$/);
+    const files = (data.result && data.result.googleDrive && data.result.googleDrive.files) ? data.result.googleDrive.files : [];
+    let html = '';
+    files.forEach(function(f){
+      const ext = (f.fileName||'').match(/\\.[^.]+$/);
       const icons = {'.xlsx':'📊','.docx':'📄','.js':'📜','.md':'📝','.json':'🗃️'};
-      driveHtml += dlLink((ext && icons[ext[0]]) || '📁', f.fileName || 'File', (ext && ext[0]) || '', f.webViewLink);
+      html += dlLink((ext && icons[ext[0]]) || '📁', f.fileName || 'File', (ext && ext[0]) || '', f.webViewLink);
     });
-    if (!driveHtml) {
-      driveHtml = '<div class="alert warning" style="margin-bottom:0"><span>&#9888;</span><div>Google Drive 연결 없음 — 아래 로컬 파일에서 다운로드하세요.</div></div>';
-    }
-    document.getElementById('tsd-driveLinks').innerHTML = driveHtml;
-
-    // ── Local files ──────────────────────────────────────────────────────
-    const clientName = (document.getElementById('tsd-clientName').value || '').trim();
-    showTsdLocalFiles(clientName);
+    document.getElementById('tsd-driveLinks').innerHTML = html || '<p style="color:var(--text-3);font-size:13px">No Drive links available</p>';
 
   } else if (stage === 'tags') {
     const summary    = (data.result && data.result.summary) ? data.result.summary : {};
@@ -2113,43 +1164,6 @@ function dlLink(icon, name, type, url) {
     '<span class="dl-icon">' + icon + '</span>' +
     '<span class="dl-meta"><div class="dl-name">' + name + '</div><div class="dl-type">' + type + '</div></span>' +
     '<span class="dl-arr">&#8599;</span></a>';
-}
-
-// ── Local file card HTML ──────────────────────────────────────────────────
-function localFileCard(file) {
-  const icons = {'.xlsx':'📊','.docx':'📄','.js':'📜','.md':'📝','.json':'🗃️'};
-  const icon = icons[file.ext] || '📁';
-  const sizeStr = file.size >= 1024*1024
-    ? (file.size/1024/1024).toFixed(1) + ' MB'
-    : (file.size/1024).toFixed(0) + ' KB';
-  const dateStr = fmtTime(file.modified);
-  return '<div class="local-file-card">' +
-    '<span class="lf-icon">' + icon + '</span>' +
-    '<div class="lf-meta">' +
-      '<div class="lf-name">' + file.name + '</div>' +
-      '<div class="lf-type">' + file.type + '</div>' +
-      '<div class="lf-size">' + sizeStr + ' &middot; ' + dateStr + '</div>' +
-    '</div>' +
-    '<a class="btn-dl" href="' + file.downloadUrl + '" download="' + file.name + '">&#8595; Download</a>' +
-  '</div>';
-}
-
-async function showTsdLocalFiles(clientName) {
-  var el = document.getElementById('tsd-localFiles');
-  if (!el) return;
-  try {
-    var params = 'type=tsd&limit=5';
-    if (clientName) params += '&client=' + encodeURIComponent(clientName);
-    var r = await fetch('/api/output?' + params);
-    var data = await r.json();
-    if (!data.files || !data.files.length) {
-      el.innerHTML = '<p style="color:var(--text-3);font-size:13px">로컬 TSD 파일 없음</p>';
-      return;
-    }
-    el.innerHTML = data.files.map(localFileCard).join('');
-  } catch(e) {
-    el.innerHTML = '<p style="color:var(--text-3);font-size:13px">파일 목록을 불러올 수 없습니다.</p>';
-  }
 }
 
 // ── Job history ───────────────────────────────────────────────────────────
@@ -2170,8 +1184,8 @@ async function loadJobs() {
         (j.stage ? '<span class="job-stage-pill">' + j.stage.toUpperCase() + '</span>' : '') +
         '<div class="job-info"><div class="job-name">' + (j.clientName || j.jobId) + '</div>' +
         '<div class="job-time">' + j.jobId + ' &middot; ' + fmtTime(j.createdAt) + '</div></div>' +
-        (j.status === 'processing' ? '<button class="job-resume-btn" onclick="resumeJob(\'' + j.jobId + '\',\'' + (j.stage||'sdr') + '\')">Monitor</button>' : '') +
-        '<button class="job-delete-btn" onclick="delJob(\'' + j.jobId + '\')">&#128465;</button>' +
+        (j.status === 'processing' ? '<button class="job-resume-btn" onclick="resumeJob(\\'' + j.jobId + '\\',\\'' + (j.stage||'sdr') + '\\')">Monitor</button>' : '') +
+        '<button class="job-delete-btn" onclick="delJob(\\'' + j.jobId + '\\')">&#128465;</button>' +
         '</div>';
     }).join('');
   } catch {}
@@ -2182,7 +1196,6 @@ function resumeJob(jobId, stage) {
   state[stage].jobId = jobId;
   document.getElementById(stage + '-progressCard').style.display = 'block';
   startTimer(stage);
-  showStopBtn(stage);  // 진행 중인 job 모니터링 시 Stop 버튼 표시
   startSSE(stage, jobId);
   clearInterval(state[stage].poll);
   state[stage].poll = setInterval(() => pollStatus(stage, jobId), 5000);
@@ -2214,11 +1227,11 @@ function setStep(stage, name, cls) {
     else                          num.textContent = num.getAttribute('data-num') || '';
   }
   if (tag) {
-    if (cls === 'done')           tag.textContent = '✓ Done';
-    else if (cls === 'active')    tag.textContent = '⬤ Running...';
-    else if (cls === 'error')     tag.textContent = '✕ Failed';
+    if (cls === 'done')        tag.textContent = '✓ Done';
+    else if (cls === 'active') tag.textContent = '⬤ Running...';
+    else if (cls === 'error')  tag.textContent = '✕ Failed';
     else if (cls === 'cancelled') tag.textContent = '◌ Cancelled';
-    else                          tag.textContent = '○ Waiting';
+    else                       tag.textContent = '○ Waiting';
   }
 }
 
@@ -2291,107 +1304,9 @@ function fmtTime(iso) {
 // Auto-refresh job list every 10 s
 setInterval(loadJobs, 10000);
 </script>
-
-<!-- ── Cancel Confirm Modal ──────────────────────────────────────────────── -->
-<div class="modal-overlay" id="cancelModal" role="dialog" aria-modal="true" aria-labelledby="cancelModalTitle">
-  <div class="modal-box">
-    <div class="modal-icon">&#9888;</div>
-    <div class="modal-title" id="cancelModalTitle">작업을 종료하시겠습니까?</div>
-    <div class="modal-desc">현재 진행 중인 AI 생성 작업이 중단됩니다.<br>완료되지 않은 결과는 저장되지 않습니다.</div>
-    <div class="modal-btns">
-      <button class="modal-btn-cancel" id="cancelModalNo">계속 진행</button>
-      <button class="modal-btn-confirm" id="cancelModalYes">&#9632; 작업 중단</button>
-    </div>
-  </div>
-</div>
-
-<!-- Adobe Credentials Modal -->
-<div class="modal-overlay" id="credModal" role="dialog" aria-modal="true" aria-labelledby="credModalTitle">
-  <div class="modal-box cred-modal-box">
-    <div class="cred-modal-icon">&#128273;</div>
-    <div class="modal-title" id="credModalTitle">Adobe Launch Credentials</div>
-    <div class="modal-desc">Enter your Adobe Launch API credentials. These are saved in your browser and sent with each Tags generation request.</div>
-
-    <!-- Paste from .env -->
-    <div style="margin-bottom:12px">
-      <label class="cred-field-label" for="cred-paste-area" style="margin-bottom:4px;display:block">Paste from .env <span style="font-weight:400;opacity:.7">(auto-fill)</span></label>
-      <textarea id="cred-paste-area" rows="4" oninput="parsePastedCreds()" placeholder="Paste .env content or KEY=VALUE lines here...&#10;e.g. ADOBE_CLIENT_ID=...&#10;     ADOBE_CLIENT_SECRET=...&#10;     ADOBE_ORG_ID=...&#10;     ADOBE_PROPERTY_ID=...&#10;     ADOBE_DATASTREAM_ID=..." class="cred-field-input" style="font-family:monospace;font-size:12px;resize:vertical;height:80px" autocomplete="off" spellcheck="false"></textarea>
-      <div id="cred-paste-status" style="font-size:12px;margin-top:4px;min-height:16px;color:#6b7280"></div>
-    </div>
-    <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
-      <div style="flex:1;height:1px;background:var(--border,#e5e7eb)"></div>
-      <span style="font-size:11px;color:#9ca3af;white-space:nowrap">OR fill in manually</span>
-      <div style="flex:1;height:1px;background:var(--border,#e5e7eb)"></div>
-    </div>
-
-    <div class="cred-field-row">
-      <label class="cred-field-label" for="cred-clientSecret">CLIENT_SECRET</label>
-      <input class="cred-field-input" id="cred-clientSecret" type="password" placeholder="Your client secret" autocomplete="off" />
-    </div>
-    <div class="cred-field-row">
-      <label class="cred-field-label" for="cred-apiKey">API_KEY</label>
-      <input class="cred-field-input" id="cred-apiKey" type="text" placeholder="Your API key / client ID" autocomplete="off" />
-    </div>
-    <div class="cred-field-row">
-      <label class="cred-field-label" for="cred-imsOrg">IMS_ORG</label>
-      <input class="cred-field-input" id="cred-imsOrg" type="text" placeholder="XXXXXXXXXX@AdobeOrg" autocomplete="off" />
-    </div>
-    <div class="cred-field-row">
-      <label class="cred-field-label" for="cred-propertyId">PROPERTY_ID</label>
-      <input class="cred-field-input" id="cred-propertyId" type="text" placeholder="PRxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" autocomplete="off" />
-    </div>
-    <div class="cred-field-row">
-      <label class="cred-field-label" for="cred-datastreamId">DATASTREAM_ID</label>
-      <input class="cred-field-input" id="cred-datastreamId" type="text" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" autocomplete="off" />
-    </div>
-    <div style="margin-top:6px;margin-bottom:18px">
-      <div class="hint">&#128274; Stored in browser localStorage only. Never sent to any server other than your own webhook-service.</div>
-    </div>
-    <div class="modal-btns">
-      <button class="cred-modal-btn-clear" onclick="clearCredentials()">Clear</button>
-      <button class="modal-btn-cancel" onclick="closeCredModal()">Cancel</button>
-      <button class="cred-modal-btn-save" onclick="saveCredentials()">&#10003; Save</button>
-    </div>
-  </div>
-</div>
-
-<!-- Client Name Modal -->
-<div class="modal-overlay" id="clientModal" role="dialog" aria-modal="true" aria-labelledby="clientModalTitle">
-  <div class="modal-box" style="max-width:400px">
-    <div class="modal-icon">&#128100;</div>
-    <div class="modal-title" id="clientModalTitle">Set Client Name</div>
-    <div class="modal-desc">Enter the client name used across all workflow stages.</div>
-    <input class="client-modal-input" id="clientModalInput" type="text" placeholder="e.g., GSSHOP" autocomplete="off" />
-    <div class="modal-btns">
-      <button class="cred-modal-btn-clear" id="clientModalDeleteBtn" onclick="deleteClientName()">Delete</button>
-      <button class="modal-btn-cancel" onclick="closeClientModal()">Cancel</button>
-      <button class="cred-modal-btn-save" onclick="saveClientName()">&#10003; Save</button>
-    </div>
-  </div>
-</div>
-
-  <!-- Google Drive File Explorer Modal -->
-  <div class="drive-modal-overlay" id="driveModalOverlay">
-    <div class="drive-modal">
-      <div class="drive-modal-header">
-        <span style="font-size:20px">&#9729;</span>
-        <span class="dm-title">Google Drive — JSON 파일 선택</span>
-        <button class="dm-close" onclick="closeDriveExplorer()">&#10005;</button>
-      </div>
-      <div class="drive-modal-toolbar">
-        <button class="btn-drive-back" id="driveBackBtn" onclick="driveGoBack()" disabled title="상위 폴더로">&#8592;</button>
-        <div class="drive-breadcrumb" id="driveBreadcrumb"><span onclick="driveNavigate('root','My Drive')">My Drive</span></div>
-        <input class="drive-search" id="driveSearch" type="text" placeholder="&#128269; 검색..." oninput="driveSearchFilter()" />
-      </div>
-      <div class="drive-file-list" id="driveFileList">
-        <div class="drive-loading">&#9696; 로딩 중...</div>
-      </div>
-      <div class="drive-modal-footer">
-        <span class="drive-selected-name" id="driveSelectedName">선택된 파일 없음</span>
-        <button class="btn-drive-cancel" onclick="closeDriveExplorer()">취소</button>
-        <button class="btn-drive-select" id="driveSelectBtn" disabled onclick="confirmDriveSelection()">선택</button>
-      </div>
-    </div>
-  </div>
 </body>
-</html>
+</html>`;
+
+fs.writeFileSync(OUT, html, 'utf8');
+const lines = html.split('\n').length;
+console.log('✅ index.html written → ' + OUT + ' (' + lines + ' lines)');

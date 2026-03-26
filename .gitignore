@@ -36,7 +36,6 @@ webhook-service/.env
 
 # Node.js
 node_modules/
-package-lock.json
 
 # Vector DB
 chroma_db/
@@ -49,3 +48,4 @@ base-docs/1_discovery/~$*.xlsx
 
 azure-openai-key.txt
 n8n-document-ai-gcp-client-secret.json
+Adobe Launch API - Create rule,component.json

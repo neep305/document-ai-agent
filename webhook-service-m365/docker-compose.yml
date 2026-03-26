@@ -1,0 +1,43 @@
+# webhook-service-m365 — webhook-service와 동일 앱 + M365 업로드 (기본 포트 3001)
+services:
+  excel-service-m365:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: webhook-service-m365:local
+    container_name: webhook-service-m365
+    ports:
+      - "${PORT:-3001}:3001"
+    env_file:
+      - .env
+    environment:
+      - PORT=3001
+      - NODE_ENV=${NODE_ENV:-production}
+      - N8N_WEBHOOK_URL=${N8N_WEBHOOK_URL}
+      - N8N_SDR_WEBHOOK_URL=${N8N_SDR_WEBHOOK_URL}
+      - N8N_TSD_WEBHOOK_URL=${N8N_TSD_WEBHOOK_URL}
+      - N8N_TAGS_WEBHOOK_URL=${N8N_TAGS_WEBHOOK_URL}
+      - N8N_API_KEY=${N8N_API_KEY}
+      - N8N_API_BASE_URL=${N8N_API_BASE_URL:-http://host.docker.internal:5678}
+      - N8N_BASIC_AUTH_USER=${N8N_BASIC_AUTH_USER}
+      - N8N_BASIC_AUTH_PASSWORD=${N8N_BASIC_AUTH_PASSWORD}
+      - CALLBACK_HOST=${CALLBACK_HOST:-host.docker.internal}
+      - SHEET_NAME_EVARS=${SHEET_NAME_EVARS:-eVars}
+      - SHEET_NAME_PROPS=${SHEET_NAME_PROPS:-props}
+      - SHEET_NAME_EVENTS=${SHEET_NAME_EVENTS:-custom events (metrics)}
+      - M365_SERVICE_API_KEY=${M365_SERVICE_API_KEY}
+      - AZURE_TENANT_ID=${AZURE_TENANT_ID}
+      - AZURE_CLIENT_ID=${AZURE_CLIENT_ID}
+      - AZURE_CLIENT_SECRET=${AZURE_CLIENT_SECRET}
+      - GRAPH_SITE_ID=${GRAPH_SITE_ID}
+      - GRAPH_SITE_PATH=${GRAPH_SITE_PATH}
+      - GRAPH_DEFAULT_FOLDER=${GRAPH_DEFAULT_FOLDER}
+      - MAX_UPLOAD_MB=${MAX_UPLOAD_MB:-50}
+      - GRAPH_UPLOAD_SESSION_THRESHOLD_MB=${GRAPH_UPLOAD_SESSION_THRESHOLD_MB:-4}
+      - LOG_UPLOADS=${LOG_UPLOADS:-false}
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3001/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
